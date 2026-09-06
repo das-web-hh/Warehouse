@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Склад — панель администратора</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg: #eef1f4;
+    --panel: #ffffff;
+    --ink: #1c2733;
+    --ink-soft: #5b6b7c;
+    --line: #dbe1e8;
+    --line-soft: #e8ecf1;
+    --brand: #2c5c8a;
+    --brand-dark: #204569;
+    --brand-soft: #e5edf5;
+    --warn: #b9762a;
+    --warn-soft: #fbf0e2;
+    --bad: #b23b3b;
+    --bad-soft: #fbe9e9;
+    --ok: #2f7a4f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:flex; height:100vh; overflow:hidden;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:236px; flex:none;
+    background:var(--brand-dark);
+    color:#dce7f2;
+    display:flex; flex-direction:column;
+    padding:18px 0;
+    transition:width .18s ease;
+    overflow:hidden;
+  }
+  .sidebar.collapsed{
+    width:54px;
+  }
+  .brand{
+    min-height:42px;
+    padding:0 14px 18px 14px;
+    font-weight:600; font-size:15px; letter-spacing:.2px;
+    color:#fff;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    margin-bottom:10px;
+    display:flex; align-items:flex-start; gap:10px;
+    white-space:nowrap;
+  }
+  .brand-icon{
+    display:flex; align-items:center; justify-content:center;
+    width:26px; height:26px; flex:none;
+    border:1px solid rgba(255,255,255,.28);
+    border-radius:6px; font-size:15px; line-height:1;
+  }
+  .brand-copy{display:block; min-width:190px;}
+  .sidebar.collapsed .brand{
+    justify-content:center;
+    padding-left:14px; padding-right:14px;
+  }
+  .sidebar.collapsed .brand-copy{
+    display:none;
+  }
+  .brand small{display:block; font-weight:400; font-size:11.5px; color:#9fb6cd; margin-top:2px;}
+  .menu-toggle{
+    all:unset; cursor:pointer;
+    display:flex; align-items:center; gap:10px;
+    min-height:38px; margin:0 10px 8px; padding:0 12px;
+    border-radius:6px; color:#dce7f2; font-size:13px;
+    transition:background .12s ease, color .12s ease;
+    white-space:nowrap;
+  }
+  .menu-toggle:hover{background:rgba(255,255,255,.08); color:#fff;}
+  .menu-toggle .toggle-icon{font-size:18px; width:16px; text-align:center; flex:none;}
+  .sidebar.collapsed .menu-toggle{
+    justify-content:center; margin-left:8px; margin-right:8px; padding-left:0; padding-right:0;
+  }
+  .sidebar.collapsed .toggle-text{display:none;}
+  .sidebar.collapsed nav.mainnav{display:none;}
+  nav.mainnav{display:flex; flex-direction:column; gap:2px; padding:6px 10px;}
+  nav.mainnav button{
+    all:unset; cursor:pointer;
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:6px;
+    color:#c7d7e6; font-size:13.5px;
+    transition:background .12s ease, color .12s ease;
+  }
+  nav.mainnav button .num{
+    font-family:var(--mono); font-size:11px; color:#7f9bb6;
+    width:16px; text-align:right; flex:none;
+  }
+  nav.mainnav button:hover{background:rgba(255,255,255,.06); color:#fff;}
+  nav.mainnav button.active{background:var(--brand); color:#fff;}
+  nav.mainnav button.active .num{color:#cfe0f0;}
+
+  /* ---------- Main ---------- */
+  .main{flex:1; display:flex; flex-direction:column; min-width:0;}
+  .topbar{
+    padding:16px 26px 0 26px; flex:none; position:relative;
+  }
+  .topbar h1{font-size:18px; margin:0 0 2px 0; font-weight:600;}
+  .topbar .sub{color:var(--ink-soft); font-size:12.5px; margin-bottom:12px;}
+  .subnav{display:flex; gap:6px; border-bottom:1px solid var(--line); padding-bottom:0;}
+  .subnav button{
+    all:unset; cursor:pointer;
+    padding:9px 14px; font-size:13px; color:var(--ink-soft);
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .subnav button:hover{color:var(--ink);}
+  .subnav button.active{color:var(--brand-dark); border-bottom-color:var(--brand); font-weight:600;}
+
+  .content{flex:1; overflow:auto; padding:18px 26px 30px 26px;}
+
+  /* ---------- Profile widget ---------- */
+  .profile-bar{display:flex; align-items:center; gap:8px; cursor:pointer; padding:6px 10px; border-radius:20px;}
+  .profile-bar:hover{background:var(--line-soft);}
+  .avatar{width:28px; height:28px; border-radius:50%; background:var(--brand); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none;}
+  .pname{font-size:13px; font-weight:600; white-space:nowrap;}
+  .profile-panel{
+    position:absolute; right:26px; top:54px; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:14px 16px; width:250px; box-shadow:0 10px 30px rgba(0,0,0,.14); z-index:60;
+  }
+  .pp-row{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding:5px 0; border-bottom:1px solid var(--line-soft);}
+  .pp-row span{color:var(--ink-soft);}
+  .pp-row:last-of-type{border-bottom:none;}
+
+  /* ---------- Toolbar (search/sort) ---------- */
+  .toolbar{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .search{position:relative; flex:none; width:280px;}
+  .search input{
+    width:100%; padding:8px 10px 8px 30px; border:1px solid var(--line);
+    border-radius:6px; font-size:13px; background:#fff; color:var(--ink); outline:none;
+  }
+  .search input:focus{border-color:var(--brand);}
+  .search svg{position:absolute; left:9px; top:9px; width:14px; height:14px; color:var(--ink-soft);}
+  .count-pill{font-size:12px; color:var(--ink-soft); padding:6px 10px; background:var(--line-soft); border-radius:20px;}
+  .sort-hint{font-size:12px; color:var(--ink-soft);}
+
+  /* ---------- Table ---------- */
+  .table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:auto;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{
+    text-align:left; font-weight:600; color:var(--ink-soft);
+    padding:9px 12px; border-bottom:1px solid var(--line);
+    background:#f7f9fb; white-space:nowrap; position:sticky; top:0;
+  }
+  thead th.sortable{cursor:pointer; user-select:none;}
+  thead th.sortable:hover{color:var(--ink);}
+  thead th .arrow{font-size:10px; margin-left:4px; color:var(--brand);}
+  tbody td{padding:9px 12px; border-bottom:1px solid var(--line-soft); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#fafbfd;}
+  td.mono, .mono{font-family:var(--mono); font-size:12.5px; color:var(--ink);}
+  td.num{white-space:nowrap;}
+  .badge{display:inline-block; padding:2px 8px; border-radius:20px; font-size:11.5px; font-weight:600;}
+  .badge.warn{background:var(--warn-soft); color:var(--warn);}
+  .badge.bad{background:var(--bad-soft); color:var(--bad);}
+  .badge.ok{background:#e7f3ec; color:var(--ok);}
+  .empty-row td{text-align:center; padding:36px 12px; color:var(--ink-soft);}
+  .icon-btn{all:unset; cursor:pointer; padding:4px 7px; border-radius:4px; font-size:13px; margin-right:2px;}
+  .icon-btn:hover{background:var(--line-soft);}
+
+  /* ---------- Cards / generic panels ---------- */
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:18px;}
+  .card + .card{margin-top:14px;}
+  .card h3{margin:0 0 4px 0; font-size:14.5px;}
+  .card .desc{color:var(--ink-soft); font-size:12.5px; margin-bottom:14px;}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .btn{
+    all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+    background:var(--brand); color:#fff; padding:9px 16px; border-radius:6px;
+    font-size:13px; font-weight:600;
+  }
+  .btn:hover{background:var(--brand-dark);}
+  .btn.secondary{background:#fff; color:var(--brand-dark); border:1px solid var(--line);}
+  .btn.secondary:hover{background:var(--brand-soft);}
+  .btn[disabled]{opacity:.45; cursor:not-allowed;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px;}
+  .field input[type=text], .field input[type=date], .field input[type=datetime-local],
+  .field select, .field textarea{
+    width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px;
+    background:#fff; color:var(--ink); font-family:var(--sans);
+  }
+  .field textarea{resize:vertical; min-height:64px;}
+  .row-check{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line-soft);}
+  .row-check:last-child{border-bottom:none;}
+  .row-check label{font-size:13px; flex:1;}
+  .filepick{border:1.5px dashed var(--line); border-radius:8px; padding:22px; text-align:center; cursor:pointer; background:#fafbfc;}
+  .filepick:hover{border-color:var(--brand); background:var(--brand-soft);}
+  .filepick input{display:none;}
+  .filepick .fname{font-size:12.5px; color:var(--brand-dark); margin-top:8px; font-family:var(--mono);}
+  .radio-row{display:flex; gap:16px; margin-bottom:14px;}
+  .radio-row label{display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;}
+  .toast{
+    position:fixed; bottom:22px; right:22px; background:var(--ink); color:#fff; padding:12px 18px;
+    border-radius:8px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.18); opacity:0; transform:translateY(8px);
+    transition:opacity .2s ease, transform .2s ease; pointer-events:none; z-index:80;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  .status-toggle{all:unset; cursor:pointer; font-size:12px; padding:3px 9px; border-radius:20px; font-weight:600;}
+  .placeholder-list{display:flex; flex-direction:column; gap:8px;}
+  .task-item{display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-soft);}
+  .task-item:last-child{border-bottom:none;}
+  .task-item .txt{font-size:13px; color:var(--ink);}
+  .task-item .meta{font-size:11.5px; color:var(--ink-soft); margin-top:3px;}
+  .task-item .actions{margin-left:auto; flex:none;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(15,22,32,.4); display:flex; align-items:center; justify-content:center; z-index:70;
+  }
+  .modal-card{
+    background:#fff; border-radius:10px; padding:22px; width:440px; max-width:92vw; max-height:88vh; overflow:auto;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  .modal-card h3{margin:0 0 14px 0; font-size:15.5px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar collapsed" id="sidebar">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">▦</span>
+      <span class="brand-copy">Склад · Админ<br><small>Панель управления приёмкой</small></span>
+    </div>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainnav">
+      <span class="toggle-icon" aria-hidden="true">☰</span>
+      <span class="toggle-text">Меню</span>
+    </button>
+    <nav class="mainnav" id="mainnav"></nav>
+  </aside>
+  <main class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="content" id="content">Загрузка…</div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* =========================================================
+   FIREBASE
+   ========================================================= */
+if (!window.firebase ||
+    typeof window.firebase.auth !== "function" ||
+    typeof window.firebase.firestore !== "function") {
+  document.getElementById("content").innerHTML = `
+    <div class="card">
+      <h3>Не удалось загрузить Firebase</h3>
+      <div class="desc">Проверьте подключение к интернету и обновите страницу.</div>
+    </div>
+  `;
+} else {
+const initializeApp = firebase.initializeApp;
+const getFirestore = () => firebase.firestore();
+const collection = (database, name) => database.collection(name);
+const doc = (database, collectionName, id) => database.collection(collectionName).doc(id);
+const addDoc = (reference, data) => reference.add(data);
+const updateDoc = (reference, data) => reference.update(data);
+const deleteDoc = (reference) => reference.delete();
+const onSnapshot = (reference, ...args) => reference.onSnapshot(...args);
+const query = (reference, ...constraints) =>
+  constraints.reduce((current, constraint) => {
+    if(constraint.type === "where"){
+      return current.where(constraint.field, constraint.operator, constraint.value);
+    }
+    return current.orderBy(constraint.field, constraint.direction);
+  }, reference);
+const orderBy = (field, direction = "asc") => ({field, direction});
+const where = (field, operator, value) => ({type:"where", field, operator, value});
+const getDoc = (reference) => reference.get();
+const getDocs = (reference) => reference.get();
+const serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAdieSc0CpKvG-WfsLqaJkhFV_w69A4nQQ",
+  authDomain: "warehouse26-fbbee.firebaseapp.com",
+  projectId: "warehouse26-fbbee",
+  storageBucket: "warehouse26-fbbee.firebasestorage.app",
+  messagingSenderId: "965022333314",
+  appId: "1:965022333314:web:cc42992352bb1ee855379b",
+  measurementId: "G-QQ7G4S2HL5"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = getFirestore(fbApp);
+
+const COL = {
+  blind: "blind_receipt",
+  auto: "auto_receipt",
+  task: "assignment_receipt",
+  history: "history",
+  catalog: "catalog",
+  users: "users",
+};
+
+/* =========================================================
+   СЕССИЯ / ПРОФИЛЬ
+   ========================================================= */
+window.currentProfile = null;
+
+function logout(){
+  auth.signOut().catch(()=>{}).finally(()=>{
+    localStorage.removeItem("wh_user_id");
+    localStorage.removeItem("wh_authenticated");
+    localStorage.removeItem("wh_is_admin");
+    localStorage.removeItem("wh_role");
+    location.href = "index.html";
+  });
+}
+
+/* =========================================================
+   ЛОКАЛЬНОЕ СОСТОЯНИЕ ДАННЫХ (наполняется из Firestore в реальном времени)
+   ========================================================= */
+const DB = {
+  blind: [], autoRecv: [], taskRecv: [], history: [], catalog: [], users: [],
+  windows: [],
+  inventory: [], // не связано с Firebase в этом ТЗ — временный локальный список
+};
+let warehouseCatalogRows = [];
+
+const RECEIPT_FIELDS = [
+  {name:"dt", label:"Дата и время", type:"datetime-local"},
+  {name:"user", label:"Принявший (ФИО)", type:"text"},
+  {name:"article", label:"Артикул", type:"text"},
+  {name:"order", label:"№ заказа", type:"text"},
+  {name:"sender", label:"Отправитель", type:"text"},
+  {name:"product", label:"Товар", type:"text"},
+  {name:"expiry", label:"Срок годности", type:"date"},
+  {name:"barcode", label:"Штрих-код", type:"text"},
+];
+const CATALOG_FIELDS = [
+  {name:"article", label:"Артикул", type:"text"},
+  {name:"name", label:"Наименование", type:"text"},
+  {name:"category", label:"Категория", type:"text"},
+  {name:"unit", label:"Ед. изм.", type:"text"},
+  {name:"barcode", label:"Штрих-код", type:"text"},
+];
+const USER_FIELDS = [
+  {name:"firstName", label:"Имя", type:"text"},
+  {name:"lastName", label:"Фамилия", type:"text"},
+  {name:"email", label:"Эмайл", type:"text"},
+  {name:"login", label:"Логин", type:"text"},
+  {name:"password", label:"Пароль", type:"text"},
+  {name:"role", label:"Должность", type:"text"},
+];
+
+/* =========================================================
+   НАВИГАЦИЯ / СОСТОЯНИЕ UI
+   ========================================================= */
+const SECTIONS = [
+  {id:"receiving", label:"Приёмка товаров"},
+  {id:"history",   label:"История"},
+  {id:"catalog",   label:"Каталог товаров"},
+  {id:"warehouseWindows", label:"Окна склада"},
+  {id:"impexp",    label:"Импорт / экспорт"},
+  {id:"inventory", label:"Инвентаризация"},
+  {id:"users",     label:"Пользователи"},
+  {id:"settings",  label:"Настройки"},
+  {id:"usertasks", label:"Задача пользователю"},
+];
+const RECEIVING_TABS = [
+  {id:"blind", label:"Приём слепая"},
+  {id:"auto",  label:"Автоприём"},
+  {id:"task",  label:"Приём по задаче"},
+];
+const IMPEXP_TABS = [
+  {id:"import", label:"Импорт"},
+  {id:"export", label:"Экспорт"},
+];
+
+const state = {
+  section: "receiving",
+  receivingTab: "blind",
+  impexpTab: "import",
+  search: { blind:"", auto:"", task:"", history:"", catalog:"" },
+  categoryFilter: "",
+  sort: {
+    auto:   { key:null, dir:1 },
+    task:   { key:null, dir:1 },
+    history:{ key:null, dir:1 },
+  },
+  importTarget: "blind",
+  importedRows: [],
+  importFileName: "",
+  importKind: "",
+  exportSel: { blind:true, auto:true, taskRecv:true, history:false, inventory:false, catalog:false },
+  exportHistoryRange: { from:"", to:"" },
+  exportInventorySessions: new Set(),
+  exportFormat: "excel",
+};
+
+let selectedTaskUser = null;
+let taskUnsub = null;
+let tasksCache = [];
+
+/* =========================================================
+   СВОРАЧИВАЕМОЕ БОКОВОЕ МЕНЮ
+   ========================================================= */
+const sidebar = document.getElementById("sidebar");
+const menuToggle = document.getElementById("menuToggle");
+function setSidebarExpanded(expanded, remember = true){
+  sidebar.classList.toggle("collapsed", !expanded);
+  menuToggle.setAttribute("aria-expanded", String(expanded));
+  menuToggle.title = expanded ? "Свернуть меню" : "Открыть меню";
+  if(remember) localStorage.setItem("wh_sidebar_expanded", expanded ? "1" : "0");
+}
+setSidebarExpanded(localStorage.getItem("wh_sidebar_expanded") === "1", false);
+menuToggle.addEventListener("click", ()=>{
+  setSidebarExpanded(sidebar.classList.contains("collapsed"));
+});
+
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+
+/* =========================================================
+   ФОРМАТИРОВАНИЕ ДАТ
+   ========================================================= */
+function pad(n){return String(n).padStart(2,"0");}
+function fmtDT(d){return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function fmtD(d){return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;}
+function dateOnlyKey(d){return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
+function toDateInputValue(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function toDatetimeLocalValue(d){return `${toDateInputValue(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function expiryBadge(d){
+  const days = Math.round((d - new Date())/86400000);
+  if(days < 0) return `<span class="badge bad">${fmtD(d)} · истёк</span>`;
+  if(days <= 14) return `<span class="badge warn">${fmtD(d)} · ${days} дн.</span>`;
+  return `<span class="badge ok">${fmtD(d)}</span>`;
+}
+
+/* =========================================================
+   МОДАЛЬНОЕ ОКНО (добавление / редактирование)
+   ========================================================= */
+function openModal({title, fields, initial, onSubmit}){
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-card">
+        <h3>${title}</h3>
+        <div id="modalFields"></div>
+        <div style="display:flex; gap:10px; margin-top:14px; justify-content:flex-end;">
+          <button class="btn secondary" id="modalCancel" type="button">Отмена</button>
+          <button class="btn" id="modalSave" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const fr = document.getElementById("modalFields");
+  fr.innerHTML = fields.map(f=>`
+    <div class="field">
+      <label>${f.label}</label>
+      <input type="${f.type}" data-fname="${f.name}" value="${initial && initial[f.name]!==undefined ? initial[f.name] : ''}">
+    </div>
+  `).join("");
+  document.getElementById("modalCancel").addEventListener("click", closeModal);
+  document.getElementById("modalOverlay").addEventListener("click", (e)=>{ if(e.target.id==="modalOverlay") closeModal(); });
+  document.getElementById("modalSave").addEventListener("click", async ()=>{
+    const values = {};
+    fr.querySelectorAll("input[data-fname]").forEach(inp=>{ values[inp.dataset.fname]=inp.value; });
+    const saveBtn = document.getElementById("modalSave");
+    saveBtn.disabled = true;
+    try{
+      await onSubmit(values);
+      closeModal();
+    }catch(err){
+      toast("Ошибка сохранения: "+err.message);
+      saveBtn.disabled = false;
+    }
+  });
+}
+function closeModal(){ document.getElementById("modalRoot").innerHTML=""; }
+
+function buildReceiptPayload(values){
+  return {
+    dt: new Date(values.dt).toISOString(),
+    user: values.user||"", article: values.article||"", order: values.order||"",
+    sender: values.sender||"", product: values.product||"",
+    expiry: new Date(values.expiry).toISOString(),
+    barcode: values.barcode||"",
+  };
+}
+
+/* =========================================================
+   ПОДПИСКИ НА FIRESTORE (реальное время)
+   ========================================================= */
+function subscribeReceiptCollection(colName, key){
+  // Do not use Firestore orderBy here: old records created by the first
+  // warehouse version may have `date`/`receivedAt` instead of `dt`, and an
+  // orderBy query silently excludes documents without the indexed field.
+  onSnapshot(collection(db, colName), snap=>{
+    DB[key] = snap.docs.map(d=>{
+      const data = d.data();
+      return {
+        id:d.id,
+        dt: data.dt ? new Date(data.dt) :
+          (data.date ? new Date(data.date) :
+          (data.receivedAt ? new Date(data.receivedAt) : new Date())),
+        user: data.user||"", article: data.article||"", order: data.order||"",
+        sender: data.sender||"", product: data.product||data.name||"",
+        expiry: data.expiry ? new Date(data.expiry) : new Date(),
+        barcode: data.barcode||data.ean||"",
+        windowId: data.windowId||"",
+        windowName: data.windowName||"",
+        userId: data.userId||"",
+      };
+    }).sort((a,b)=>b.dt.getTime()-a.dt.getTime());
+    maybeRerender(colName);
+  }, err=>toast(`Ошибка чтения «${colName}»: ${err.message}`));
+}
+function subscribeCatalog(){
+  onSnapshot(collection(db, COL.catalog), snap=>{
+    const onlineRows = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.catalog = mergeCatalogRows(warehouseCatalogRows, onlineRows);
+    maybeRerender("catalog");
+  }, err=>toast("Ошибка чтения каталога: "+err.message));
+}
+function catalogRowKey(row){
+  const barcode = String(row.barcode || row.ean || "").trim();
+  if(barcode) return "barcode:" + barcode;
+  const article = String(row.article || row.artikel || "").trim().toLowerCase();
+  if(article) return "article:" + article;
+  return "name:" + String(row.name || "").trim().toLowerCase();
+}
+function catalogCategory(row){
+  return String(row && row.category || "").trim() || "Без категории";
+}
+function mergeCatalogRows(warehouseRows, onlineRows){
+  const merged = new Map();
+  (warehouseRows || []).forEach(row=>{
+    const key = catalogRowKey(row);
+    if(key !== "name:") merged.set(key, {...row});
+  });
+  (onlineRows || []).forEach(row=>{
+    const key = catalogRowKey(row);
+    if(key === "name:") return;
+    // The top-level catalog is authoritative for fields maintained in the
+    // admin panel (especially category and unit).
+    merged.set(key, {...(merged.get(key)||{}), ...row});
+  });
+  return Array.from(merged.values());
+}
+function subscribeWarehouseCatalog(){
+  onSnapshot(doc(db, "warehouses", "warehouse26"), snap=>{
+    const data = snap.exists ? snap.data() : {};
+    const source = Array.isArray(data.database) ? data.database : [];
+    warehouseCatalogRows = source.map(item=>({
+      article: String(item.artikel || item.article || "").trim(),
+      name: String(item.name || "").trim(),
+      category: String(item.category || "").trim(),
+      unit: String(item.unit || "").trim(),
+      barcode: String(item.ean || item.barcode || "").trim()
+    })).filter(row=>row.name || row.article || row.barcode);
+    // If catalog documents already exist, keep their category/unit values.
+    DB.catalog = mergeCatalogRows(warehouseCatalogRows, DB.catalog);
+    maybeRerender("catalog");
+  }, err=>toast("Ошибка чтения warehouse26: "+err.message));
+}
+function subscribeWarehouseWindows(){
+  // Each warehouse browser writes one document here. Do not use orderBy:
+  // older documents may not have updatedAt and Firestore would require an
+  // index for the query.
+  onSnapshot(collection(db, "warehouse_windows"), snap=>{
+    DB.windows = snap.docs.map(d=>({id:d.id, ...d.data()}))
+      .sort((a,b)=>Number(b.updatedAt||0)-Number(a.updatedAt||0));
+    maybeRerender("warehouseWindows");
+  }, err=>toast("Ошибка чтения окон склада: "+err.message));
+}
+function subscribeUsers(){
+  onSnapshot(collection(db, COL.users), snap=>{
+    DB.users = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    maybeRerender("users");
+  }, err=>toast("Ошибка чтения пользователей: "+err.message));
+}
+function subscribeAll(){
+  subscribeReceiptCollection(COL.blind, "blind");
+  subscribeReceiptCollection(COL.auto, "autoRecv");
+  subscribeReceiptCollection(COL.task, "taskRecv");
+  subscribeReceiptCollection(COL.history, "history");
+  subscribeCatalog();
+  subscribeWarehouseCatalog();
+  subscribeWarehouseWindows();
+  subscribeUsers();
+}
+function maybeRerender(colName){
+  const s = state.section;
+  if(colName===COL.blind && s==="receiving" && state.receivingTab==="blind") return renderContent();
+  if(colName===COL.auto && s==="receiving" && state.receivingTab==="auto") return renderContent();
+  if(colName===COL.task && s==="receiving" && state.receivingTab==="task") return renderContent();
+  if(colName===COL.history && s==="history") return renderContent();
+  if(colName==="catalog" && s==="catalog") return renderContent();
+  if(colName==="warehouseWindows" && s==="warehouseWindows") return renderContent();
+  if(colName==="users" && (s==="users" || s==="usertasks")) return renderContent();
+  if(s==="impexp" && state.impexpTab==="export" &&
+     [COL.blind,COL.auto,COL.task,COL.history,"catalog"].includes(colName)) return renderContent();
+}
+
+/* =========================================================
+   РЕНДЕР: SIDEBAR
+   ========================================================= */
+function renderSidebar(){
+  const nav = document.getElementById("mainnav");
+  nav.innerHTML = SECTIONS.map((s,i)=>`
+    <button data-section="${s.id}" class="${state.section===s.id?'active':''}">
+      <span class="num">${i+1}</span><span>${s.label}</span>
+    </button>
+  `).join("");
+  nav.querySelectorAll("button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.section = btn.dataset.section;
+      renderSidebar();
+      renderTop();
+      renderContent();
+    });
+  });
+}
+
+/* =========================================================
+   РЕНДЕР: TOPBAR + ПРОФИЛЬ
+   ========================================================= */
+function renderTop(){
+  const top = document.getElementById("topbar");
+  const titles = {
+    receiving:["Приёмка товаров","Три режима приёмки: слепой контроль, автоматический и по заранее выданной задаче"],
+    history:["История приёмки","Журнал приёмки — редактируется напрямую как отдельная база «history»"],
+    catalog:["Каталог товаров","Справочник артикулов, доступных на складе"],
+    warehouseWindows:["Окна склада","Товары по рабочим окнам: кто работает, где хранится товар и сколько принято"],
+    impexp:["Импорт / экспорт","Загрузка данных из Excel и JSON, выгрузка баз на устройство"],
+    inventory:["Инвентаризация","Сессии пересчёта остатков"],
+    users:["Пользователи","Учётные записи сотрудников: создание, редактирование и удаление"],
+    settings:["Настройки","Параметры панели администратора"],
+    usertasks:["Задача пользователю","Постановка задач и контроль их выполнения по каждому сотруднику"],
+  };
+  const [h,sub] = titles[state.section];
+  let subnavHtml = "";
+  if(state.section==="receiving"){
+    subnavHtml = `<div class="subnav" id="subnav">${RECEIVING_TABS.map(t=>`
+      <button data-tab="${t.id}" class="${state.receivingTab===t.id?'active':''}">${t.label}</button>
+    `).join("")}</div>`;
+  } else if(state.section==="impexp"){
+    subnavHtml = `<div class="subnav" id="subnav">${IMPEXP_TABS.map(t=>`
+      <button data-tab="${t.id}" class="${state.impexpTab===t.id?'active':''}">${t.label}</button>
+    `).join("")}</div>`;
+  }
+  top.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+      <div><h1>${h}</h1><div class="sub">${sub}</div></div>
+      <div id="profileWidget"></div>
+    </div>
+    ${subnavHtml}
+  `;
+  const sn = document.getElementById("subnav");
+  if(sn){
+    sn.querySelectorAll("button").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if(state.section==="receiving") state.receivingTab = btn.dataset.tab;
+        if(state.section==="impexp") state.impexpTab = btn.dataset.tab;
+        renderTop();
+        renderContent();
+      });
+    });
+  }
+  renderProfileWidget();
+}
+
+function renderProfileWidget(){
+  const p = window.currentProfile;
+  const box = document.getElementById("profileWidget");
+  if(!box) return;
+  if(!p){ box.innerHTML = ""; return; }
+  const initials = `${(p.firstName||"?")[0]||"?"}${(p.lastName||"")[0]||""}`.toUpperCase();
+  box.innerHTML = `
+    <div class="profile-bar" id="profileBar">
+      <div class="avatar">${initials}</div>
+      <div class="pname">${p.firstName||""} ${p.lastName||""}</div>
+    </div>
+  `;
+  document.getElementById("profileBar").addEventListener("click", toggleProfilePanel);
+}
+function toggleProfilePanel(){
+  const existing = document.getElementById("profilePanel");
+  if(existing){ existing.remove(); return; }
+  const p = window.currentProfile;
+  if(!p) return;
+  const panel = document.createElement("div");
+  panel.id = "profilePanel";
+  panel.className = "profile-panel";
+  panel.innerHTML = `
+    <div class="pp-row"><span>Имя</span><b>${p.firstName||"—"}</b></div>
+    <div class="pp-row"><span>Фамилия</span><b>${p.lastName||"—"}</b></div>
+    <div class="pp-row"><span>Эмайл</span><b>${p.email||"—"}</b></div>
+    <div class="pp-row"><span>Логин</span><b>${p.login||"—"}</b></div>
+    <div class="pp-row"><span>Пароль</span><b>••••••••</b></div>
+    <div class="pp-row"><span>ID аккаунта</span><b class="mono">${p.id||"—"}</b></div>
+    <button class="btn" id="logoutBtn" style="width:100%; margin-top:10px; justify-content:center;">Выход</button>
+  `;
+  document.getElementById("topbar").appendChild(panel);
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+}
+
+/* =========================================================
+   ТАБЛИЦЫ ПРИЁМКИ / ИСТОРИИ (общий рендер с CRUD)
+   ========================================================= */
+function filterRows(rows, query){
+  if(!query) return rows;
+  const q = query.trim().toLowerCase();
+  if(!q) return rows;
+  return rows.filter(r =>
+    (r.user||"").toLowerCase().includes(q) ||
+    (r.article||"").toLowerCase().includes(q) ||
+    (r.order||"").toLowerCase().includes(q) ||
+    (r.sender||"").toLowerCase().includes(q) ||
+    (r.product||"").toLowerCase().includes(q) ||
+    (r.barcode||"").includes(q)
+  );
+}
+function sortRows(rows, sortState){
+  if(!sortState || !sortState.key) return rows;
+  const {key, dir} = sortState;
+  const copy = rows.slice();
+  copy.sort((a,b)=>{
+    let av, bv;
+    if(key==="date"){ av = dateOnlyKey(a.dt); bv = dateOnlyKey(b.dt); }
+    else if(key==="user"){ av=a.user; bv=b.user; }
+    else if(key==="sender"){ av=a.sender; bv=b.sender; }
+    if(av < bv) return -1*dir;
+    if(av > bv) return 1*dir;
+    return 0;
+  });
+  return copy;
+}
+function sortArrow(sortState, key){
+  if(!sortState || sortState.key!==key) return "";
+  return sortState.dir===1 ? '<span class="arrow">▲</span>' : '<span class="arrow">▼</span>';
+}
+function tableRowsHtml(rows, colName){
+  if(rows.length===0){
+    return `<tr class="empty-row"><td colspan="9">Ничего не найдено</td></tr>`;
+  }
+  return rows.map(r=>`
+    <tr>
+      <td class="num">${fmtDT(r.dt)}</td>
+      <td>${r.user}</td>
+      <td class="mono">${r.article}</td>
+      <td class="mono">${r.order}</td>
+      <td>${r.sender}</td>
+      <td>${r.product}</td>
+      <td class="num">${expiryBadge(r.expiry)}</td>
+      <td class="mono">${r.barcode}</td>
+      <td style="white-space:nowrap;">
+        <button class="icon-btn" data-act="edit" data-id="${r.id}" title="Изменить">✎</button>
+        <button class="icon-btn" data-act="del" data-id="${r.id}" title="Удалить">🗑</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderReceivingTable(containerId, rows, opts){
+  const {searchKey, sortKey, allowSort, colName} = opts;
+  const q = state.search[searchKey] || "";
+  let view = filterRows(rows, q);
+  if(allowSort) view = sortRows(view, state.sort[sortKey]);
+
+  const headDate = allowSort
+    ? `<th class="sortable" data-col="date">Дата и время${sortArrow(state.sort[sortKey],"date")}</th>`
+    : `<th>Дата и время</th>`;
+  const headUser = allowSort
+    ? `<th class="sortable" data-col="user">Принявший${sortArrow(state.sort[sortKey],"user")}</th>`
+    : `<th>Принявший</th>`;
+  const headSender = allowSort
+    ? `<th class="sortable" data-col="sender">Отправитель${sortArrow(state.sort[sortKey],"sender")}</th>`
+    : `<th>Отправитель</th>`;
+
+  const html = `
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Поиск по этой таблице…" value="${q}" data-search="${searchKey}">
+      </div>
+      <div class="count-pill">${view.length} из ${rows.length}</div>
+      ${allowSort ? `<div class="sort-hint">Сортировка: дата (по дню), принявший, отправитель — клик по заголовку</div>`:""}
+      <button class="btn" id="addRecBtn" style="margin-left:auto;">+ Добавить запись</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          ${headDate}${headUser}<th>Артикул</th><th>№ заказа</th>${headSender}<th>Товар</th><th>Срок годности</th><th>Штрих-код</th><th>Действия</th>
+        </tr></thead>
+        <tbody>${tableRowsHtml(view, colName)}</tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById(containerId).innerHTML = html;
+
+  const root = document.getElementById(containerId);
+  const input = root.querySelector("input[data-search]");
+  input.addEventListener("input", (e)=>{
+    state.search[searchKey] = e.target.value;
+    renderReceivingTable(containerId, rows, opts);
+    const i2 = document.querySelector(`#${containerId} input[data-search]`);
+    if(i2){ i2.focus(); i2.setSelectionRange(i2.value.length, i2.value.length); }
+  });
+  if(allowSort){
+    root.querySelectorAll("th.sortable").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const col = th.dataset.col;
+        const s = state.sort[sortKey];
+        if(s.key===col) s.dir *= -1; else { s.key=col; s.dir=1; }
+        renderReceivingTable(containerId, rows, opts);
+      });
+    });
+  }
+  document.getElementById("addRecBtn").addEventListener("click", ()=>{
+    openModal({
+      title:"Новая запись", fields:RECEIPT_FIELDS,
+      initial:{dt:toDatetimeLocalValue(new Date()), expiry:toDateInputValue(new Date())},
+      onSubmit: async(values)=>{
+        await addDoc(collection(db, colName), buildReceiptPayload(values));
+        toast("Запись добавлена");
+      }
+    });
+  });
+  root.querySelectorAll(".icon-btn").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const id=b.dataset.id, act=b.dataset.act;
+      const row = rows.find(r=>r.id===id);
+      if(!row) return;
+      if(act==="edit"){
+        const initVals = {...row, dt: toDatetimeLocalValue(row.dt), expiry: toDateInputValue(row.expiry)};
+        openModal({
+          title:"Изменить запись", fields:RECEIPT_FIELDS, initial:initVals,
+          onSubmit: async(values)=>{
+            await updateDoc(doc(db, colName, id), buildReceiptPayload(values));
+            toast("Изменения сохранены");
+          }
+        });
+      } else if(act==="del"){
+        if(confirm("Удалить запись безвозвратно?")){
+          deleteDoc(doc(db, colName, id)).then(()=>toast("Запись удалена"))
+            .catch(err=>toast("Ошибка удаления: "+err.message));
+        }
+      }
+    });
+  });
+}
+
+/* =========================================================
+   КАТАЛОГ
+   ========================================================= */
+function renderCatalog(){
+  const q = (state.search.catalog||"").trim().toLowerCase();
+  const categories = Array.from(new Set((DB.catalog||[])
+    .map(catalogCategory))).sort((a,b)=>a.localeCompare(b,"ru"));
+  const rows = (DB.catalog||[]).filter(r =>
+    (!state.categoryFilter || catalogCategory(r) === state.categoryFilter) &&
+    (!q || (r.article||"").toLowerCase().includes(q) || (r.name||"").toLowerCase().includes(q) ||
+    catalogCategory(r).toLowerCase().includes(q) || (r.barcode||"").includes(q))
+  );
+  const html = `
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Поиск по каталогу…" value="${state.search.catalog||''}" id="catSearch">
+      </div>
+      <select id="catCategoryFilter" style="padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px; background:#fff; color:var(--ink);">
+        <option value="">Все категории</option>
+        ${categories.map(category=>`<option value="${category}" ${state.categoryFilter===category?'selected':''}>${category}</option>`).join("")}
+      </select>
+      <div class="count-pill">${rows.length} из ${DB.catalog.length}</div>
+      <button class="btn" id="addCatalogBtn" style="margin-left:auto;">+ Добавить товар</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Артикул</th><th>Наименование</th><th>Категория</th><th>Ед. изм.</th><th>Штрих-код</th><th>Действия</th></tr></thead>
+        <tbody>${rows.length ? rows.map(r=>`
+          <tr>
+            <td class="mono">${r.article||''}</td><td>${r.name||''}</td><td>${catalogCategory(r)}</td><td>${r.unit||''}</td><td class="mono">${r.barcode||''}</td>
+            <td style="white-space:nowrap;">
+              <button class="icon-btn" data-act="edit" data-id="${r.id}">✎</button>
+              <button class="icon-btn" data-act="del" data-id="${r.id}">🗑</button>
+            </td>
+          </tr>
+        `).join("") : `<tr class="empty-row"><td colspan="6">Ничего не найдено</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+  const inp = document.getElementById("catSearch");
+  inp.addEventListener("input", e=>{
+    state.search.catalog=e.target.value; renderCatalog();
+    const i2=document.getElementById("catSearch"); if(i2){ i2.focus(); i2.setSelectionRange(i2.value.length,i2.value.length); }
+  });
+  document.getElementById("catCategoryFilter").addEventListener("change", e=>{
+    state.categoryFilter = e.target.value;
+    renderCatalog();
+  });
+  document.getElementById("addCatalogBtn").addEventListener("click", ()=>{
+    openModal({title:"Новый товар", fields:CATALOG_FIELDS, initial:{}, onSubmit: async(values)=>{
+      await addDoc(collection(db, COL.catalog), values);
+      toast("Товар добавлен в каталог");
+    }});
+  });
+  document.querySelectorAll("#content .icon-btn").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const id=b.dataset.id, act=b.dataset.act;
+      if(act==="edit"){
+        const r = DB.catalog.find(x=>x.id===id);
+        openModal({title:"Изменить товар", fields:CATALOG_FIELDS, initial:r, onSubmit: async(values)=>{
+          await updateDoc(doc(db, COL.catalog, id), values);
+          toast("Изменения сохранены");
+        }});
+      } else if(act==="del"){
+        if(confirm("Удалить товар из каталога?")){
+          deleteDoc(doc(db, COL.catalog, id)).then(()=>toast("Товар удалён"))
+            .catch(err=>toast("Ошибка удаления: "+err.message));
+        }
+      }
+    });
+  });
+}
+
+/* =========================================================
+   ОКНА СКЛАДА
+   Один документ warehouse_windows = один браузер/рабочее окно склада.
+   Внутри снимка есть пользователь, адреса хранения и локальные приёмки.
+   ========================================================= */
+function adminEsc(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[ch]));
+}
+function cloudDate(value){
+  const n = Number(value||0);
+  if(!n) return "—";
+  const d = new Date(n);
+  return isNaN(d) ? "—" : fmtDT(d);
+}
+function windowOperator(row){
+  return row.userName || row.operator?.userName || row.userEmail ||
+    row.operator?.email || row.userId || "Пользователь не определён";
+}
+function windowAddress(location){
+  if(!location) return "Приёмка";
+  return [location.warehouse, location.row, location.floor, location.shelf]
+    .filter(value=>value !== undefined && value !== null && String(value).trim() && String(value) !== "--")
+    .map(value=>String(value).trim()).join(" · ") || "Адрес не указан";
+}
+function warehouseWindowRows(){
+  const rows = [];
+  (DB.windows||[]).forEach(windowRow=>{
+    const base = {
+      windowId: windowRow.windowId || windowRow.id,
+      windowName: windowRow.windowName || ("Окно " + String(windowRow.id||"").slice(-6)),
+      operator: windowOperator(windowRow),
+      updatedAt: Number(windowRow.updatedAt||0)
+    };
+    const locations = windowRow.inventoryLocations &&
+      typeof windowRow.inventoryLocations === "object"
+      ? windowRow.inventoryLocations : {};
+    Object.values(locations).forEach(location=>{
+      Object.values(location?.items || {}).forEach(item=>{
+        const qty = Number(item?.quantity||0);
+        if(qty <= 0) return;
+        rows.push({
+          ...base, kind:"Остаток", address:windowAddress(location),
+          product:item.name || "Без названия", barcode:item.barcode || "—",
+          quantity:qty, expiry:item.expiry || "—",
+          updatedAt:Math.max(base.updatedAt, Number(item.lastSeen||0))
+        });
+      });
+    });
+    // Приёмки остаются видимыми даже до первого сканирования адреса.
+    (Array.isArray(windowRow.arrivals) ? windowRow.arrivals : []).forEach(arrival=>{
+      rows.push({
+        ...base, kind:"Приёмка", address:"Новая приёмка",
+        product:arrival.name || "Без названия",
+        barcode:arrival.ean || "—",
+        quantity:Number(arrival.menge||0),
+        expiry:"—",
+        updatedAt:Math.max(base.updatedAt, Number(arrival.receivedAt||0) || 0),
+        arrivalDate:arrival.date || ""
+      });
+    });
+  });
+  return rows.sort((a,b)=>b.updatedAt-a.updatedAt);
+}
+function renderWarehouseWindows(){
+  const rows = warehouseWindowRows();
+  const windowCount = (DB.windows||[]).length;
+  const totalQty = rows.reduce((sum,row)=>sum+Number(row.quantity||0),0);
+  const uniqueProducts = new Set(rows.map(row=>row.barcode !== "—" ? row.barcode : row.product)).size;
+  const html = `
+    <div class="toolbar">
+      <div class="count-pill">${windowCount} рабочих окон</div>
+      <div class="count-pill">${uniqueProducts} товаров</div>
+      <div class="count-pill">${totalQty} единиц</div>
+      <div class="sort-hint">Обновляется автоматически из Firebase</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Окно</th><th>Пользователь</th><th>Тип</th><th>Адрес</th>
+          <th>Товар</th><th>Штрих-код</th><th>Кол-во</th><th>Срок</th><th>Обновлено</th>
+        </tr></thead>
+        <tbody>${rows.length ? rows.map(row=>`
+          <tr>
+            <td class="mono">${adminEsc(row.windowName)}</td>
+            <td>${adminEsc(row.operator)}</td>
+            <td><span class="badge ${row.kind==="Приёмка"?"warn":"ok"}">${row.kind}</span></td>
+            <td>${adminEsc(row.address)}</td>
+            <td>${adminEsc(row.product)}${row.arrivalDate ? `<div class="sort-hint">${adminEsc(row.arrivalDate)}</div>` : ""}</td>
+            <td class="mono">${adminEsc(row.barcode)}</td>
+            <td class="num">${adminEsc(row.quantity)}</td>
+            <td>${adminEsc(row.expiry)}</td>
+            <td class="num">${cloudDate(row.updatedAt)}</td>
+          </tr>
+        `).join("") : `<tr class="empty-row"><td colspan="9">Рабочих окон или синхронизированных товаров пока нет</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+}
+
+/* =========================================================
+   ПОЛЬЗОВАТЕЛИ
+   ========================================================= */
+function renderUsers(){
+  const rows = DB.users || [];
+  const html = `
+    <div class="toolbar">
+      <div class="count-pill">${rows.length} пользователей</div>
+      <button class="btn" id="addUserBtn" style="margin-left:auto;">+ Добавить пользователя</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Имя</th><th>Фамилия</th><th>Эмайл</th><th>Логин</th><th>Пароль</th><th>Должность</th><th>ID</th><th>Действия</th></tr></thead>
+        <tbody>${rows.length? rows.map(u=>`
+          <tr>
+            <td>${u.firstName||''}</td><td>${u.lastName||''}</td><td>${u.email||''}</td>
+            <td class="mono">${u.login||''}</td>
+            <td class="mono"><span class="pw-mask" data-id="${u.id}" data-shown="0">••••••••</span></td>
+            <td>${u.role||''}</td>
+            <td class="mono">${u.id}</td>
+            <td style="white-space:nowrap;">
+              <button class="icon-btn" data-act="edit" data-id="${u.id}" title="Изменить">✎</button>
+              <button class="icon-btn" data-act="del" data-id="${u.id}" title="Удалить">🗑</button>
+              <button class="icon-btn" data-act="reveal" data-id="${u.id}" title="Показать пароль">👁</button>
+            </td>
+          </tr>
+        `).join(""): `<tr class="empty-row"><td colspan="8">Пользователей пока нет</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+  document.getElementById("addUserBtn").addEventListener("click", ()=>{
+    openModal({
+      title:"Новый пользователь", fields:USER_FIELDS, initial:{},
+      onSubmit: async(values)=>{
+        await addDoc(collection(db, COL.users), {...values, createdAt: serverTimestamp()});
+        toast("Пользователь добавлен");
+      }
+    });
+  });
+  document.querySelectorAll("#content .icon-btn").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const act=b.dataset.act, id=b.dataset.id;
+      if(act==="reveal"){
+        const span = document.querySelector(`.pw-mask[data-id="${id}"]`);
+        const u = DB.users.find(x=>x.id===id);
+        if(span.dataset.shown==="1"){ span.textContent="••••••••"; span.dataset.shown="0"; }
+        else{ span.textContent = (u && u.password) || ""; span.dataset.shown="1"; }
+        return;
+      }
+      if(act==="edit"){
+        const u = DB.users.find(x=>x.id===id);
+        openModal({
+          title:"Изменить пользователя", fields:USER_FIELDS, initial:u,
+          onSubmit: async(values)=>{
+            await updateDoc(doc(db, COL.users, id), values);
+            toast("Изменения сохранены");
+          }
+        });
+      } else if(act==="del"){
+        if(confirm("Удалить пользователя безвозвратно?")){
+          deleteDoc(doc(db, COL.users, id)).then(()=>toast("Пользователь удалён"))
+            .catch(err=>toast("Ошибка удаления: "+err.message));
+        }
+      }
+    });
+  });
+}
+
+/* =========================================================
+   ИМПОРТ / ЭКСПОРТ
+   ========================================================= */
+function normalizeImportedRecord(raw, idx){
+  const pick = (...names)=>{
+    for(const n of names){ if(raw[n]!==undefined && raw[n]!==null && raw[n]!=="") return raw[n]; }
+    return "";
+  };
+  let dt = pick("dt","Дата","Дата и время","datetime");
+  dt = dt ? new Date(dt) : new Date();
+  if(isNaN(dt)) dt = new Date();
+  let exp = pick("expiry","Срок годности","expiration");
+  exp = exp ? new Date(exp) : new Date();
+  if(isNaN(exp)) exp = new Date();
+  return {
+    dt, expiry: exp,
+    user: pick("user","Пользователь","Принявший") || "",
+    article: String(pick("article","Артикул") || ""),
+    order: String(pick("order","№ заказа","Номер заказа") || ""),
+    sender: pick("sender","Отправитель") || "",
+    product: pick("product","Товар","Наименование") || "",
+    barcode: String(pick("barcode","Штрих-код","Штрихкод") || ""),
+  };
+}
+
+function renderImpExp(){
+  if(state.impexpTab==="import") renderImport();
+  else renderExport();
+}
+
+function renderImport(){
+  const html = `
+    <div class="grid-2">
+      <div class="card">
+        <h3>Импорт из Excel</h3>
+        <div class="desc">Файл .xlsx или .xls с колонками, аналогичными таблицам приёмки.</div>
+        <label class="filepick" id="excelPick">
+          <input type="file" id="excelInput" accept=".xlsx,.xls">
+          <div>Выбрать Excel-файл</div>
+          <div class="fname">${state.importKind==='excel' ? state.importFileName : ""}</div>
+        </label>
+      </div>
+      <div class="card">
+        <h3>Импорт из файла</h3>
+        <div class="desc">Файл .json с массивом записей.</div>
+        <label class="filepick" id="jsonPick">
+          <input type="file" id="jsonInput" accept=".json">
+          <div>Выбрать JSON-файл</div>
+          <div class="fname">${state.importKind==='json' ? state.importFileName : ""}</div>
+        </label>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Куда загрузить</h3>
+      <div class="desc">${state.importedRows.length} записей готово к загрузке${state.importFileName ? " из «"+state.importFileName+"»":""}.</div>
+      <div class="field" style="max-width:320px;">
+        <label>База назначения</label>
+        <select id="importTargetSel">
+          <option value="blind" ${state.importTarget==='blind'?'selected':''}>Слепая приёмка</option>
+          <option value="auto" ${state.importTarget==='auto'?'selected':''}>Автоприём</option>
+          <option value="task" ${state.importTarget==='task'?'selected':''}>Приём по задаче</option>
+        </select>
+      </div>
+      <button class="btn" id="commitImport" ${state.importedRows.length? "":"disabled"}>Загрузить в базу</button>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+  document.getElementById("excelInput").addEventListener("change", handleExcelFile);
+  document.getElementById("jsonInput").addEventListener("change", handleJsonFile);
+  document.getElementById("importTargetSel").addEventListener("change", e=>{ state.importTarget = e.target.value; });
+  document.getElementById("commitImport").addEventListener("click", commitImport);
+}
+
+function handleExcelFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, {type:"array"});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, {defval:""});
+      state.importedRows = json.map((r,i)=>normalizeImportedRecord(r, i));
+      state.importFileName = file.name;
+      state.importKind = "excel";
+      toast(`Считано строк: ${json.length}`);
+      renderImport();
+    }catch(err){ toast("Не удалось прочитать Excel-файл: "+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function handleJsonFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      const arr = Array.isArray(parsed) ? parsed : (parsed.rows || parsed.data || []);
+      state.importedRows = arr.map((r,i)=>normalizeImportedRecord(r, i));
+      state.importFileName = file.name;
+      state.importKind = "json";
+      toast(`Считано строк: ${arr.length}`);
+      renderImport();
+    }catch(err){ toast("Файл повреждён или имеет неверный формат JSON"); }
+  };
+  reader.readAsText(file);
+}
+async function commitImport(){
+  const colMap = {blind:COL.blind, auto:COL.auto, task:COL.task};
+  const colName = colMap[state.importTarget];
+  if(!colName || state.importedRows.length===0) return;
+  const btn = document.getElementById("commitImport");
+  btn.disabled = true; btn.textContent = "Загрузка…";
+  try{
+    for(const r of state.importedRows){
+      await addDoc(collection(db, colName), {
+        dt: r.dt.toISOString(), user:r.user, article:r.article, order:r.order,
+        sender:r.sender, product:r.product, expiry:r.expiry.toISOString(), barcode:r.barcode,
+      });
+    }
+    const n = state.importedRows.length;
+    state.importedRows = []; state.importFileName = ""; state.importKind = "";
+    toast(`Загружено записей: ${n}`);
+  }catch(err){
+    toast("Ошибка загрузки: "+err.message);
+  }
+  renderImport();
+}
+
+function renderExport(){
+  const sel = state.exportSel;
+  const html = `
+    <div class="card">
+      <h3>Что выгружать</h3>
+      <div class="desc">Отметьте нужные базы. Для истории и инвентаризации доступны дополнительные фильтры.</div>
+      <div class="row-check"><input type="checkbox" id="ex_blind" ${sel.blind?'checked':''}><label for="ex_blind">Слепая приёмка (${DB.blind.length})</label></div>
+      <div class="row-check"><input type="checkbox" id="ex_auto" ${sel.auto?'checked':''}><label for="ex_auto">Автоприём (${DB.autoRecv.length})</label></div>
+      <div class="row-check"><input type="checkbox" id="ex_task" ${sel.taskRecv?'checked':''}><label for="ex_task">Приём по задаче (${DB.taskRecv.length})</label></div>
+      <div class="row-check"><input type="checkbox" id="ex_catalog" ${sel.catalog?'checked':''}><label for="ex_catalog">Каталог товаров (${DB.catalog.length})</label></div>
+      <div class="row-check"><input type="checkbox" id="ex_history" ${sel.history?'checked':''}><label for="ex_history">История (${DB.history.length}, с выбором дат)</label></div>
+      <div id="historyRange" style="display:${sel.history?'flex':'none'}; gap:12px; padding:8px 0 4px 26px;">
+        <div class="field" style="margin-bottom:0;"><label>С даты</label><input type="date" id="hFrom" value="${state.exportHistoryRange.from}"></div>
+        <div class="field" style="margin-bottom:0;"><label>По дату</label><input type="date" id="hTo" value="${state.exportHistoryRange.to}"></div>
+      </div>
+      <div class="row-check"><input type="checkbox" id="ex_inv" ${sel.inventory?'checked':''}><label for="ex_inv">Инвентаризация (с выбором номеров сессий)</label></div>
+      <div id="invSessions" style="display:${sel.inventory?'flex':'none'}; gap:14px; flex-wrap:wrap; padding:8px 0 4px 26px;">
+        ${DB.inventory.map(s=>`
+          <label style="font-size:12.5px; display:flex; gap:5px; align-items:center;">
+            <input type="checkbox" class="invSess" data-n="${s.session}" ${state.exportInventorySessions.has(s.session)?'checked':''}> № ${s.session} (${fmtD(s.date)})
+          </label>
+        `).join("") || `<span class="desc" style="margin:0;">Сессий пока нет — создайте их во вкладке «Инвентаризация».</span>`}
+      </div>
+    </div>
+    <div class="card">
+      <h3>Формат файла</h3>
+      <div class="radio-row">
+        <label><input type="radio" name="fmt" value="excel" ${state.exportFormat==='excel'?'checked':''}> Excel (.xlsx)</label>
+        <label><input type="radio" name="fmt" value="json" ${state.exportFormat==='json'?'checked':''}> JSON (.json)</label>
+      </div>
+      <button class="btn" id="doExport">Экспортировать на устройство</button>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+  const bind = (id,key)=>document.getElementById(id).addEventListener("change", e=>{
+    sel[key]=e.target.checked;
+    document.getElementById("historyRange").style.display = sel.history? "flex":"none";
+    document.getElementById("invSessions").style.display = sel.inventory? "flex":"none";
+  });
+  bind("ex_blind","blind"); bind("ex_auto","auto"); bind("ex_task","taskRecv");
+  bind("ex_catalog","catalog"); bind("ex_history","history"); bind("ex_inv","inventory");
+  document.getElementById("hFrom").addEventListener("change", e=>state.exportHistoryRange.from=e.target.value);
+  document.getElementById("hTo").addEventListener("change", e=>state.exportHistoryRange.to=e.target.value);
+  document.querySelectorAll(".invSess").forEach(cb=>{
+    cb.addEventListener("change", e=>{
+      const n = Number(e.target.dataset.n);
+      if(e.target.checked) state.exportInventorySessions.add(n); else state.exportInventorySessions.delete(n);
+    });
+  });
+  document.querySelectorAll('input[name=fmt]').forEach(r=>r.addEventListener("change", e=>{ state.exportFormat = e.target.value; }));
+  document.getElementById("doExport").addEventListener("click", runExport);
+}
+function rowsToPlain(rows){
+  return rows.map(r=>({
+    "Дата и время": fmtDT(r.dt), "Пользователь": r.user, "Артикул": r.article,
+    "№ заказа": r.order, "Отправитель": r.sender, "Товар": r.product,
+    "Срок годности": fmtD(r.expiry), "Штрих-код": r.barcode,
+  }));
+}
+function runExport(){
+  const sel = state.exportSel;
+  const sheets = {};
+  if(sel.blind) sheets["Слепая приёмка"] = rowsToPlain(DB.blind);
+  if(sel.auto) sheets["Автоприём"] = rowsToPlain(DB.autoRecv);
+  if(sel.taskRecv) sheets["Приём по задаче"] = rowsToPlain(DB.taskRecv);
+  if(sel.catalog) sheets["Каталог"] = DB.catalog.map(c=>({
+    "Артикул":c.article,"Наименование":c.name,"Категория":c.category,"Ед. изм.":c.unit,"Штрих-код":c.barcode
+  }));
+  if(sel.history){
+    let rows = DB.history.slice();
+    const {from,to} = state.exportHistoryRange;
+    if(from){ const f=new Date(from); rows = rows.filter(r=>r.dt>=f); }
+    if(to){ const t=new Date(to); t.setHours(23,59,59,999); rows = rows.filter(r=>r.dt<=t); }
+    sheets["История"] = rowsToPlain(rows);
+  }
+  if(sel.inventory){
+    const chosen = DB.inventory.filter(s=>state.exportInventorySessions.has(s.session));
+    sheets["Инвентаризация"] = chosen.map(s=>({
+      "№ сессии": s.session, "Дата": fmtD(s.date), "Ответственный": s.user, "Позиций": s.items, "Статус": s.status
+    }));
+  }
+  if(Object.keys(sheets).length===0){ toast("Выберите хотя бы одну базу для экспорта"); return; }
+
+  const stamp = fmtD(new Date()).split(".").join("-");
+  if(state.exportFormat === "excel"){
+    const wb = XLSX.utils.book_new();
+    Object.entries(sheets).forEach(([name, data])=>{
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, name.slice(0,31));
+    });
+    XLSX.writeFile(wb, `export-${stamp}.xlsx`);
+  } else {
+    const blob = new Blob([JSON.stringify(sheets, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `export-${stamp}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  toast("Файл экспортирован на устройство");
+}
+
+/* =========================================================
+   ИНВЕНТАРИЗАЦИЯ (локально, вне Firebase — по ТЗ не входит в список баз)
+   ========================================================= */
+function renderInventory(){
+  const html = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>№ сессии</th><th>Дата</th><th>Ответственный</th><th>Позиций пересчитано</th><th>Статус</th></tr></thead>
+        <tbody>${DB.inventory.length ? DB.inventory.slice().reverse().map(s=>`
+          <tr>
+            <td class="mono">№ ${s.session}</td>
+            <td class="num">${fmtD(s.date)}</td>
+            <td>${s.user}</td>
+            <td class="num">${s.items}</td>
+            <td><span class="badge ${s.status==='открыта'?'warn':'ok'}">${s.status}</span></td>
+          </tr>
+        `).join("") : `<tr class="empty-row"><td colspan="5">Сессий пока нет</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <h3>Новая инвентаризация</h3>
+      <div class="desc">Начать новую сессию пересчёта остатков склада (хранится только в этой сессии браузера).</div>
+      <button class="btn" id="newInv">Начать инвентаризацию</button>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+  document.getElementById("newInv").addEventListener("click", ()=>{
+    const n = DB.inventory.length+1;
+    const who = window.currentProfile ? `${window.currentProfile.firstName||""} ${window.currentProfile.lastName||""}`.trim() : "—";
+    DB.inventory.push({session:n, date:new Date(), user: who || "—", items:0, status:"открыта"});
+    state.exportInventorySessions.add(n);
+    toast(`Инвентаризация №${n} открыта`);
+    renderInventory();
+  });
+}
+
+/* =========================================================
+   НАСТРОЙКИ
+   ========================================================= */
+function renderSettings(){
+  const html = `
+    <div class="card" style="max-width:480px;">
+      <h3>Общие параметры</h3>
+      <div class="field"><label>Название склада</label><input type="text" value="Основной склад №1"></div>
+      <div class="field"><label>Строк на странице по умолчанию</label>
+        <select><option>25</option><option selected>50</option><option>100</option></select>
+      </div>
+      <div class="field"><label>Часовой пояс</label>
+        <select><option>UTC+3 (Москва)</option><option>UTC+5 (Екатеринбург)</option><option>UTC+7 (Красноярск)</option></select>
+      </div>
+      <button class="btn secondary" id="saveSettings">Сохранить</button>
+    </div>
+    <div class="card" style="max-width:480px;">
+      <h3>Пользователи и доступ</h3>
+      <div class="desc">Полное управление сотрудниками — во вкладке «Пользователи» в меню слева.</div>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+  document.getElementById("saveSettings").addEventListener("click", ()=>toast("Настройки сохранены"));
+}
+
+/* =========================================================
+   ЗАДАЧА ПОЛЬЗОВАТЕЛЮ (пишет в tasks_<ID из карточки пользователя>)
+   ========================================================= */
+function renderUserTasks(){
+  if(!selectedTaskUser && DB.users && DB.users.length) selectedTaskUser = DB.users[0].id;
+  const html = `
+    <div class="card">
+      <h3>Новая задача</h3>
+      <div class="grid-2">
+        <div class="field">
+          <label>Сотрудник</label>
+          <select id="taskUserSel">
+            ${(DB.users||[]).map(u=>`<option value="${u.id}" ${u.id===selectedTaskUser?'selected':''}>${u.firstName||''} ${u.lastName||''} (${u.login||u.id})</option>`).join("") || `<option value="">Нет пользователей</option>`}
+          </select>
+        </div>
+        <div class="field"><label>Срок выполнения</label><input type="date" id="taskDue"></div>
+      </div>
+      <div class="field"><label>Описание задачи</label>
+        <textarea id="taskText" placeholder="Например: пересчитать остатки по стеллажу B-04"></textarea>
+      </div>
+      <button class="btn" id="addTask" ${selectedTaskUser? "":"disabled"}>Поставить задачу</button>
+    </div>
+    <div class="card">
+      <h3>Задачи выбранного сотрудника <span style="font-weight:400; color:var(--ink-soft); font-size:12.5px;">— tasks_${selectedTaskUser||''}</span></h3>
+      <div class="placeholder-list" id="taskList">Загрузка…</div>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = html;
+
+  const sel = document.getElementById("taskUserSel");
+  if(sel){
+    sel.addEventListener("change", e=>{
+      selectedTaskUser = e.target.value || null;
+      renderUserTasks();
+    });
+  }
+  const addBtn = document.getElementById("addTask");
+  if(addBtn){
+    addBtn.addEventListener("click", async ()=>{
+      if(!selectedTaskUser){ toast("Выберите сотрудника"); return; }
+      const due = document.getElementById("taskDue").value;
+      const text = document.getElementById("taskText").value.trim();
+      if(!text){ toast("Опишите задачу перед постановкой"); return; }
+      try{
+        await addDoc(collection(db, "tasks_"+selectedTaskUser), {
+          text,
+          dueDate: due ? new Date(due).toISOString() : new Date().toISOString(),
+          done:false,
+          createdAt: serverTimestamp(),
+          assignedBy: window.currentProfile ? window.currentProfile.id : null,
+        });
+        toast("Задача поставлена");
+        document.getElementById("taskText").value = "";
+      }catch(err){ toast("Ошибка постановки задачи: "+err.message); }
+    });
+  }
+  subscribeTasks(selectedTaskUser);
+}
+function subscribeTasks(userId){
+  if(taskUnsub){ taskUnsub(); taskUnsub=null; }
+  tasksCache = [];
+  if(!userId){ renderTaskListArea(); return; }
+  taskUnsub = onSnapshot(collection(db, "tasks_"+userId), snap=>{
+    tasksCache = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    tasksCache.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    renderTaskListArea();
+  }, err=>{
+    const el = document.getElementById("taskList");
+    if(el) el.innerHTML = `<div class="desc">Не удалось загрузить задачи: ${err.message}</div>`;
+  });
+}
+function renderTaskListArea(){
+  const list = document.getElementById("taskList");
+  if(!list) return;
+  if(tasksCache.length===0){ list.innerHTML = `<div class="desc">Задач пока нет.</div>`; return; }
+  list.innerHTML = tasksCache.map(t=>`
+    <div class="task-item">
+      <div style="flex:1;">
+        <div class="txt">${t.text||''}</div>
+        <div class="meta">Срок: ${t.dueDate? fmtD(new Date(t.dueDate)) : '—'}</div>
+      </div>
+      <div class="actions">
+        <button class="status-toggle" data-id="${t.id}" style="background:${t.done?'#e7f3ec':'var(--warn-soft)'}; color:${t.done?'var(--ok)':'var(--warn)'}">
+          ${t.done? "выполнено" : "в работе"}
+        </button>
+      </div>
+    </div>
+  `).join("");
+  list.querySelectorAll("button[data-id]").forEach(b=>{
+    b.addEventListener("click", async ()=>{
+      const t = tasksCache.find(x=>x.id===b.dataset.id);
+      if(!t || !selectedTaskUser) return;
+      try{ await updateDoc(doc(db, "tasks_"+selectedTaskUser, t.id), {done: !t.done}); }
+      catch(err){ toast("Ошибка обновления: "+err.message); }
+    });
+  });
+}
+
+/* =========================================================
+   ГЛАВНЫЙ РЕНДЕР КОНТЕНТА
+   ========================================================= */
+function renderContent(){
+  if(state.section==="receiving"){
+    document.getElementById("content").innerHTML = `<div id="recvTable"></div>`;
+    if(state.receivingTab==="blind"){
+      renderReceivingTable("recvTable", DB.blind, {searchKey:"blind", sortKey:"blind", allowSort:false, colName:COL.blind});
+    } else if(state.receivingTab==="auto"){
+      renderReceivingTable("recvTable", DB.autoRecv, {searchKey:"auto", sortKey:"auto", allowSort:true, colName:COL.auto});
+    } else {
+      renderReceivingTable("recvTable", DB.taskRecv, {searchKey:"task", sortKey:"task", allowSort:true, colName:COL.task});
+    }
+  } else if(state.section==="history"){
+    document.getElementById("content").innerHTML = `<div id="recvTable"></div>`;
+    renderReceivingTable("recvTable", DB.history, {searchKey:"history", sortKey:"history", allowSort:true, colName:COL.history});
+  } else if(state.section==="catalog"){
+    renderCatalog();
+  } else if(state.section==="warehouseWindows"){
+    renderWarehouseWindows();
+  } else if(state.section==="impexp"){
+    renderImpExp();
+  } else if(state.section==="inventory"){
+    renderInventory();
+  } else if(state.section==="users"){
+    renderUsers();
+  } else if(state.section==="settings"){
+    renderSettings();
+  } else if(state.section==="usertasks"){
+    renderUserTasks();
+  }
+}
+
+/* =========================================================
+   СТАРТ ПРИЛОЖЕНИЯ
+   ========================================================= */
+async function initApp(userId){
+  // UID из Firebase Auth уже подтверждает вход. Не блокируем интерфейс
+  // ожиданием чтения дополнительного документа профиля.
+  localStorage.setItem("wh_user_id", userId);
+  window.currentProfile = {
+    id: userId,
+    email: auth.currentUser?.email || "",
+    role: "admin"
+  };
+
+  renderSidebar();
+  renderTop();
+  renderContent();
+  subscribeAll();
+
+  // Профиль загружаем после отображения панели. Даже если чтение документа
+  // будет запрещено правилами Firestore, меню и основные функции останутся видимыми.
+  try{
+    const snap = await getDoc(doc(db, COL.users, userId));
+    if(snap.exists){
+      window.currentProfile = { id: snap.id, ...snap.data() };
+      renderTop();
+    }
+  }catch(err){
+    toast("Профиль не загружен: " + err.message);
+  }
+}
+
+function renderLoginRequired(message = "Откройте страницу входа и войдите под учётной записью администратора.") {
+  document.getElementById("topbar").innerHTML = `
+    <h1>Панель администратора</h1>
+    <div class="sub">Для доступа нужно войти в систему.</div>
+  `;
+  document.getElementById("content").innerHTML = `
+    <div class="card" style="max-width:520px;">
+      <h3>Нет доступа к панели</h3>
+      <div class="desc">${message}</div>
+      <a class="btn" href="index.html">Перейти ко входу</a>
+    </div>
+  `;
+}
+
+auth.onAuthStateChanged(user => {
+  if(!user){
+    renderLoginRequired();
+    return;
+  }
+
+  const isAdmin =
+    localStorage.getItem("wh_is_admin") === "true" ||
+    user.email?.toLowerCase() === "khazratbek1@gmail.com";
+
+  if(!isAdmin){
+    renderLoginRequired("Эта учётная запись не имеет прав администратора.");
+    return;
+  }
+
+  initApp(user.uid);
+});
+}
+</script>
+</body>
+</html>
