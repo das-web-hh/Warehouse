@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warehouse — Авторизация</title>
+
+<!-- Подключение Firebase SDK (Auth + Firestore) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<!-- Подключение EmailJS -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<script type="text/javascript">
+  // 1. Инициализация EmailJS
+  (function(){
+      emailjs.init("eVykpcx5pKB6QOkY_");
+  })();
+
+  // 2. Инициализация Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAdieSc0CpKvG-WfsLqaJkhFV_w69A4nQQ",
+    authDomain: "warehouse26-fbbee.firebaseapp.com",
+    projectId: "warehouse26-fbbee",
+    storageBucket: "warehouse26-fbbee.firebasestorage.app",
+    messagingSenderId: "965022333314",
+    appId: "1:965022333314:web:cc42992352bb1ee855379b",
+    measurementId: "G-QQ7G4S2HL5"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(error => {
+    if (!['failed-precondition', 'unimplemented'].includes(error?.code)) {
+      console.warn('Firestore offline cache unavailable:', error);
+    }
+  });
+</script>
+
+<style>
+:root {
+  --blue: #1c7ed6; --green: #2b8a3e; --red: #e03131;
+  --bg-body: linear-gradient(160deg,#0b1622 0%,#112240 45%,#0d1f35 100%);
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0; padding: 0; background: var(--bg-body) fixed;
+  min-height: 100vh; color: #fff; display: flex; align-items: center; justify-content: center;
+}
+.auth-card {
+  background: rgba(15, 31, 56, 0.94); border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px); border-radius: 24px; padding: 28px 22px;
+  width: 100%; max-width: 400px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); text-align: center;
+}
+.auth-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.auth-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+.auth-field label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.6); display: block; margin-bottom: 4px; }
+.auth-input {
+  width: 100%; padding: 11px 14px; border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08);
+  color: #fff; font-size: 15px; outline: none;
+}
+.auth-input:focus { border-color: var(--blue); background: rgba(255, 255, 255, 0.14); }
+
+/* Контейнер для поля пароля с кнопкой глазика */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+.password-wrapper .auth-input {
+  padding-right: 42px;
+}
+.toggle-password-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+.toggle-password-btn:hover {
+  color: #fff;
+}
+
+.btn-primary {
+  width: 100%; padding: 13px; margin-top: 8px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #1563b8, #1c7ed6); color: #fff;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.auth-nav-links { display: flex; justify-content: space-between; margin-top: 16px; font-size: 12px; }
+.auth-link { color: #ff9d43; cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; }
+
+.toast-info {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(15, 31, 56, 0.95); border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; z-index: 10000;
+  transition: all 0.3s ease; text-align: center; max-width: 90%;
+}
+.toast-success { border-color: var(--green); color: #8ce99a; }
+.toast-error { border-color: var(--red); color: #ff8787; }
+</style>
+</head>
+<body>
+
+<div class="toast-info" id="toastBox"></div>
+
+<div class="auth-card">
+  <div class="auth-title" id="authTitle">Вход в систему</div>
+  <div class="auth-sub" id="authSub">Введите Email и пароль</div>
+
+  <!-- ФОРМА: ВХОД -->
+  <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+    <div class="auth-field">
+      <label>Email / Логин</label>
+      <input type="text" id="loginEmail" class="auth-input" placeholder="user@example.com или admin" required>
+    </div>
+    <div class="auth-field">
+      <label>Пароль</label>
+      <div class="password-wrapper">
+        <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••" required>
+        <button type="button" class="toggle-password-btn" onclick="togglePassword('loginPassword', this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <button type="submit" class="btn-primary">Войти</button>
+  </form>
+
+  <!-- РЕГИСТРАЦИЯ - ШАГ 1 -->
+  <form class="auth-form" id="regStep1" style="display:none;" onsubmit="sendRegCode(event)">
+    <div class="auth-field">
+      <label>Email адрес</label>
+      <input type="email" id="regEmail" class="auth-input" placeholder="user@example.com" required>
+    </div>
+    <button type="submit" class="btn-primary" id="btnSendRegCode">Получить код</button>
+  </form>
+
+  <!-- РЕГИСТРАЦИЯ - ШАГ 2 -->
+  <form class="auth-form" id="regStep2" style="display:none;" onsubmit="verifyRegCode(event)">
+    <div class="auth-field">
+      <label>Код из Email</label>
+      <input type="text" id="regCodeInput" class="auth-input" placeholder="6-значный код" maxlength="6" required>
+    </div>
+    <button type="submit" class="btn-primary">Подтвердить код</button>
+  </form>
+
+  <!-- РЕГИСТРАЦИЯ - ШАГ 3 -->
+  <form class="auth-form" id="regStep3" style="display:none;" onsubmit="completeRegistration(event)">
+    <div class="auth-field">
+      <label>Имя</label>
+      <input type="text" id="regFirstName" class="auth-input" placeholder="Иван" required>
+    </div>
+    <div class="auth-field">
+      <label>Фамилия</label>
+      <input type="text" id="regLastName" class="auth-input" placeholder="Иванов" required>
+    </div>
+    <div class="auth-field">
+      <label>Пароль</label>
+      <div class="password-wrapper">
+        <input type="password" id="regPassword" class="auth-input" placeholder="••••••••" minlength="6" required>
+        <button type="button" class="toggle-password-btn" onclick="togglePassword('regPassword', this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="auth-field">
+      <label>Тип учётной записи</label>
+      <select id="regRole" class="auth-input">
+        <option value="user">Сотрудник склада</option>
+        <option value="observer">Наблюдатель</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary">Завершить регистрацию</button>
+  </form>
+
+  <!-- СБРОС ПАРОЛЯ - ШАГ 1 -->
+  <form class="auth-form" id="resetStep1" style="display:none;" onsubmit="sendResetCode(event)">
+    <div class="auth-field">
+      <label>Email для восстановления</label>
+      <input type="email" id="resetEmail" class="auth-input" placeholder="user@example.com" required>
+    </div>
+    <button type="submit" class="btn-primary" id="btnSendReset">Отправить код</button>
+  </form>
+
+  <!-- СБРОС ПАРОЛЯ - ШАГ 2 -->
+  <form class="auth-form" id="resetStep2" style="display:none;" onsubmit="verifyResetCode(event)">
+    <div class="auth-field">
+      <label>Код из Email</label>
+      <input type="text" id="resetCodeInput" class="auth-input" placeholder="6-значный код" maxlength="6" required>
+    </div>
+    <div class="auth-field">
+      <label>Новый пароль</label>
+      <div class="password-wrapper">
+        <input type="password" id="newPasswordInput" class="auth-input" placeholder="••••••••" minlength="6" required>
+        <button type="button" class="toggle-password-btn" onclick="togglePassword('newPasswordInput', this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <button type="submit" class="btn-primary">Сохранить новый пароль</button>
+  </form>
+
+  <!-- КНОПКИ ПЕРЕКЛЮЧЕНИЯ -->
+  <div class="auth-nav-links">
+    <button type="button" class="auth-link" id="leftLink" onclick="switchMode('forgot')">Забыл пароль?</button>
+    <button type="button" class="auth-link" id="rightLink" onclick="switchMode('register')">Регистрация</button>
+  </div>
+</div>
+
+<script>
+let tempRegEmail = "";
+let tempRegCode = null;
+
+let currentResetCode = null;
+let currentResetEmail = "";
+
+// Данные администратора
+const ADMIN_EMAIL = "khazratbek@gmail.com";
+
+// Переключение видимости пароля
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const isPassword = input.type === 'password';
+  
+  input.type = isPassword ? 'text' : 'password';
+
+  btn.innerHTML = isPassword 
+    ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+      </svg>`
+    : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>`;
+}
+
+function showToast(message, isError = false) {
+  const toast = document.getElementById('toastBox');
+  toast.textContent = message;
+  toast.className = `toast-info ${isError ? 'toast-error' : 'toast-success'}`;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3500);
+}
+
+function switchMode(mode) {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('regStep1').style.display = 'none';
+  document.getElementById('regStep2').style.display = 'none';
+  document.getElementById('regStep3').style.display = 'none';
+  document.getElementById('resetStep1').style.display = 'none';
+  document.getElementById('resetStep2').style.display = 'none';
+
+  if (mode === 'login') {
+    document.getElementById('authTitle').textContent = 'Вход в систему';
+    document.getElementById('authSub').textContent = 'Введите Email и пароль';
+    document.getElementById('loginForm').style.display = 'flex';
+    document.getElementById('leftLink').textContent = 'Забыл пароль?';
+    document.getElementById('leftLink').onclick = () => switchMode('forgot');
+    document.getElementById('rightLink').textContent = 'Регистрация';
+    document.getElementById('rightLink').onclick = () => switchMode('register');
+  } else if (mode === 'register') {
+    document.getElementById('authTitle').textContent = 'Регистрация — Шаг 1';
+    document.getElementById('authSub').textContent = 'Введите Email для получения кода';
+    document.getElementById('regStep1').style.display = 'flex';
+    document.getElementById('leftLink').textContent = 'Уже есть аккаунт?';
+    document.getElementById('leftLink').onclick = () => switchMode('login');
+    document.getElementById('rightLink').textContent = '';
+  } else if (mode === 'forgot') {
+    document.getElementById('authTitle').textContent = 'Сброс пароля';
+    document.getElementById('authSub').textContent = 'Введите почту для получения кода';
+    document.getElementById('resetStep1').style.display = 'flex';
+    document.getElementById('leftLink').textContent = 'Вернуться ко входу';
+    document.getElementById('leftLink').onclick = () => switchMode('login');
+    document.getElementById('rightLink').textContent = '';
+  }
+}
+
+// 1. ВХОД С ПРОВЕРКОЙ НА АДМИНА И ПЕРЕХОДОМ НА admin.html
+function handleLogin(event) {
+  event.preventDefault();
+  let emailInput = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value.trim();
+
+  // Если введено 'admin', заменяем на почту администратора
+  if (emailInput === 'admin') {
+    emailInput = ADMIN_EMAIL;
+  }
+
+  auth.signInWithEmailAndPassword(emailInput, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      localStorage.setItem('wh_authenticated', 'true');
+      
+      // Проверяем роль через Firestore
+      db.collection('users').doc(user.uid).get().then((doc) => {
+        const userData = doc.data();
+        const isUserAdmin = (emailInput === ADMIN_EMAIL) || (userData && userData.role === 'admin');
+        const isObserver = userData && userData.role === 'observer';
+
+        if (isUserAdmin) {
+          localStorage.setItem('wh_is_admin', 'true');
+          localStorage.setItem('wh_is_observer', 'false');
+          showToast('Вход выполнен! Переход в панель администратора...');
+          setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+        } else if (isObserver) {
+          localStorage.setItem('wh_is_admin', 'false');
+          localStorage.setItem('wh_is_observer', 'true');
+          showToast('Вход выполнен! Открывается режим наблюдателя...');
+          setTimeout(() => { window.location.href = 'observer.html'; }, 1000);
+        } else {
+          localStorage.setItem('wh_is_admin', 'false');
+          localStorage.setItem('wh_is_observer', 'false');
+          showToast('Успешный вход! Перенаправление...');
+          setTimeout(() => { window.location.href = 'warehouse.html'; }, 1000);
+        }
+      }).catch(() => {
+        if (emailInput === ADMIN_EMAIL) {
+          localStorage.setItem('wh_is_admin', 'true');
+          localStorage.setItem('wh_is_observer', 'false');
+          window.location.href = 'admin.html';
+        } else {
+          localStorage.setItem('wh_is_observer', 'false');
+          window.location.href = 'warehouse.html';
+        }
+      });
+    })
+    .catch((error) => {
+      showToast('Ошибка входа: неверный Email/Логин или пароль.', true);
+    });
+}
+
+// 2. РЕГИСТРАЦИЯ - ШАГ 1
+async function sendRegCode(event) {
+  event.preventDefault();
+  const email = document.getElementById('regEmail').value.trim().toLowerCase();
+  const btn = document.getElementById('btnSendRegCode');
+
+  try {
+    const userQuery = await db.collection('users').where('email', '==', email).limit(1).get();
+    if (!userQuery.empty) {
+      showToast('Пользователь с таким Email уже существует!', true);
+      return;
+    }
+
+    btn.textContent = 'Отправка...';
+    btn.disabled = true;
+
+    tempRegEmail = email;
+    tempRegCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const templateParams = {
+      to_email: email,
+      email: email,
+      passcode: tempRegCode,
+      code: tempRegCode
+    };
+
+    await emailjs.send('service_gqzvbbf', 'template_43migsz', templateParams);
+
+    btn.textContent = 'Получить код';
+    btn.disabled = false;
+    showToast(`Код отправлен на ${email}`);
+
+    document.getElementById('regStep1').style.display = 'none';
+    document.getElementById('regStep2').style.display = 'flex';
+    document.getElementById('authTitle').textContent = 'Регистрация — Шаг 2';
+    document.getElementById('authSub').textContent = 'Введите код, отправленный на почту';
+
+  } catch (error) {
+    btn.textContent = 'Получить код';
+    btn.disabled = false;
+    showToast('Ошибка при отправке кода на Email.', true);
+  }
+}
+
+// 3. РЕГИСТРАЦИЯ - ШАГ 2
+function verifyRegCode(event) {
+  event.preventDefault();
+  const inputCode = document.getElementById('regCodeInput').value.trim();
+
+  if (inputCode !== tempRegCode) {
+    showToast('Неверный код из Email!', true);
+    return;
+  }
+
+  showToast('Email подтверждён!');
+  document.getElementById('regStep2').style.display = 'none';
+  document.getElementById('regStep3').style.display = 'flex';
+  document.getElementById('authTitle').textContent = 'Регистрация — Шаг 3';
+  document.getElementById('authSub').textContent = 'Укажите ваши данные и пароль';
+}
+
+// 4. РЕГИСТРАЦИЯ - ШАГ 3
+async function completeRegistration(event) {
+  event.preventDefault();
+  const firstName = document.getElementById('regFirstName').value.trim();
+  const lastName = document.getElementById('regLastName').value.trim();
+  const password = document.getElementById('regPassword').value.trim();
+  const accountRole = document.getElementById('regRole')?.value === 'observer'
+    ? 'observer'
+    : 'user';
+
+  try {
+    const userCredential = await auth.createUserWithEmailAndPassword(tempRegEmail, password);
+    const user = userCredential.user;
+
+    await db.collection('users').doc(user.uid).set({
+      firstName: firstName,
+      lastName: lastName,
+      fullName: `${firstName} ${lastName}`,
+      email: tempRegEmail,
+      role: accountRole,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    showToast('Регистрация успешно завершена!');
+    localStorage.setItem('wh_authenticated', 'true');
+    localStorage.setItem('wh_is_admin', 'false');
+    localStorage.setItem('wh_is_observer', accountRole === 'observer' ? 'true' : 'false');
+    setTimeout(() => {
+      window.location.href = accountRole === 'observer'
+        ? 'observer.html'
+        : 'warehouse.html';
+    }, 1000);
+
+  } catch (error) {
+    showToast('Ошибка сохранения: ' + error.message, true);
+  }
+}
+
+// 5. ВОССТАНОВЛЕНИЕ ПАРОЛЯ
+async function sendResetCode(event) {
+  event.preventDefault();
+  const email = document.getElementById('resetEmail').value.trim().toLowerCase();
+  const btn = document.getElementById('btnSendReset');
+
+  const userQuery = await db.collection('users').where('email', '==', email).limit(1).get();
+  if (userQuery.empty) {
+    showToast('Пользователь с таким Email не найден!', true);
+    return;
+  }
+
+  btn.textContent = 'Отправка...';
+  btn.disabled = true;
+
+  currentResetEmail = email;
+  currentResetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const templateParams = {
+    to_email: email,
+    email: email,
+    passcode: currentResetCode,
+    code: currentResetCode
+  };
+
+  emailjs.send('service_gqzvbbf', 'template_43migsz', templateParams)
+    .then(() => {
+      btn.textContent = 'Отправить код';
+      btn.disabled = false;
+      showToast(`Код отправлен на ${email}`);
+      document.getElementById('resetStep1').style.display = 'none';
+      document.getElementById('resetStep2').style.display = 'flex';
+    })
+    .catch(() => {
+      btn.textContent = 'Отправить код';
+      btn.disabled = false;
+      showToast('Ошибка отправки кода на Email.', true);
+    });
+}
+
+async function verifyResetCode(event) {
+  event.preventDefault();
+  const inputCode = document.getElementById('resetCodeInput').value.trim();
+
+  if (inputCode !== currentResetCode) {
+    showToast('Неверный код из Email!', true);
+    return;
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(currentResetEmail);
+    showToast('Ссылка для сброса отправлена на почту!');
+    switchMode('login');
+  } catch (err) {
+    showToast('Ошибка сброса: ' + err.message, true);
+  }
+}
+</script>
+</body>
+</html>
