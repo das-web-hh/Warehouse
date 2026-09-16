@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<meta name="theme-color" content="#1563b8">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Warehouse">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,14 +12,12 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232D3748' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/><path d='M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z'/><line x1='8' y1='10' x2='12' y2='10'/><line x1='8' y1='14' x2='11' y2='14'/><path d='M14 15l2.5 2.5L22 12' stroke='%2310B981' stroke-width='2.5'/></svg>">
 <title>Warehouse</title>
 <script>
-/* Register the PWA worker from the origin root so Chrome can install it
-   and Android can discover the Share Target. */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', {scope: '/'})
-      .catch(error => console.warn('Service Worker не зарегистрирован:', error));
-  });
-}
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', {scope: '/'})
+        .catch(err => console.log('SW failed', err));
+    });
+  }
 </script>
 <script async src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
