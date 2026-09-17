@@ -2766,9 +2766,11 @@ body{overscroll-behavior:none;}
   <div class="nr-body">
     <section class="nr-screen nr-start active" id="nrScreenStart">
       <div class="nr-start-title">Приём по имени</div>
-       <div class="nr-start-subtitle">Загрузите накладную Excel или снимите несколько страниц камерой для распознавания.</div>
+       <div class="nr-start-subtitle">Загрузите PDF-накладную, Excel или снимите несколько страниц камерой для распознавания.</div>
       <input class="nr-file-input" id="nrExcelInput" type="file" accept=".xlsx,.xls,.csv" onchange="nrHandleFile(this)">
+      <input class="nr-file-input" id="nrPdfInput" type="file" accept="application/pdf,.pdf" onchange="nrHandlePdfFile(this)">
       <button class="nr-main-btn" type="button" onclick="document.getElementById('nrExcelInput').click()">📂 Выбрать Excel файл</button>
+      <button class="nr-main-btn" type="button" onclick="document.getElementById('nrPdfInput').click()">📄 Выбрать PDF-накладную</button>
       <button class="nr-camera-btn" type="button" onclick="openNrCamera()">📷 Снимок</button>
       <div class="nr-status" id="nrStartStatus" role="status" aria-live="polite"></div>
       <div class="nr-registry" id="nrRegistry">
@@ -7853,7 +7855,8 @@ async function _runAutoReceiveQueueOnce() {
   try {
     // Один запрос занимает очередь целиком: второй файл не начнётся,
     // пока Gemini не вернёт ответ или не истечёт 90 секунд ожидания.
-    const responseText = await _requestGeminiAutoReceiveFile(
+      _setAutoReceiveGlobalNotice('Идёт оптимизация и анализ страниц...');
+      const responseText = await _requestGeminiAutoReceiveFile(
       file,
       prompt,
       requestSettings,
@@ -8580,11 +8583,73 @@ async function _fetchGeminiJson(url, options, timeoutMs = GEMINI_RESPONSE_TIMEOU
   return result.data;
 }
 
-async function _requestGeminiAutoReceiveFile(file, prompt, settings, timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS) {
-  // PDF отправляется тем же официальным generateContent-запросом, что и
-  // изображение. Старый вызов /api/gemini/pdf давал 404: такого маршрута
-  // нет в standalone HTML, а для него также не передавался API-ключ.
-  return _requestGeminiChat(prompt, [file], settings, timeoutMs, { structured: true, includeHistory: false });
+function _warehousePythonBaseUrl() {
+  try {
+    if (typeof getTermuxUrl === 'function') return getTermuxUrl();
+  } catch (ignore) {}
+  const input = document.getElementById('pythonApiUrl');
+  const fallback = typeof TERMUX_URL === 'string' ? TERMUX_URL : '';
+  return String(input?.value || fallback).trim().replace(/\/+$/, '');
+}
+
+async function _processInvoiceThroughPython(
+  file,
+  settings,
+  onStatus,
+  timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS
+) {
+  if (!file) throw new Error('Файл накладной не выбран.');
+  if (!settings?.apiKey) throw new Error('Сначала укажите API-ключ Gemini в настройках.');
+
+  const formData = new FormData();
+  formData.append('file', file, file.name || 'invoice.pdf');
+  formData.append('api_key', settings.apiKey);
+  onStatus?.('Идёт оптимизация и анализ страниц...', 'loading');
+
+  const controller = new AbortController();
+  const requestTimeout = Math.max(Number(timeoutMs) || 0, 30 * 60 * 1000);
+  const timer = setTimeout(() => controller.abort(), requestTimeout);
+  let response;
+  try {
+    response = await fetch(_warehousePythonBaseUrl() + '/process-invoice', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Python-сервер слишком долго обрабатывает накладную.');
+    }
+    throw new Error('Не удалось подключиться к Python-серверу.');
+  } finally {
+    clearTimeout(timer);
+  }
+
+  let payload = {};
+  try { payload = await response.json(); } catch (ignore) {}
+  if (!response.ok || payload.status !== 'success') {
+    throw new Error(payload.message || `Обработка накладной завершилась с HTTP ${response.status}.`);
+  }
+  const invoice = payload.invoice || payload.data;
+  if (!invoice || !Array.isArray(invoice.items)) {
+    throw new Error('Python-сервер вернул неполный JSON накладной.');
+  }
+  return invoice;
+}
+
+async function _requestGeminiAutoReceiveFile(
+  file,
+  _prompt,
+  settings,
+  timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS
+) {
+  // Автоприём больше не отправляет PDF напрямую в Gemini из браузера.
+  // Python сначала рендерит страницы, сжимает их и последовательно
+  // вызывает google-genai с обязательной задержкой между страницами.
+  const invoice = await _processInvoiceThroughPython(file, settings, message => {
+    _setAutoReceiveGlobalNotice(message);
+  }, timeoutMs);
+  return JSON.stringify(invoice);
 }
 
 function _autoReceivePromptForToday(instruction, attachToEveryFile = false) {
@@ -20539,7 +20604,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const loaderText = 'Подготавливаем снимки и запускаем Gemini OCR…';
       setStatus(loaderText, 'loading');
       const settings = getGeminiSettings();
-      if (!settings.apiKey) {
+      const selectedKey = _selectGeminiKey();
+      const requestSettings = {
+        ...settings,
+        apiKey: selectedKey?.apiKey || settings.apiKey,
+        keyId: selectedKey?.id || settings.keyId || ''
+      };
+      if (!requestSettings.apiKey) {
         throw new Error('Сначала укажите API-ключ Gemini в настройках.');
       }
       const pages = [];
@@ -20551,15 +20622,26 @@ document.addEventListener('DOMContentLoaded', function () {
         const file = files[index];
         window.nrSetSnapshot2Progress(index, files.length,
           `Подготовка страницы ${index + 1} из ${files.length}…`);
-        const preparedImage = await prepareSnapshotImage(file);
-        setStatus(`Распознаём страницу ${index + 1} из ${files.length} через Gemini…`, 'loading');
-        const recognized = normalizeSnapshotOcr(await requestSnapshotOcr(preparedImage, {
-          ...settings,
-          model: SNAPSHOT2_GEMINI_MODEL
-        }));
-        supplier = supplier || String(recognized.supplier || '').trim();
-        orderNumber = orderNumber || String(recognized.orderNumber || '').trim();
-        pages.push({page: index + 1, items: recognized.items});
+        setStatus('Идёт оптимизация и анализ страниц...', 'loading');
+        const invoice = await _processInvoiceThroughPython(
+          file,
+          requestSettings,
+          message => setStatus(
+            `${message} Страница ${index + 1} из ${files.length}.`,
+            'loading'
+          )
+        );
+        supplier = supplier || String(invoice.senderName || '').trim();
+        orderNumber = orderNumber || String(invoice.orderNumber || '').trim();
+        const invoicePages = Array.isArray(invoice.pages) && invoice.pages.length
+          ? invoice.pages
+          : [{items: invoice.items || []}];
+        invoicePages.forEach((page, pageIndex) => {
+          pages.push({
+            page: index + pageIndex + 1,
+            items: Array.isArray(page?.items) ? page.items : []
+          });
+        });
         window.nrSetSnapshot2Progress(index + 1, files.length,
           `Распознано страниц: ${index + 1} из ${files.length}.`);
       }
@@ -21364,6 +21446,43 @@ ${lines}
     document.getElementById('shareRouteOverlay')?.classList.add('open');
   }
 
+  window.nrHandlePdfFile = async function (input) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    try {
+      const selectedKey = _selectGeminiKey();
+      const baseSettings = getGeminiSettings();
+      if (!selectedKey && !baseSettings.apiKey) {
+        throw new Error('Сначала укажите API-ключ Gemini в настройках.');
+      }
+      const settings = {
+        ...baseSettings,
+        apiKey: selectedKey?.apiKey || baseSettings.apiKey,
+        keyId: selectedKey?.id || baseSettings.keyId || '',
+        attachInstructionPerFile: false,
+        instruction: ''
+      };
+      openNameReceive();
+      nrBeginGeminiReceive();
+      switchScreen('List');
+      nrSetSnapshot2Progress(0, 1, 'Идёт оптимизация и анализ страниц...');
+      setNameReceiveShareStatus('Идёт оптимизация и анализ страниц...', 'loading');
+      const invoice = await _processInvoiceThroughPython(
+        file,
+        settings,
+        message => setNameReceiveShareStatus(message, 'loading')
+      );
+      nrApplyGeminiResult(invoice);
+      nrSetSnapshot2Progress(1, 1, 'Накладная обработана и товары объединены.');
+      setNameReceiveShareStatus('Обработка завершена. Проверьте список и сохраните партию.', 'ok');
+    } catch (error) {
+      console.error('PDF processing failed:', error);
+      setNameReceiveShareStatus(error?.message || 'Не удалось обработать PDF.', 'error');
+    } finally {
+      if (input) input.value = '';
+    }
+  };
+
   window.closeWarehouseShareRoute = function () {
     document.getElementById('shareRouteOverlay')?.classList.remove('open');
   };
@@ -21410,19 +21529,6 @@ ${lines}
     return records.length;
   };
 
-  function buildNameReceivePrompt() {
-    return [
-      'Ты OCR-модуль складских накладных.',
-      'Проанализируй PDF или изображение накладной.',
-      'В накладной может быть НЕСКОЛЬКО позиций товара (строк таблицы) — найди и верни ВСЕ, ни одну не пропускай.',
-      'Ответь строго валидным JSON, без Markdown, пояснений и текста до/после, по такой схеме:',
-      '{"senderName":"отправитель","orderNumber":"номер заказа в формате EB и 7 цифр, например EB1234567","date":"' + formattedShort + '","items":[{"name":"имя товара","menge":5}]}',
-      'В массиве items — один объект на каждую позицию/строку таблицы товаров из накладной (может быть от 1 до 20 и более).',
-      '"menge" — количество (число) для этой позиции: обычно берётся из колонки "Anzahl"/"Количество" накладной.',
-      'Если данных для какого-то поля нет, оставь его пустой строкой или пустым массивом, но не выдумывай значения.'
-    ].join('\n');
-  }
-
   window.warehouseProcessSharedFilesByName = async function (files) {
     const accepted = normalizeSharedFiles(files);
     if (!accepted.length) throw new Error('Нет PDF или изображений для приёма по имени.');
@@ -21447,21 +21553,23 @@ ${lines}
     nrBeginGeminiReceive();
     switchScreen('List');
     const total = accepted.length;
-    const prompt = buildNameReceivePrompt();
     for (let index = 0; index < total; index++) {
       const file = accepted[index];
-      nrSetSnapshot2Progress(index, total, `Распознаём файл ${index + 1} из ${total}…`);
-      setNameReceiveShareStatus(`Gemini распознаёт «${file.name || 'файл'}»…`, 'loading');
-      const responseText = await _requestGeminiChat(
-        prompt,
-        [file],
-        settings,
-        typeof GEMINI_RESPONSE_TIMEOUT_MS === 'number' ? GEMINI_RESPONSE_TIMEOUT_MS : 120000,
-        {includeHistory: false}
+      nrSetSnapshot2Progress(index, total, 'Идёт оптимизация и анализ страниц...');
+      setNameReceiveShareStatus(
+        `Идёт оптимизация и анализ страниц: ${file.name || 'файл'}…`,
+        'loading'
       );
-      const parsed = _parseAutoReceiveResponse(responseText);
-      nrApplyGeminiResult(parsed);
-      nrSetSnapshot2Progress(index + 1, total, `Распознано файлов: ${index + 1} из ${total}.`);
+      const invoice = await _processInvoiceThroughPython(
+        file,
+        settings,
+        message => setNameReceiveShareStatus(
+          `${message} Файл ${index + 1} из ${total}.`,
+          'loading'
+        )
+      );
+      nrApplyGeminiResult(invoice);
+      nrSetSnapshot2Progress(index + 1, total, `Обработано файлов: ${index + 1} из ${total}.`);
     }
     setNameReceiveShareStatus('Распознавание завершено. Проверьте список и сохраните партию.', 'ok');
   };

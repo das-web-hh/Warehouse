@@ -1,0 +1,5 @@
+Flask>=2.2
+flask-cors>=4.0
+Pillow>=10.0
+pdf2image>=1.17
+google-genai>=1.0
