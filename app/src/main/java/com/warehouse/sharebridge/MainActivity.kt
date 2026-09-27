@@ -3,7 +3,6 @@ package com.warehouse.sharebridge
 import android.util.Base64
 import android.content.Intent
 import android.net.Uri
-import android.os.Base64
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.webkit.WebView
