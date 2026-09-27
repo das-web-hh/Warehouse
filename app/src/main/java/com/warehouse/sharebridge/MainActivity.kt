@@ -23,11 +23,18 @@ import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+
 class MainActivity : AppCompatActivity() {
 
     private val localUrl = "file:///android_asset/warehouse.html"
     private lateinit var webView: WebView
     private var pendingIntent: Intent? = null
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    companion object {
+        private const val FILE_CHOOSER_REQUEST_CODE = 51426
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,13 +48,6 @@ class MainActivity : AppCompatActivity() {
             mediaPlaybackRequiresUserGesture = false
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
-        }
-
-        // ВАЖНО: Разрешаем доступ к камере внутри WebView
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.grant(request.resources)
-            }
         }
 
         webView.isFocusable = true
