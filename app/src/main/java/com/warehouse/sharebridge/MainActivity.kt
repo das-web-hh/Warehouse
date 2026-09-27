@@ -5,6 +5,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.util.Base64
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -13,9 +15,7 @@ import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
-    // Путь к вашему локальному файлу в assets (или можете вернуть адрес сайта)
     private val localUrl = "file:///android_asset/warehouse.html"
-
     private lateinit var webView: WebView
     private var pendingIntent: Intent? = null
 
@@ -30,6 +30,15 @@ class MainActivity : AppCompatActivity() {
             domStorageEnabled = true
             allowFileAccess = true
             mediaPlaybackRequiresUserGesture = false
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
+        }
+
+        // ВАЖНО: Разрешаем доступ к камере внутри WebView
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                request?.grant(request.resources)
+            }
         }
 
         webView.webViewClient = object : WebViewClient() {
@@ -40,7 +49,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Загружаем интерфейс
         webView.loadUrl(localUrl)
 
         if (isShareIntent(intent)) {
