@@ -1,10 +1,10 @@
 package com.warehouse.sharebridge
 
-import android.util.Base64
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.util.Base64
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -13,8 +13,8 @@ import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
-    // TODO: проверьте, что это точный адрес вашего сайта на GitHub Pages
-    private val siteUrl = "https://as-web-hh.github.io/warehouse.html"
+    // Путь к вашему локальному файлу в assets (или можете вернуть адрес сайта)
+    private val localUrl = "file:///android_asset/warehouse.html"
 
     private lateinit var webView: WebView
     private var pendingIntent: Intent? = null
@@ -25,10 +25,12 @@ class MainActivity : AppCompatActivity() {
         webView = WebView(this)
         setContentView(webView)
 
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.allowFileAccess = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = true
+            mediaPlaybackRequiresUserGesture = false
+        }
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -38,7 +40,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.loadUrl(siteUrl)
+        // Загружаем интерфейс
+        webView.loadUrl(localUrl)
 
         if (isShareIntent(intent)) {
             pendingIntent = intent
@@ -49,7 +52,6 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (isShareIntent(intent)) {
-            // Страница уже загружена — можно передавать файлы сразу.
             handleShareIntent(intent)
         }
     }
@@ -83,10 +85,11 @@ class MainActivity : AppCompatActivity() {
                 val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
                 if (bytes != null) {
                     val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                    val obj = JSONObject()
-                    obj.put("name", name)
-                    obj.put("type", type)
-                    obj.put("base64", base64)
+                    val obj = JSONObject().apply {
+                        put("name", name)
+                        put("type", type)
+                        put("base64", base64)
+                    }
                     jsonFiles.put(obj)
                 }
             } catch (e: Exception) {
@@ -111,6 +114,7 @@ class MainActivity : AppCompatActivity() {
         return name
     }
 
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (webView.canGoBack()) {
             webView.goBack()
