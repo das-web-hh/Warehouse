@@ -20,6 +20,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -94,9 +95,37 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(WebAppInterface(this), "Android")
         webView.loadUrl(localUrl)
 
+        startPythonServer()
+
         if (isShareIntent(intent)) {
             pendingIntent = intent
         }
+    }
+
+    override fun onDestroy() {
+        stopPythonServer()
+        super.onDestroy()
+    }
+
+    private fun sendTermuxCommand(scriptPath: String) {
+        try {
+            val intent = Intent()
+            intent.setClassName("com.termux", "com.termux.app.RunCommandService")
+            intent.action = "com.termux.RUN_COMMAND"
+            intent.putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
+            intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
+            ContextCompat.startForegroundService(this, intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun startPythonServer() {
+        sendTermuxCommand("/data/data/com.termux/files/home/start-server.sh")
+    }
+
+    private fun stopPythonServer() {
+        sendTermuxCommand("/data/data/com.termux/files/home/stop-server.sh")
     }
 
     override fun onNewIntent(intent: Intent) {
