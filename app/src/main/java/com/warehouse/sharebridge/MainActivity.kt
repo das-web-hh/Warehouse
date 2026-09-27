@@ -1,24 +1,33 @@
 package com.warehouse.sharebridge
 
+import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.print.PrintAttributes
+import android.print.PrintManager
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
+import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
-
+import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private val localUrl = "file:///android_asset/warehouse.html"
     private lateinit var webView: WebView
     private var pendingIntent: Intent? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,6 +50,39 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        webView.isFocusable = true
+        webView.isFocusableInTouchMode = true
+
+        // ВАЖНО: Разрешаем доступ к камере внутри WebView
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                request?.grant(request.resources)
+            }
+
+            // Без этого клик по <input type="file"> в WebView ничего не делает —
+            // системный выбор файла/галереи не открывается вообще.
+            override fun onShowFileChooser(
+                webView: WebView?,
+                callback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                filePathCallback?.onReceiveValue(null)
+                filePathCallback = callback
+                val chooserIntent = fileChooserParams?.createIntent()
+                    ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                        type = "*/*"
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                    }
+                return try {
+                    startActivityForResult(chooserIntent, FILE_CHOOSER_REQUEST_CODE)
+                    true
+                } catch (e: Exception) {
+                    filePathCallback = null
+                    false
+                }
+            }
+        }
+
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
@@ -49,6 +91,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        webView.addJavascriptInterface(WebAppInterface(this), "Android")
         webView.loadUrl(localUrl)
 
         if (isShareIntent(intent)) {
@@ -128,6 +171,71 @@ class MainActivity : AppCompatActivity() {
             webView.goBack()
         } else {
             super.onBackPressed()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            val results = if (resultCode == RESULT_OK && data != null) {
+                WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+            } else null
+            filePathCallback?.onReceiveValue(results)
+            filePathCallback = null
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    // Возвращаем фокус на WebView при возврате в приложение — иначе
+    // Bluetooth/HID-сканер может перестать присылать нажатия клавиш.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) webView.requestFocus(View.FOCUS_DOWN)
+    }
+
+    // Мост для warehouse.html: window.Android.saveFile(...) и
+    // window.Android.printHtml(...), которые сейчас никуда не вызываются
+    // без этого объекта.
+    private inner class WebAppInterface(private val context: Context) {
+        @JavascriptInterface
+        fun saveFile(base64: String, fileName: String, mimeType: String) {
+            try {
+                val bytes = Base64.decode(base64, Base64.DEFAULT)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val values = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    uri?.let {
+                        context.contentResolver.openOutputStream(it)?.use { out -> out.write(bytes) }
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    if (!dir.exists()) dir.mkdirs()
+                    File(dir, fileName).writeBytes(bytes)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun printHtml(html: String) {
+            runOnUiThread {
+                val printWebView = WebView(context)
+                printWebView.webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+                        val adapter = view?.createPrintDocumentAdapter("Warehouse") ?: return
+                        printManager.print("Warehouse Document", adapter, PrintAttributes.Builder().build())
+                    }
+                }
+                printWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+            }
         }
     }
 }
