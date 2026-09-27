@@ -1,5 +1,6 @@
 package com.warehouse.sharebridge
 
+import android.util.Base64
 import android.content.Intent
 import android.net.Uri
 import android.os.Base64
