@@ -7861,7 +7861,8 @@ async function _commitReceivedItems(items, options = {}) {
   if (typeof window.__warehouseSaveToCollection === 'function') {
     const serverRecord = {
       batchId, date: batchDate, senderName, orderNumber, receivedAt,
-      positions, totalQty, items: acceptedItems, source: options.source || ''
+      positions, totalQty, items: acceptedItems, sourceFileName,
+      source: options.source || ''
     };
     const targetCollection = options.source || 'history';
     window.__warehouseSaveToCollection(targetCollection, serverRecord);
@@ -8845,7 +8846,11 @@ async function _processInvoiceThroughPython(
   if (!response.ok || payload.status !== 'success') {
     throw new Error(payload.message || `Обработка накладной завершилась с HTTP ${response.status}.`);
   }
-  const invoice = payload.invoice || payload.data;
+  // Старый Python возвращал поля накладной на верхнем уровне, новый также
+  // кладёт их в invoice. Поддерживаем оба формата, чтобы результат не
+  // терялся до экрана «Приём по имени».
+  const invoice = payload.invoice || payload.data
+    || (Array.isArray(payload.items) ? payload : null);
   if (!invoice || !Array.isArray(invoice.items)) {
     throw new Error('Python-сервер вернул неполный JSON накладной.');
   }
@@ -8860,6 +8865,62 @@ function _dataUrlToInvoiceFile(dataUrl, filename) {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return new File([bytes], filename, {type: mime, lastModified: Date.now()});
+}
+
+async function _dataUrlToPngFile(dataUrl, filename) {
+  const source = String(dataUrl || '');
+  if (!source) throw new Error('Пустая обработанная страница.');
+  const image = new Image();
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = () => reject(new Error('Не удалось подготовить PNG страницы.'));
+    image.src = source;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Браузер не поддерживает подготовку PNG.');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('Не удалось создать PNG страницы.');
+  return new File([blob], filename, {type: 'image/png', lastModified: Date.now()});
+}
+
+function _filenameDateTime(filename) {
+  const base = String(filename || '').split(/[\\/]/).pop() || '';
+  const match = /(?<!\d)((?:19|20)\d{6})(?:[-_ ]?(\d{4}))?(?!\d)/.exec(base);
+  if (!match) return 'no_date';
+  const token = match[1];
+  const year = Number(token.slice(0, 4));
+  const month = Number(token.slice(4, 6));
+  const day = Number(token.slice(6, 8));
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1
+      || date.getUTCDate() !== day) return 'no_date';
+  let result = `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+  if (match[2]) {
+    const hour = Number(match[2].slice(0, 2));
+    const minute = Number(match[2].slice(2));
+    if (hour <= 23 && minute <= 59) {
+      result += ` ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+  }
+  return result;
+}
+
+function _normalizeInvoiceSender(value) {
+  const text = String(value || '').trim();
+  const lower = text.toLocaleLowerCase('ru-RU');
+  return !text || lower.includes('creditor@stroeh.de')
+    || lower.includes('stroeh') || lower.includes('ströh')
+    ? 'no_name'
+    : text;
+}
+
+function _normalizeInvoiceOrderNumber(value) {
+  const match = /\bEB\s*[-/#:]?(\d{7})\b/i.exec(String(value || ''));
+  return match ? `EB${match[1]}` : 'EB_no_data';
 }
 
 /* Шаг 1: PDF/картинка отправляется на Python — он ТОЛЬКО рендерит и
@@ -8911,24 +8972,59 @@ async function _processInvoiceViaPreparedPages(
   if (!pages.length) throw new Error('Python-сервер не вернул ни одной страницы документа.');
 
   const items = [];
+  const processedFiles = [];
+  const seenItemKeys = new Set();
+  let detectedSenderName = '';
+  let detectedOrderNumber = '';
   const total = pages.length;
   for (let index = 0; index < total; index++) {
     const page = pages[index];
     onStatus?.(`Gemini распознаёт страницу ${index + 1} из ${total}...`, 'loading');
     const pageFile = _dataUrlToInvoiceFile(page.imageData, `page-${page.pageIndex || index + 1}.jpg`);
+    try {
+      processedFiles.push(await _dataUrlToPngFile(
+        page.imageData,
+        `processed-${String(file.name || 'document').replace(/\.[^/.]+$/, '')}-page-${index + 1}.png`
+      ));
+    } catch (error) {
+      console.warn('Не удалось подготовить обработанный PNG:', error);
+    }
     const rawText = await _requestGeminiChat('', [pageFile], settings, timeoutMs, {structured: true});
     let parsed = null;
     try { parsed = JSON.parse(String(rawText || '')); } catch (parseError) {
       console.warn(`Страница ${index + 1}: Gemini вернул невалидный JSON`, parseError);
     }
-    if (parsed && Array.isArray(parsed.items)) items.push(...parsed.items);
+    if (parsed && Array.isArray(parsed.items)) {
+      parsed.items.forEach(item => {
+        const itemKey = [
+          String(item?.name || '').trim().toLocaleLowerCase('ru-RU'),
+          String(item?.unit || '').trim().toLocaleLowerCase('ru-RU'),
+          String(item?.menge ?? item?.quantity ?? item?.qty ?? item?.count ?? 0)
+        ].join('|');
+        if (!itemKey.startsWith('|') && !seenItemKeys.has(itemKey)) {
+          seenItemKeys.add(itemKey);
+          items.push(item);
+        }
+      });
+    }
+    if (parsed?.senderName && parsed.senderName !== 'no_name' && !detectedSenderName) {
+      detectedSenderName = String(parsed.senderName).trim();
+    }
+    if (parsed?.orderNumber && parsed.orderNumber !== 'EB_no_data' && !detectedOrderNumber) {
+      detectedOrderNumber = String(parsed.orderNumber).trim();
+    }
   }
 
   return {
-    senderName: payload.senderName || payload.metadata?.senderName || '',
-    orderNumber: payload.orderNumber || payload.metadata?.orderNumber || '',
-    date: payload.date || payload.metadata?.date || '',
-    items
+    senderName: _normalizeInvoiceSender(
+      detectedSenderName || payload.senderName || payload.metadata?.senderName
+    ),
+    orderNumber: _normalizeInvoiceOrderNumber(
+      detectedOrderNumber || payload.orderNumber || payload.metadata?.orderNumber
+    ),
+    date: _filenameDateTime(file.name),
+    items,
+    processedFiles
   };
 }
 
@@ -8938,10 +9034,10 @@ async function _requestGeminiAutoReceiveFile(
   settings,
   timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS
 ) {
-  // Python готовит страницы (рендер + сжатие, без Gemini), а сам браузер
-  // распознаёт их постранично — так длинные накладные не обрываются на
-  // середине JSON-ответа.
-  const invoice = await _processInvoiceViaPreparedPages(file, settings, message => {
+  // Автоприём больше не отправляет PDF напрямую в Gemini из браузера.
+  // Python сначала рендерит страницы, сжимает их и последовательно
+  // вызывает google-genai с обязательной задержкой между страницами.
+  const invoice = await _processInvoiceThroughPython(file, settings, message => {
     _setAutoReceiveGlobalNotice(message);
   }, timeoutMs);
   return JSON.stringify(invoice);
@@ -9002,12 +9098,7 @@ async function _requestGeminiChat(text, files, settings, timeoutMs = GEMINI_RESP
               ...(options.structured ? {
                 system_instruction: {
                   parts: [{
-                    text: 'Ты модуль универсального извлечения данных из накладных (свыше 20 различных форматов бланков). Обрабатывай документ строго по ключевым маркерам независимо от макета:\n' +
-                      '1) Строка 1: наименование отправителя/бренда (например, логотип вверху документа, например "EQUOVIS") -> senderName.\n' +
-                      '2) Строка 2: внешний номер документа/заказа (маркер "Ext. Beleg-Nr." / "EB...") -> orderNumber.\n' +
-                      '3) Строка 3: дата получения или дата документа -> date.\n' +
-                      '4) Строки 4 и далее: позиции товаров (название, количество, единица измерения) -> items[].\n' +
-                      'Игнорируй служебные пометки (галочки, крестики, штрихкоды) — это не данные о товаре. Никогда не извлекай и не включай в ответ артикул (Artikel-Nr.). Верни только валидный JSON без Markdown и пояснений. Формат: {"senderName":"","orderNumber":"","date":"","items":[{"name":"","menge":0,"unit":"","ean":""}]}. Не выдумывай значения. Отсутствующие поля оставляй пустыми.'
+                      text: 'Ты модуль универсального извлечения данных из накладных. Сначала проверь рукописные отметки: если нет ни одной ✓ или X, включи все напечатанные строки товаров; если отметки есть, исключи строки с X, неотмеченные строки со словами ew, europallet, pallet, versand, EB+цифры, palettenfrachtkostenpauschale, palletenfrachtkostenpauseschale, versandkosten, landehilfsmittel или post и включи только строки с ясной ✓/подтверждением. Одинаковую строку на разных страницах учитывай один раз, приоритет первой странице. На пустом документе верни пустой items. senderName бери из шапки/логотипа, но не используй creditor@stroeh.de, stroeh или ströh; иначе no_name. orderNumber — только EB и ровно 7 цифр, иначе EB_no_data. Дату сервер заменит датой из имени файла. Количество бери из aktuelle Liefermenge; рукописное число рядом с stk/штук важнее, перечёркнутое/X/0 означает 0, число всегда целое. ean — только физически видимый штрихкод на строке, Artikel-Nr. не включай. Верни только валидный JSON без Markdown: {"senderName":"","orderNumber":"","date":"","items":[{"name":"","menge":0,"unit":"","ean":""}]}.'
                   }]
                 }
               } : {}),
@@ -11453,7 +11544,7 @@ const GEMINI_DEFAULT_INSTRUCTION = 'Проанализируй накладну�
   '3. Строка 3 — дата получения или дата документа.\n' +
   '4. Строки 4 и далее — позиции товаров: название товара, количество и единица измерения.\n' +
   'Артикул (Artikel-Nr.) НЕ извлекай и не включай ни в одно поле. Игнорируй служебные пометки: галочки, крестики, штрихкоды и прочие технические символы — они не являются данными о товаре. Если значение не найдено, оставь поле пустым. Не додумывай отсутствующие данные.';
-const GEMINI_SNAPSHOT2_DEFAULT_INSTRUCTION = 'Извлеки из этой страницы документа только товары, их количество и единицу измерения. Игнорируй галочки, крестики, штрихкоды и артикул (Artikel-Nr.) — их извлекать не нужно. Верни JSON с массивом items: [{"name":"","menge":0,"unit":"","ean":""}]. Не добавляй пояснения и не выдумывай отсутствующие значения.';
+const GEMINI_SNAPSHOT2_DEFAULT_INSTRUCTION = 'Извлеки товары построчно. Если на документе нет ни одной отметки, включи все напечатанные строки. Если отметки есть, включай только строки с ✓/ясным подтверждением, исключай строки с X и неотмеченные строки с ew, europallet, pallet, versand, EB+цифры, palettenfrachtkostenpauschale, palletenfrachtkostenpauseschale, versandkosten, landehilfsmittel или post. Количество бери из aktuelle Liefermenge; рукописное число рядом с stk/штук важнее печатного, перечёркнутое/X/0 означает 0. Верни только JSON {"items":[{"name":"","menge":0,"unit":"","ean":""}]} без артикулов и пояснений. Штрихкод указывай только если он физически напечатан/написан на строке.';
 
 function _geminiNewKeyId() {
   return `gemini_key_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -19956,7 +20047,8 @@ document.addEventListener('DOMContentLoaded', function () {
 (function () {
   'use strict';
   const state = {
-    products: [], originalFileName: 'приемка', qtyId: null, qtyMode: 'actual',
+    products: [], originalFileName: 'приемка', sourceFiles: [], sourceInvoiceFiles: [],
+    qtyId: null, qtyMode: 'actual',
     unverifiedOnly: false, highlighted: null, swipe: null, rowToDeleteId: null,
     selectedValue: 0, wheelRotation: 0, wheelLastIndex: -1, wheelStartY: 0,
     source: 'excel', newIds: new Set(), savedBatchId: '', saving: false, activeRegistryId: '',
@@ -20092,6 +20184,8 @@ document.addEventListener('DOMContentLoaded', function () {
     state.activeRegistryId = String(record.id || '');
     state.source = 'registry';
     state.originalFileName = String(record.orderNumber || 'приёмка');
+    state.sourceFiles = [];
+    state.sourceInvoiceFiles = [];
     state.savedBatchId = '';
     state.saving = false;
     state.highlighted = null;
@@ -20343,6 +20437,9 @@ document.addEventListener('DOMContentLoaded', function () {
     state.source = 'snapshot2';
     state.activeRegistryId = '';
     state.products = [];
+    state.sourceFiles = [];
+    state.sourceInvoiceFiles = [];
+    state.originalFileName = 'приемка';
     state.newIds.clear();
     state.highlighted = null;
     state.savedBatchId = '';
@@ -20353,21 +20450,39 @@ document.addEventListener('DOMContentLoaded', function () {
     $('nrSnapshot2Progress').style.display = 'block';
     renderList();
   };
+  window.nrSetReceiveSourceFiles = function (files, filename, append = false) {
+    const nextFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    state.sourceFiles = append ? [...state.sourceFiles, ...nextFiles] : nextFiles;
+    if (filename) state.originalFileName = String(filename);
+  };
+  window.nrSetReceiveSourceInvoices = function (files, append = false) {
+    const nextFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    state.sourceInvoiceFiles = append
+      ? [...state.sourceInvoiceFiles, ...nextFiles]
+      : nextFiles;
+  };
   window.nrOpenGeminiReceiveList = function () {
     nrBeginGeminiReceive();
     switchScreen('List');
   };
   window.nrApplyGeminiResult = function (payload) {
     if (state.source !== 'snapshot2') nrBeginGeminiReceive();
-    if (payload?.senderName && $('nrSender').textContent === '-') $('nrSender').textContent = payload.senderName;
-    if (payload?.orderNumber && $('nrOrder').textContent === '-') $('nrOrder').textContent = payload.orderNumber;
-    if (payload?.date && $('nrDate').textContent === '-') $('nrDate').textContent = payload.date;
-    const items = Array.isArray(payload?.items) ? payload.items : [];
+    const invoice = payload?.invoice && typeof payload.invoice === 'object'
+      ? payload.invoice
+      : (payload || {});
+    if (invoice?.senderName && $('nrSender').textContent === '-') $('nrSender').textContent = invoice.senderName;
+    if (invoice?.orderNumber && $('nrOrder').textContent === '-') $('nrOrder').textContent = invoice.orderNumber;
+    if (invoice?.date && $('nrDate').textContent === '-') $('nrDate').textContent = invoice.date;
+    const items = Array.isArray(invoice?.items) ? invoice.items : [];
     const freshIds = [];
     items.forEach(item => {
       const name = String(item?.name || item?.product || item?.title || '').trim();
       if (!name) return;
-      const amount = Math.max(0, Number.parseInt(item?.menge ?? item?.quantity ?? item?.qty ?? item?.count ?? 0, 10) || 0);
+       const rawAmount = item?.menge ?? item?.quantity ?? item?.qty
+         ?? item?.count ?? item?.qtyPlan ?? item?.plannedQty ?? 0;
+       const amountText = String(rawAmount ?? '').replace(',', '.');
+       const amountMatch = /-?\d+(?:\.\d+)?/.exec(amountText);
+       const amount = Math.max(0, amountMatch ? Math.trunc(Number(amountMatch[0])) : 0);
       const similar = nrFindSimilarProduct(name);
       if (similar) {
         similar.qtyPlan += amount;
@@ -20409,6 +20524,137 @@ document.addEventListener('DOMContentLoaded', function () {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(data), 'Приемка');
     XLSX.writeFile(workbook, state.originalFileName + '_processed.xlsx');
   };
+
+  async function nrSaveProcessedFiles(batchId, batchDate, orderNumber, files, invoiceFiles) {
+    const sourceFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    const sourceInvoices = Array.isArray(invoiceFiles) ? invoiceFiles.filter(Boolean) : [];
+    if (!sourceFiles.length && !sourceInvoices.length) {
+      return {localCount: 0, driveUrls: [], driveInvoiceUrls: [], driveError: ''};
+    }
+    const driveUrls = [];
+    const driveFiles = [];
+    const driveInvoiceUrls = [];
+    let driveError = '';
+    const driveSettings = typeof _getGoogleDriveSettings === 'function'
+      ? _getGoogleDriveSettings()
+      : {};
+    const safeBatch = String(batchId || 'batch').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+    const safeDate = typeof _googleDriveSafePart === 'function'
+      ? _googleDriveSafePart(batchDate || 'no_date', 24)
+      : String(batchDate || 'no_date').replace(/[^a-zA-Z0-9._-]+/g, '_');
+    const driveKey = typeof _googleDriveKeyForContext === 'function'
+      ? _googleDriveKeyForContext({batchId, codeField: 'batchId'})
+      : `batch_${safeBatch}`;
+
+    for (let index = 0; index < sourceFiles.length; index++) {
+      const file = sourceFiles[index];
+      // Локальная копия сохраняется даже при недоступном Google Drive.
+      await idbSaveBlob('photos', batchId, file);
+      if (driveSettings.url && driveSettings.folderId && typeof _uploadOneFileToGoogleDrive === 'function') {
+        try {
+          const fileName = `${driveKey}_${safeDate}_processed_${index + 1}.png`;
+          const uploaded = await _uploadOneFileToGoogleDrive(file, {
+            key: driveKey,
+            code: batchId,
+            fileName
+          }, driveSettings);
+          const url = typeof _googleDriveFileUrl === 'function'
+            ? _googleDriveFileUrl(uploaded, false)
+            : '';
+          if (url) {
+            driveUrls.push(url);
+            driveFiles.push({index, url});
+          }
+        } catch (error) {
+          driveError = error?.message || 'Google Drive недоступен';
+          console.warn('Не удалось сохранить обработанный PNG на Google Drive:', error);
+        }
+      }
+    }
+    for (let index = 0; index < sourceInvoices.length; index++) {
+      const file = sourceInvoices[index];
+      await idbSaveBlob('invoices', batchId, file);
+      if (driveSettings.url && driveSettings.folderId && typeof _uploadOneFileToGoogleDrive === 'function') {
+        try {
+          const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+          const extension = isPdf
+            ? 'pdf'
+            : String(file.type || '').split('/')[1]?.replace(/[^a-z0-9]+/gi, '') || 'bin';
+          const fileName = `${driveKey}_${safeDate}_source_${index + 1}.${extension}`;
+          const uploaded = await _uploadOneFileToGoogleDrive(file, {
+            key: driveKey,
+            code: batchId,
+            fileName
+          }, driveSettings);
+          const url = typeof _googleDriveFileUrl === 'function'
+            ? _googleDriveFileUrl(uploaded, isPdf)
+            : '';
+          if (url) driveInvoiceUrls.push({
+            url,
+            name: uploaded?.name || file.name || fileName,
+            isPdf
+          });
+        } catch (error) {
+          driveError = error?.message || 'Google Drive недоступен';
+          console.warn('Не удалось сохранить исходный файл на Google Drive:', error);
+        }
+      }
+    }
+
+    const batchKey = typeof makeBatchKey === 'function' ? makeBatchKey(batchId) : '';
+    if (batchKey && typeof idbLoad === 'function' && typeof idbSave === 'function') {
+      const previous = await idbLoad(batchKey) || {};
+      await idbSave(batchKey, {
+        ...previous,
+        batchId,
+        date: batchDate,
+        orderNumber,
+        sourceFileName: state.originalFileName || previous.sourceFileName || '',
+        processedPhotoNames: sourceFiles.map(file => file.name || ''),
+        drivePhotoUrls: [
+          ...(Array.isArray(previous.drivePhotoUrls) ? previous.drivePhotoUrls : []),
+          ...driveUrls
+        ],
+        driveInvoiceUrls: [
+          ...(Array.isArray(previous.driveInvoiceUrls) ? previous.driveInvoiceUrls : []),
+          ...driveInvoiceUrls
+        ]
+      });
+    }
+
+    const media = sourceFiles.map((file, index) => ({
+      kind: 'processed_png',
+      name: file.name || `processed-${index + 1}.png`,
+      type: file.type || 'image/png',
+      url: driveFiles.find(entry => entry.index === index)?.url || '',
+      storage: driveFiles.some(entry => entry.index === index)
+        ? 'indexeddb+google_drive'
+        : 'indexeddb',
+      batchId
+    })).concat(sourceInvoices.map((file, index) => ({
+      kind: 'source_file',
+      name: file.name || `source-${index + 1}`,
+      type: file.type || 'application/octet-stream',
+      url: driveInvoiceUrls[index]?.url || '',
+      storage: driveInvoiceUrls[index] ? 'indexeddb+google_drive' : 'indexeddb',
+      batchId
+    })));
+    arrivals.filter(item => String(item.batchId || '') === String(batchId || ''))
+      .forEach(item => { item.attachments = media; });
+    localStorage.setItem('my_off_arr6', JSON.stringify(arrivals));
+    autoBackup();
+    if (typeof window.__warehouseSaveToCollection === 'function') {
+      await window.__warehouseSaveToCollection('batch_media', {
+        batchId,
+        date: batchDate,
+        orderNumber,
+        sourceFileName: state.originalFileName || '',
+        attachments: media
+      });
+    }
+    return {localCount: sourceFiles.length + sourceInvoices.length, driveUrls, driveInvoiceUrls, driveError};
+  }
+
   window.nrSaveBatch = async function () {
     if (state.saving) return;
     if (state.savedBatchId) {
@@ -20439,13 +20685,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const isEan = /^\d{8,14}$/.test(code);
         return {
           name: String(item.name || '').trim(),
-          menge: Math.max(0, Number.parseInt(item.qtyActual, 10) || 0),
+           // Если фактическое число ещё не введено, сохраняем распознанный
+           // план. После ручного пересчёта приоритет получает qtyActual.
+           menge: Math.max(
+             0,
+             Number.parseInt(item.qtyActual, 10) || Number.parseInt(item.qtyPlan, 10) || 0
+           ),
           ean: isEan ? code : '',
           artikel: isEan ? '' : code
         };
       }).filter(item => item.name);
-      const committed = await _commitReceivedItems(items, {
-        batchId: `name_receive_${Date.now().toString(36)}`,
+       const requestedBatchId = `name_receive_${Date.now().toString(36)}`;
+       const committed = await _commitReceivedItems(items, {
+         batchId: requestedBatchId,
         date: dateProvided ? displayedDate : formattedShort,
         dateProvided,
         senderName: senderName === '-' ? '' : senderName,
@@ -20455,10 +20707,19 @@ document.addEventListener('DOMContentLoaded', function () {
         source: 'blind_receipt'
       });
       if (!committed.positions) throw new Error('В партии нет новых позиций для сохранения.');
+       const mediaResult = await nrSaveProcessedFiles(
+         committed.batchId,
+         committed.batchDate,
+         orderNumber === '-' ? '' : orderNumber,
+         state.sourceFiles
+       );
       state.savedBatchId = committed.batchId;
       if (typeof renderHistoryList === 'function') renderHistoryList();
       if (button) button.textContent = '✓ Сохранено';
-      $('nrInfoText').textContent = `Партия сохранена: ${committed.positions} позиций, ${committed.totalQty} шт. Она отображается первой в истории приёмок.`;
+       const driveNote = mediaResult.driveError
+         ? ` Локальные PNG сохранены, но Drive сообщил: ${mediaResult.driveError}.`
+         : (mediaResult.driveUrls.length ? ` PNG загружено в Google Drive: ${mediaResult.driveUrls.length}.` : '');
+       $('nrInfoText').textContent = `Партия сохранена: ${committed.positions} позиций, ${committed.totalQty} шт.${driveNote} Она отображается первой в истории приёмок.`;
       $('nrInfoOverlay').classList.remove('hidden');
     } catch (error) {
       if (button) { button.disabled = false; button.textContent = '💾 Сохранить'; }
@@ -20734,17 +20995,6 @@ document.addEventListener('DOMContentLoaded', function () {
     renderRegistry();
     return existing;
   }
-  // Каждый ответ Gemini — отдельная партия. Не объединяем две накладные
-  // только потому, что у них совпали отправитель и номер заказа: каждую
-  // запись пользователь должен открыть отдельно и пересчитать.
-  function addGeminiRegistryRecord(payload) {
-    const incoming = registryRecordFromPayload(payload);
-    if (!incoming.products.length) return null;
-    registry.unshift(incoming);
-    saveRegistry();
-    renderRegistry();
-    return incoming;
-  }
   function renderRegistry() {
     const list = $('nrRegistryList');
     const empty = $('nrRegistryEmpty');
@@ -20767,16 +21017,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const card = document.createElement('div');
       card.className = 'nr-registry-card';
       card.dataset.id = record.id;
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('aria-label', `Открыть партию ${record.orderNumber || ''}`.trim());
       card.addEventListener('click', event => window.nrOpenRegistryCard(record.id, event));
-      card.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          window.nrOpenRegistryCard(record.id, event);
-        }
-      });
       card.addEventListener('touchstart', event => window.nrRegistryTouchStart(event, card), {passive:true});
       card.addEventListener('touchmove', event => window.nrRegistryTouchMove(event, card), {passive:false});
       card.addEventListener('touchend', event => window.nrRegistryTouchEnd(event, card), {passive:true});
@@ -20809,9 +21050,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     const record = registry.find(item => item.id === id);
     if (record && typeof window.nrLoadRegistryBatch === 'function') window.nrLoadRegistryBatch(record);
-  };
-  window.nrRegisterGeminiResponse = function (payload) {
-    return addGeminiRegistryRecord(payload);
   };
   window.nrRegistryTouchStart = function (event, card) {
     document.querySelectorAll('.nr-registry-card.swiped').forEach(openCard => {
@@ -21366,13 +21604,8 @@ document.addEventListener('DOMContentLoaded', function () {
       };
       renderDeliveryPages(payload);
       window.nrSetSnapshot2Progress(files.length, files.length, 'Распознавание накладных завершено.');
-       // Один запуск Gemini для одного набора снимков = одна партия в реестре.
-       // Строка появится на стартовом экране и откроет отдельный список
-       // товаров для последующего подсчёта фактического количества.
-       const batch = addGeminiRegistryRecord(payload);
-       const result = batch
-         ? `${batch.senderName} · ${batch.orderNumber} · ${batch.pages} стр. · ${batch.positions} поз.`
-         : 'Позиции в документе не распознаны.';
+      const batch = mergeRegistryRecord(registryRecordFromPayload(payload));
+      const result = `${batch.senderName} · ${batch.orderNumber} · ${batch.pages} стр. · ${batch.positions} поз.`;
       setStatus(`Распознавание завершено. ${result}`, 'ok');
       window.switchScreen('Start');
       releaseShots();
@@ -22296,6 +22529,7 @@ window.receiveNativeSharedFiles = function (files) {
       };
       openNameReceive();
       nrBeginGeminiReceive();
+      window.nrSetReceiveSourceFiles([], file.name || 'приёмка');
       switchScreen('List');
       nrSetSnapshot2Progress(0, 1, 'Идёт оптимизация и анализ страниц...');
       setNameReceiveShareStatus('Идёт оптимизация и анализ страниц...', 'loading');
@@ -22304,10 +22538,14 @@ window.receiveNativeSharedFiles = function (files) {
         settings,
         message => setNameReceiveShareStatus(message, 'loading')
       );
-       nrRegisterGeminiResponse(invoice);
+      window.nrSetReceiveSourceInvoices([file]);
+      window.nrSetReceiveSourceFiles(
+        Array.isArray(invoice.processedFiles) ? invoice.processedFiles : [],
+        file.name || 'приёмка'
+      );
+      nrApplyGeminiResult(invoice);
       nrSetSnapshot2Progress(1, 1, 'Накладная обработана и товары объединены.');
-       setNameReceiveShareStatus('Партия добавлена в реестр. Нажмите на строку, чтобы открыть подсчёт.', 'ok');
-       switchScreen('Start');
+      setNameReceiveShareStatus('Обработка завершена. Проверьте список и сохраните партию.', 'ok');
     } catch (error) {
       console.error('PDF processing failed:', error);
       setNameReceiveShareStatus(error?.message || 'Не удалось обработать PDF.', 'error');
@@ -22384,6 +22622,7 @@ window.receiveNativeSharedFiles = function (files) {
 
     openNameReceive();
     nrBeginGeminiReceive();
+    window.nrSetReceiveSourceFiles([], accepted[0]?.name || 'приёмка');
     switchScreen('List');
     const total = accepted.length;
     for (let index = 0; index < total; index++) {
@@ -22401,11 +22640,16 @@ window.receiveNativeSharedFiles = function (files) {
           'loading'
         )
       );
-       nrRegisterGeminiResponse(invoice);
+      window.nrSetReceiveSourceInvoices([file], true);
+      window.nrSetReceiveSourceFiles(
+        Array.isArray(invoice.processedFiles) ? invoice.processedFiles : [],
+        file.name || accepted[0]?.name || 'приёмка',
+        true
+      );
+      nrApplyGeminiResult(invoice);
       nrSetSnapshot2Progress(index + 1, total, `Обработано файлов: ${index + 1} из ${total}.`);
     }
-     setNameReceiveShareStatus('Партии добавлены в реестр. Нажмите на строку, чтобы открыть подсчёт.', 'ok');
-     switchScreen('Start');
+    setNameReceiveShareStatus('Распознавание завершено. Проверьте список и сохраните партию.', 'ok');
   };
 
   window.routeWarehouseSharedFiles = async function (mode) {
