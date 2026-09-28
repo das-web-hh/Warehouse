@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.print.PrintAttributes
 import android.print.PrintManager
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
@@ -35,15 +36,27 @@ import javax.crypto.spec.GCMParameterSpec
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 
+private data class DocEntry(
+    val id: String,
+    val name: String,
+    val mime: String,
+    val size: Long,
+    val modified: Long
+) {
+    val isDir: Boolean get() = mime == DocumentsContract.Document.MIME_TYPE_DIR
+}
+
 class MainActivity : AppCompatActivity() {
 
     private val localUrl = "file:///android_asset/index.html"
     private lateinit var webView: WebView
     private var pendingIntent: Intent? = null
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingFolderRequestId: String? = null
 
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 51426
+        private const val FOLDER_PICKER_REQUEST_CODE = 51427
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val LOGIN_KEY_ALIAS = "warehouse_login_key_v1"
         private const val LOGIN_PREFS = "warehouse_login_credentials"
@@ -228,6 +241,41 @@ class MainActivity : AppCompatActivity() {
 
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == FOLDER_PICKER_REQUEST_CODE) {
+            val requestId = pendingFolderRequestId
+            pendingFolderRequestId = null
+            val uri = if (resultCode == RESULT_OK) data?.data else null
+            var name = ""
+            if (uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                } catch (e: Exception) {
+                    try {
+                        contentResolver.takePersistableUriPermission(
+                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (e2: Exception) {
+                        e2.printStackTrace()
+                    }
+                }
+                name = try {
+                    rootEntry(uri).name
+                } catch (e: Exception) {
+                    uri.lastPathSegment?.substringAfterLast(':') ?: "folder"
+                }
+            }
+            if (requestId != null) {
+                val js = "window.__onNativeFolderPicked && window.__onNativeFolderPicked(" +
+                    "${JSONObject.quote(requestId)}," +
+                    "${JSONObject.quote(uri?.toString() ?: "")}," +
+                    "${JSONObject.quote(name)});"
+                webView.evaluateJavascript(js, null)
+            }
+            return
+        }
         if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
             val results = if (resultCode == RESULT_OK && data != null) {
                 WebChromeClient.FileChooserParams.parseResult(resultCode, data)
@@ -244,6 +292,110 @@ class MainActivity : AppCompatActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) webView.requestFocus(View.FOCUS_DOWN)
+    }
+
+    // ───── Работа с папками через Storage Access Framework ─────
+    private fun splitPath(path: String): List<String> =
+        path.split('/').filter { it.isNotEmpty() }
+
+    private fun docUri(tree: Uri, id: String): Uri =
+        DocumentsContract.buildDocumentUriUsingTree(tree, id)
+
+    private fun rootEntry(tree: Uri): DocEntry {
+        val id = DocumentsContract.getTreeDocumentId(tree)
+        var name = id.substringAfterLast(':').ifBlank { "folder" }
+        contentResolver.query(
+            docUri(tree, id),
+            arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+            null, null, null
+        )?.use { c ->
+            if (c.moveToFirst()) name = c.getString(0) ?: name
+        }
+        return DocEntry(id, name, DocumentsContract.Document.MIME_TYPE_DIR, 0, 0)
+    }
+
+    private fun listChildren(tree: Uri, parentId: String): List<DocEntry> {
+        val out = ArrayList<DocEntry>()
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(tree, parentId)
+        contentResolver.query(
+            childrenUri,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE,
+                DocumentsContract.Document.COLUMN_SIZE,
+                DocumentsContract.Document.COLUMN_LAST_MODIFIED
+            ),
+            null, null, null
+        )?.use { c ->
+            while (c.moveToNext()) {
+                val id = c.getString(0) ?: continue
+                out.add(
+                    DocEntry(
+                        id,
+                        c.getString(1) ?: "",
+                        c.getString(2) ?: "",
+                        if (c.isNull(3)) 0L else c.getLong(3),
+                        if (c.isNull(4)) 0L else c.getLong(4)
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    private fun resolveEntry(tree: Uri, path: String): DocEntry? {
+        val segments = splitPath(path)
+        if (segments.isEmpty()) return rootEntry(tree)
+        var currentId = DocumentsContract.getTreeDocumentId(tree)
+        var entry: DocEntry? = null
+        for (segment in segments) {
+            entry = listChildren(tree, currentId).firstOrNull { it.name == segment } ?: return null
+            currentId = entry.id
+        }
+        return entry
+    }
+
+    private fun ensureDirs(tree: Uri, segments: List<String>): String? {
+        var parentId = DocumentsContract.getTreeDocumentId(tree)
+        for (segment in segments) {
+            val existing = listChildren(tree, parentId).firstOrNull { it.name == segment }
+            parentId = when {
+                existing == null -> {
+                    val created = DocumentsContract.createDocument(
+                        contentResolver,
+                        docUri(tree, parentId),
+                        DocumentsContract.Document.MIME_TYPE_DIR,
+                        segment
+                    ) ?: return null
+                    DocumentsContract.getDocumentId(created)
+                }
+                existing.isDir -> existing.id
+                else -> return null
+            }
+        }
+        return parentId
+    }
+
+    private fun ensureFile(tree: Uri, path: String, mime: String): Uri? {
+        val segments = splitPath(path)
+        if (segments.isEmpty()) return null
+        val parentId = ensureDirs(tree, segments.dropLast(1)) ?: return null
+        val name = segments.last()
+        val existing = listChildren(tree, parentId).firstOrNull { it.name == name }
+        if (existing != null) return if (existing.isDir) null else docUri(tree, existing.id)
+        val created = DocumentsContract.createDocument(
+            contentResolver, docUri(tree, parentId), mime, name
+        ) ?: return null
+        return docUri(tree, DocumentsContract.getDocumentId(created))
+    }
+
+    private fun entryJson(entry: DocEntry): JSONObject = JSONObject().apply {
+        put("name", entry.name)
+        put("isDir", entry.isDir)
+        put("size", entry.size)
+        put("modified", entry.modified)
+        put("mime", if (entry.isDir) "" else entry.mime)
     }
 
     // Мост для warehouse.html: window.Android.saveFile(...) и
@@ -410,6 +562,146 @@ class MainActivity : AppCompatActivity() {
                 } catch (error: Exception) {
                     notifyBiometricError("Не удалось запустить биометрическую проверку.")
                 }
+            }
+        }
+
+        // ───── Выбор папки и файловые операции для warehouse.html ─────
+        @JavascriptInterface
+        fun pickFolder(requestId: String) {
+            runOnUiThread {
+                pendingFolderRequestId = requestId
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                    addFlags(
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                            Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+                    )
+                }
+                try {
+                    startActivityForResult(intent, FOLDER_PICKER_REQUEST_CODE)
+                } catch (e: Exception) {
+                    pendingFolderRequestId = null
+                    evaluateJavascript(
+                        "window.__onNativeFolderPicked && window.__onNativeFolderPicked(" +
+                            "${JSONObject.quote(requestId)},'','');"
+                    )
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun hasFolderPermission(treeUri: String, write: Boolean): Boolean {
+            return try {
+                val uri = Uri.parse(treeUri)
+                context.contentResolver.persistedUriPermissions.any {
+                    it.uri == uri && it.isReadPermission && (!write || it.isWritePermission)
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun listDir(treeUri: String, path: String): String? {
+            return try {
+                val tree = Uri.parse(treeUri)
+                val dir = resolveEntry(tree, path)
+                if (dir == null || !dir.isDir) return null
+                val array = JSONArray()
+                listChildren(tree, dir.id).forEach { array.put(entryJson(it)) }
+                array.toString()
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        @JavascriptInterface
+        fun statEntry(treeUri: String, path: String): String? {
+            return try {
+                resolveEntry(Uri.parse(treeUri), path)?.let { entryJson(it).toString() }
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        @JavascriptInterface
+        fun readChunk(treeUri: String, path: String, offset: Double, length: Int): String? {
+            return try {
+                val tree = Uri.parse(treeUri)
+                val entry = resolveEntry(tree, path)
+                if (entry == null || entry.isDir) return null
+                context.contentResolver.openInputStream(docUri(tree, entry.id))?.use { input ->
+                    val target = offset.toLong()
+                    var skipped = 0L
+                    while (skipped < target) {
+                        val n = input.skip(target - skipped)
+                        if (n <= 0) break
+                        skipped += n
+                    }
+                    val buffer = ByteArray(length)
+                    var read = 0
+                    while (read < length) {
+                        val n = input.read(buffer, read, length - read)
+                        if (n < 0) break
+                        read += n
+                    }
+                    Base64.encodeToString(buffer, 0, read, Base64.NO_WRAP)
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        @JavascriptInterface
+        fun writeChunk(
+            treeUri: String,
+            path: String,
+            base64: String,
+            append: Boolean,
+            mime: String
+        ): Boolean {
+            return try {
+                val tree = Uri.parse(treeUri)
+                val uri = ensureFile(tree, path, mime.ifBlank { "application/octet-stream" })
+                    ?: return false
+                val bytes = Base64.decode(base64, Base64.DEFAULT)
+                val stream = context.contentResolver.openOutputStream(uri, if (append) "wa" else "wt")
+                    ?: return false
+                stream.use { it.write(bytes) }
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun createFile(treeUri: String, path: String, mime: String): Boolean {
+            return try {
+                ensureFile(Uri.parse(treeUri), path, mime.ifBlank { "application/octet-stream" }) != null
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun mkdirs(treeUri: String, path: String): Boolean {
+            return try {
+                ensureDirs(Uri.parse(treeUri), splitPath(path)) != null
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun deleteEntry(treeUri: String, path: String): Boolean {
+            return try {
+                val tree = Uri.parse(treeUri)
+                val entry = resolveEntry(tree, path) ?: return false
+                DocumentsContract.deleteDocument(context.contentResolver, docUri(tree, entry.id))
+            } catch (e: Exception) {
+                false
             }
         }
 
