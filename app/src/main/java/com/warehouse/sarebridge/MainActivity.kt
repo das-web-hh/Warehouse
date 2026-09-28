@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingIntent: Intent? = null
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var pendingFolderRequestId: String? = null
+    private var printWebView: WebView? = null
 
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 51426
@@ -733,15 +734,25 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun printHtml(html: String) {
             runOnUiThread {
-                val printWebView = WebView(context)
-                printWebView.webViewClient = object : WebViewClient() {
+                val wv = WebView(this@MainActivity)
+                printWebView = wv // держим ссылку, иначе WebView может быть собран GC до конца печати
+                wv.settings.javaScriptEnabled = false
+                wv.webViewClient = object : WebViewClient() {
+                    private var started = false
                     override fun onPageFinished(view: WebView?, url: String?) {
-                        val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
-                        val adapter = view?.createPrintDocumentAdapter("Warehouse") ?: return
-                        printManager.print("Warehouse Document", adapter, PrintAttributes.Builder().build())
+                        if (started || view == null) return
+                        started = true
+                        val printManager =
+                            getSystemService(Context.PRINT_SERVICE) as PrintManager
+                        val adapter = view.createPrintDocumentAdapter("Warehouse")
+                        printManager.print(
+                            "Warehouse Document",
+                            adapter,
+                            PrintAttributes.Builder().build()
+                        )
                     }
                 }
-                printWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+                wv.loadDataWithBaseURL("https://localhost/", html, "text/html", "UTF-8", null)
             }
         }
     }
