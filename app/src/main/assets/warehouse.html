@@ -12461,6 +12461,14 @@ async function refreshAutoReceiveFiles(showNotice = true) {
 
 async function pickAutoReceiveFolder() {
   if (_folderApiUnsupported()) {
+    // В Android WebView (APK) нет showDirectoryPicker — открываем запасной выбор
+    // через <input webkitdirectory>, чтобы кнопка всё равно работала.
+    const fallbackInput = document.getElementById('autoReceiveFolderInput');
+    if (fallbackInput) {
+      fallbackInput.value = '';
+      fallbackInput.click();
+      return;
+    }
     showAlert('Выбор папки недоступен',
       'Откройте приложение в Chrome/Edge или установите его как PWA. ' +
       'После этого можно выбрать любую доступную папку, в том числе папку Google Drive, ' +
