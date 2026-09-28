@@ -2141,6 +2141,7 @@ body[data-theme="dark"] .python-settings-paths{border-color:rgba(255,255,255,.08
 .quick-action-icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;}
 .quick-action-icon svg{width:45px;height:45px;display:block;fill:none;stroke:currentColor;
   stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.quick-action-icon svg.neon-icon{width:48px;height:48px;overflow:visible;stroke-width:initial;}
 .quick-action-icon.featured-app-icon{width:72px;height:72px;}
 .quick-action-icon.featured-app-icon svg{width:68px;height:68px;}
 .task-cube-part{stroke:#55B985;}
@@ -2617,6 +2618,163 @@ body{overscroll-behavior:none;}
 .home-area,.home-screen-pages,.fullscreen-modal,.modal-scroll-body,
 .nr-body,.nr-list,.nr-report-list,.list-container{overscroll-behavior-y:none;}
 </style>
+<script>
+/* Android-мост для выбора папок (Storage Access Framework).
+   В WebView нет showDirectoryPicker, поэтому эмулируем FileSystemDirectoryHandle
+   поверх window.Android (см. MainActivity.kt). Остальной код работает без изменений. */
+(function () {
+  const bridge = window.Android;
+  if (!bridge || typeof bridge.pickFolder !== 'function') return;
+  if (typeof window.showDirectoryPicker === 'function') return;
+
+  const CHUNK = 2 * 1024 * 1024;
+  const MIME = {pdf:'application/pdf', json:'application/json', jpg:'image/jpeg', jpeg:'image/jpeg',
+    png:'image/png', webp:'image/webp', gif:'image/gif', xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    xls:'application/vnd.ms-excel', csv:'text/csv', txt:'text/plain', html:'text/html', zip:'application/zip'};
+  function mimeFor(name) {
+    const ext = String(name || '').split('.').pop().toLowerCase();
+    return MIME[ext] || 'application/octet-stream';
+  }
+  function join(base, name) { return base ? base + '/' + name : name; }
+  function err(name, msg) { return new DOMException(msg, name); }
+  function parse(json) { try { return json ? JSON.parse(json) : null; } catch (e) { return null; } }
+  function b64ToBytes(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function bytesToB64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+
+  class NativeWritable {
+    constructor(handle) { this._h = handle; this._chunks = []; }
+    async write(data) {
+      if (data && typeof data === 'object' && data.type === 'write') data = data.data;
+      this._chunks.push(data);
+    }
+    async close() {
+      const blob = new Blob(this._chunks);
+      const tree = this._h.__nativeTree, path = this._h.__nativePath;
+      const mime = mimeFor(this._h.name);
+      if (blob.size === 0) {
+        if (!bridge.writeChunk(tree, path, '', false, mime)) throw err('NotAllowedError', 'Не удалось записать файл');
+        return;
+      }
+      for (let offset = 0, first = true; offset < blob.size; offset += CHUNK, first = false) {
+        const bytes = new Uint8Array(await blob.slice(offset, offset + CHUNK).arrayBuffer());
+        if (!bridge.writeChunk(tree, path, bytesToB64(bytes), !first, mime)) {
+          throw err('NotAllowedError', 'Не удалось записать файл');
+        }
+      }
+    }
+    async abort() { this._chunks = []; }
+  }
+
+  class NativeFileHandle {
+    constructor(tree, path, name, meta) {
+      this.kind = 'file'; this.name = name;
+      this.__nativeTree = tree; this.__nativePath = path; this.__meta = meta || null;
+    }
+    async getFile() {
+      const st = parse(bridge.statEntry(this.__nativeTree, this.__nativePath));
+      if (!st || st.isDir) throw err('NotFoundError', 'Файл не найден: ' + this.name);
+      const parts = [];
+      for (let offset = 0; offset < st.size;) {
+        const b64 = bridge.readChunk(this.__nativeTree, this.__nativePath, offset, CHUNK);
+        if (!b64) break;
+        const bytes = b64ToBytes(b64);
+        if (!bytes.length) break;
+        parts.push(bytes);
+        offset += bytes.length;
+      }
+      const type = st.mime && st.mime !== 'application/octet-stream' ? st.mime : mimeFor(this.name);
+      return new File(parts, this.name, {type, lastModified: st.modified || Date.now()});
+    }
+    async createWritable() { return new NativeWritable(this); }
+  }
+
+  class NativeDirectoryHandle {
+    constructor(tree, path, name) {
+      this.kind = 'directory'; this.name = name;
+      this.__nativeTree = tree; this.__nativePath = path;
+    }
+    async queryPermission(opts) {
+      return bridge.hasFolderPermission(this.__nativeTree, Boolean(opts && opts.mode === 'readwrite')) ? 'granted' : 'denied';
+    }
+    async requestPermission(opts) { return this.queryPermission(opts); }
+    async *values() {
+      const list = parse(bridge.listDir(this.__nativeTree, this.__nativePath));
+      if (!list) throw err('NotAllowedError', 'Нет доступа к папке');
+      for (const item of list) {
+        const path = join(this.__nativePath, item.name);
+        yield item.isDir
+          ? new NativeDirectoryHandle(this.__nativeTree, path, item.name)
+          : new NativeFileHandle(this.__nativeTree, path, item.name, item);
+      }
+    }
+    async *entries() { for await (const h of this.values()) yield [h.name, h]; }
+    async *keys() { for await (const h of this.values()) yield h.name; }
+    async getDirectoryHandle(name, options) {
+      const path = join(this.__nativePath, name);
+      const st = parse(bridge.statEntry(this.__nativeTree, path));
+      if (!st) {
+        if (!(options && options.create)) throw err('NotFoundError', 'Папка не найдена: ' + name);
+        if (!bridge.mkdirs(this.__nativeTree, path)) throw err('NotAllowedError', 'Не удалось создать папку: ' + name);
+      } else if (!st.isDir) {
+        throw err('TypeMismatchError', name + ' — это файл');
+      }
+      return new NativeDirectoryHandle(this.__nativeTree, path, name);
+    }
+    async getFileHandle(name, options) {
+      const path = join(this.__nativePath, name);
+      const st = parse(bridge.statEntry(this.__nativeTree, path));
+      if (!st) {
+        if (!(options && options.create)) throw err('NotFoundError', 'Файл не найден: ' + name);
+        if (!bridge.createFile(this.__nativeTree, path, mimeFor(name))) throw err('NotAllowedError', 'Не удалось создать файл: ' + name);
+      } else if (st.isDir) {
+        throw err('TypeMismatchError', name + ' — это папка');
+      }
+      return new NativeFileHandle(this.__nativeTree, path, name, st);
+    }
+    async removeEntry(name) {
+      if (!bridge.deleteEntry(this.__nativeTree, join(this.__nativePath, name))) {
+        throw err('NotFoundError', 'Не удалось удалить: ' + name);
+      }
+    }
+  }
+
+  // Ручки, сохранённые в IndexedDB, возвращаются как простые объекты без методов.
+  window.__rehydrateNativeHandle = function (h) {
+    if (h && h.__nativeTree && h.kind === 'directory' && typeof h.getFileHandle !== 'function') {
+      return new NativeDirectoryHandle(h.__nativeTree, h.__nativePath || '', h.name);
+    }
+    return h;
+  };
+
+  const pending = new Map();
+  let seq = 0;
+  window.showDirectoryPicker = function () {
+    return new Promise((resolve, reject) => {
+      const id = 'pick' + (++seq) + '_' + Date.now();
+      pending.set(id, {resolve, reject});
+      try { bridge.pickFolder(id); } catch (e) { pending.delete(id); reject(e); }
+    });
+  };
+  window.__onNativeFolderPicked = function (id, tree, name) {
+    const p = pending.get(id);
+    if (!p) return;
+    pending.delete(id);
+    if (!tree) p.reject(err('AbortError', 'The user aborted a request.'));
+    else p.resolve(new NativeDirectoryHandle(tree, '', name || 'folder'));
+  };
+}());
+</script>
 </head>
 <body>
 
@@ -2688,7 +2846,6 @@ body{overscroll-behavior:none;}
           <line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/>
           <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
         </svg>
-          <span class="inventory-scan-label">Камера</span>
       </button>
     </div>
   </div>
@@ -2766,15 +2923,55 @@ body{overscroll-behavior:none;}
       <span class="quick-action-label">Импорт / Экспорт</span>
     </button>
     <button class="quick-action gray" onclick="openSettings()">
-      <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.6V20a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H6v-2.6h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V5h2.6v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.6h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg></span>
+      <span class="quick-action-icon"><svg class="gear-icon" xmlns="http://www.w3.org/2000/svg" viewBox="-1 -6 100 100" aria-hidden="true">
+        <path d="M 33.7,29.8 C 36,29.1 38,32.3 39.7,34.1 C 43.1,34.2 46.4,35.4 49.3,37.3 C 51.2,36 54.1,33.5 56.7,34.6 C 59.8,35.9 61,39.9 61.3,43 C 63.8,45.2 64.9,48.7 64.9,52.1 C 66.5,53.4 69.4,55.5 69.1,58.3 C 68.8,61.4 65,63.1 62.7,64.4 C 61.2,67.6 59,70.5 56,72.4 C 56,75 56.6,78.5 54.3,80.5 C 51.5,82.9 47.4,81.4 44.4,80.5 C 41.3,81.7 38,81.9 34.8,81 C 33,82.4 30,84.4 27.5,83.6 C 24.5,82.5 24.2,78.5 24.1,75.7 C 21.2,74.1 19.3,71.2 18,68.1 C 15.5,69 11.9,70.2 9.8,68.1 C 7.2,65.5 8.9,61.5 9.7,58.5 C 8.9,55 9.2,51.4 10.4,48.1 C 9.1,46.1 6.5,43.5 7.3,40.8 C 8.2,37.8 12.1,37.3 14.7,36.9 C 16.5,33.8 19.1,31.2 22.3,29.5 C 22.6,26.4 22.1,22.6 24.7,20.7 C 27.4,18.8 31.2,20.9 33.7,22.3 C 36.9,21.3 40.3,21.5 43.4,22.7 C 45,21.1 47.3,18.7 49.7,19.9 C 52.4,21.2 52.3,25.2 52.1,28 Z M 36,41 A 11,11 0 1,0 36,63 A 11,11 0 1,0 36,41 Z" fill="none" stroke="#808080" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M 68.5,12 C 70,11.5 71.3,13.6 72.4,14.8 C 74.6,14.9 76.8,15.7 78.7,17 C 80,16.1 81.9,14.5 83.6,15.2 C 85.7,16.1 86.5,18.7 86.7,20.8 C 88.4,22.3 89.1,24.6 89.1,26.9 C 90.2,27.8 92.1,29.2 91.9,31.1 C 91.7,33.2 89.2,34.3 87.6,35.2 C 86.6,37.3 85.1,39.2 83.1,40.5 C 83.1,42.2 83.5,44.5 82,45.8 C 80.1,47.4 77.4,46.4 75.4,45.8 C 73.3,46.6 71.1,46.7 69,46.1 C 67.8,47 65.8,48.4 64.1,47.8 C 62.1,47.1 61.9,44.4 61.8,42.6 C 59.9,41.5 58.6,39.6 57.7,37.5 C 56.1,38.1 53.7,38.9 52.3,37.5 C 50.6,35.8 51.7,33.1 52.2,31.1 C 51.7,28.8 51.9,26.4 52.7,24.2 C 51.8,22.9 50.1,21.1 50.6,19.3 C 51.2,17.3 53.8,17 55.5,16.7 C 56.7,14.7 58.4,12.9 60.5,11.8 C 60.7,9.7 60.4,7.2 62.1,5.9 C 63.9,4.6 66.4,6 68.1,7 C 70.2,6.3 72.5,6.4 74.6,7.2 C 75.7,6.1 77.2,4.5 78.8,5.3 C 80.6,6.2 80.5,8.8 80.4,10.7 Z M 70,19.5 A 7.3,7.3 0 1,0 70,34.1 A 7.3,7.3 0 1,0 70,19.5 Z" fill="none" stroke="#808080" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></span>
        <span class="quick-action-label">Настройки</span>
      </button>
      <button class="quick-action orange" onclick="openNameReceive()">
-       <span class="quick-action-icon"><span aria-hidden="true">📋</span></span>
+       <span class="quick-action-icon"><svg class="neon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+          <defs>
+            <filter id="neonGlowName" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.8"/></feComponentTransfer>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#neonGlowName)">
+            <path d="M32 4L10 15v20l22 11 22-11V15Z" fill="none" stroke="#B00FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 15L32 26l22-11M32 26v20" fill="none" stroke="#B00FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <g filter="url(#neonGlowName)">
+            <text x="32" y="48" fill="#FFFF00" stroke="none" font-family="Arial, sans-serif" font-size="15" font-weight="bold">A</text>
+            <text x="43" y="48" fill="#FFFF00" stroke="none" font-family="Arial, sans-serif" font-size="11" font-weight="bold">bc</text>
+          </g>
+        </svg></span>
        <span class="quick-action-label">Приём по имени</span>
      </button>
       <button class="quick-action red" onclick="openBwareReceive()">
-        <span class="quick-action-icon"><span aria-hidden="true">⚠️</span></span>
+        <span class="quick-action-icon"><svg class="neon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+          <defs>
+            <filter id="neonGlowBware" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.8" result="blur"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.8"/></feComponentTransfer>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#neonGlowBware)">
+            <path d="M26 4 L14 10 L24 16 L28 11 Z" fill="none" stroke="#B00FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M34 5 L48 11 L40 17 L31 12 Z" fill="none" stroke="#B00FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 18 L6 22 L14 24 Z" fill="none" stroke="#B00FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 24 L28 33 v18 L10 42 Z" fill="none" stroke="#B00FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 29 L20 36 L15 41" fill="none" stroke="#B00FFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M54 24 L36 33 v18 L54 42 Z" fill="none" stroke="#B00FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M50 29 L44 36 L48 41" fill="none" stroke="#B00FFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <g filter="url(#neonGlowBware)">
+            <text x="22" y="48" fill="#FFFF00" stroke="none" font-family="Arial, sans-serif" font-size="14" font-weight="bold">B</text>
+            <text x="32" y="48" fill="#FFFF00" stroke="none" font-family="Arial, sans-serif" font-size="10" font-weight="bold">-ware</text>
+          </g>
+        </svg></span>
         <span class="quick-action-label">Приём B-Ware</span>
       </button>
      <button class="quick-action blue" onclick="openLinkTool()">
@@ -4607,6 +4804,72 @@ body{overscroll-behavior:none;}
         </div>
         <div class="settings-item-arrow">›</div>
       </div>
+      <div class="settings-item" style="align-items:flex-start;">
+        <div class="settings-item-icon">⏱️</div>
+        <div style="flex:1">
+          <div class="settings-item-title">Время проверки папки автоприёма</div>
+          <div class="settings-item-sub" style="margin-bottom:8px;">Как часто приложение ищет новые файлы в выбранной папке</div>
+          <select class="feedback-settings-select" id="settingsAutoReceiveIntervalSelect"
+            onchange="setAutoReceiveCheckMinutes(this.value)">
+            <option value="1">Каждую минуту</option>
+            <option value="2">Каждые 2 минуты</option>
+            <option value="5">Каждые 5 минут</option>
+            <option value="10">Каждые 10 минут</option>
+            <option value="15">Каждые 15 минут</option>
+            <option value="30">Каждые 30 минут</option>
+            <option value="60">Каждый час</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-item" style="align-items:flex-start;">
+        <div class="settings-item-icon">⏳</div>
+        <div style="flex:1">
+          <div class="settings-item-title">Время ожидания ответа Gemini</div>
+          <div class="settings-item-sub" style="margin-bottom:8px;">Сколько ждать ответ на распознавание документа</div>
+          <select class="feedback-settings-select" id="settingsGeminiTimeoutSelect"
+            onchange="setGeminiSendSetting('timeout', this.value)">
+            <option value="30">30 секунд</option>
+            <option value="60">1 минута</option>
+            <option value="90">90 секунд</option>
+            <option value="120">2 минуты</option>
+            <option value="180">3 минуты</option>
+            <option value="300">5 минут</option>
+            <option value="600">10 минут</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-item" style="align-items:flex-start;">
+        <div class="settings-item-icon">⏸️</div>
+        <div style="flex:1">
+          <div class="settings-item-title">Пауза между отправками в Gemini</div>
+          <div class="settings-item-sub" style="margin-bottom:8px;">Через сколько отправлять следующий документ. Слишком короткая пауза может вызвать лимит Gemini</div>
+          <select class="feedback-settings-select" id="settingsGeminiPauseSelect"
+            onchange="setGeminiSendSetting('pause', this.value)">
+            <option value="10">10 секунд</option>
+            <option value="20">20 секунд</option>
+            <option value="30">30 секунд</option>
+            <option value="60">1 минута</option>
+            <option value="120">2 минуты</option>
+            <option value="180">3 минуты</option>
+            <option value="300">5 минут</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-item" style="align-items:flex-start;">
+        <div class="settings-item-icon">🔁</div>
+        <div style="flex:1">
+          <div class="settings-item-title">Количество попыток отправки в Gemini</div>
+          <div class="settings-item-sub" style="margin-bottom:8px;">Сколько раз повторять запрос при сбое сети или перегрузке сервера</div>
+          <select class="feedback-settings-select" id="settingsGeminiAttemptsSelect"
+            onchange="setGeminiSendSetting('attempts', this.value)">
+            <option value="1">1 (без повторов)</option>
+            <option value="2">2 попытки</option>
+            <option value="3">3 попытки</option>
+            <option value="4">4 попытки</option>
+            <option value="5">5 попыток</option>
+          </select>
+        </div>
+      </div>
       <div class="settings-item" onclick="showStorageInfo()">
         <div class="settings-item-icon">📊</div>
         <div style="flex:1">
@@ -5304,8 +5567,8 @@ async function _cleanupOldProductPhotos() {
       if (permitted && _photoDirHandle.values) {
         for await (const entry of _photoDirHandle.values()) {
           if (entry.kind !== 'file' || !/^batch_/i.test(entry.name)) continue;
-          const file = await entry.getFile();
-          if (file.lastModified && file.lastModified < cutoff.getTime()) {
+          const lastModified = entry.__meta ? entry.__meta.modified : (await entry.getFile()).lastModified;
+          if (lastModified && lastModified < cutoff.getTime()) {
             await _photoDirHandle.removeEntry(entry.name);
             deleted++;
           }
@@ -7352,9 +7615,47 @@ let _autoReceiveMonitorTimer = null;
 let _autoReceiveNextQueueAt = 0;
 let _autoReceiveConfigError = '';
 let _autoReceiveFolderScanRunning = false;
-// Проверяем выбранную папку раз в 15 минут. Внутри одной открытой вкладки
+// Время проверки папки задаётся в настройках (по умолчанию 15 минут). Внутри одной открытой вкладки
 // очередь всё равно продолжает обрабатывать уже найденные документы.
-const AUTO_RECEIVE_FOLDER_CHECK_INTERVAL_MS = 15 * 60 * 1000;
+const AUTO_RECEIVE_CHECK_INTERVAL_KEY = 'wh_auto_receive_check_minutes';
+const AUTO_RECEIVE_CHECK_OPTIONS = [1, 2, 5, 10, 15, 30, 60];
+const AUTO_RECEIVE_CHECK_DEFAULT_MINUTES = 15;
+
+function _autoReceiveCheckMinutes() {
+  let value = AUTO_RECEIVE_CHECK_DEFAULT_MINUTES;
+  try { value = Number(localStorage.getItem(AUTO_RECEIVE_CHECK_INTERVAL_KEY)); } catch (e) {}
+  return AUTO_RECEIVE_CHECK_OPTIONS.includes(value) ? value : AUTO_RECEIVE_CHECK_DEFAULT_MINUTES;
+}
+
+function _autoReceiveCheckIntervalMs() {
+  return _autoReceiveCheckMinutes() * 60 * 1000;
+}
+
+function _autoReceiveCheckLabel() {
+  const minutes = _autoReceiveCheckMinutes();
+  if (minutes === 1) return 'каждую минуту';
+  if (minutes === 60) return 'каждый час';
+  return `каждые ${minutes} мин`;
+}
+
+// Вызывается из настроек: сохраняет время проверки и перезапускает таймер.
+function setAutoReceiveCheckMinutes(value) {
+  const minutes = Number(value);
+  if (!AUTO_RECEIVE_CHECK_OPTIONS.includes(minutes)) return;
+  try { localStorage.setItem(AUTO_RECEIVE_CHECK_INTERVAL_KEY, String(minutes)); } catch (e) {}
+  if (_autoReceiveMonitorTimer) {
+    clearInterval(_autoReceiveMonitorTimer);
+    _autoReceiveMonitorTimer = null;
+  }
+  _startAutoReceiveMonitor();
+  try { updateFolderSubtitles(); } catch (e) {}
+  try { _setAutoReceiveNotice(`Проверка папки: ${_autoReceiveCheckLabel()}`); } catch (e) {}
+}
+
+function syncAutoReceiveCheckSelect() {
+  const select = document.getElementById('settingsAutoReceiveIntervalSelect');
+  if (select) select.value = String(_autoReceiveCheckMinutes());
+}
 
 function _autoReceiveCurrentFolderName() {
   return _autoReceiveDirHandle?.name || _autoReceiveFolderNameStored || '';
@@ -8063,7 +8364,7 @@ async function _runAutoReceiveQueueOnce() {
       file,
       prompt,
       requestSettings,
-      GEMINI_RESPONSE_TIMEOUT_MS
+      _geminiResponseTimeoutMs()
     );
     const savedBatch = await _saveAutoReceiveBatch(record, file, responseText);
     _appendGeminiChatMessage('assistant', responseText, [], {
@@ -8083,8 +8384,8 @@ async function _runAutoReceiveQueueOnce() {
     });
     // Между файлами всегда выдерживаем одну минуту. Это не даёт Gemini
     // получить второй PDF до завершения первого и успокаивает rate limit.
-    _autoReceiveNextQueueAt = Date.now() + GEMINI_AUTO_RECEIVE_BASE_DELAY_MS;
-    _scheduleAutoReceiveQueue(GEMINI_AUTO_RECEIVE_BASE_DELAY_MS);
+    _autoReceiveNextQueueAt = Date.now() + _geminiPauseMs();
+    _scheduleAutoReceiveQueue(_geminiPauseMs());
   } catch (error) {
     _appendGeminiChatMessage('assistant', _geminiFrontendErrorMessage(error), [], {
       keyLabel: `Ключ ${selectedKey.index + 1}`
@@ -8115,7 +8416,7 @@ async function _runAutoReceiveQueueOnce() {
         attempts: attempt,
         quotaRetry: false,
         nextAttemptAt: 0,
-        lastError: 'Gemini не ответил за 5 минут. Автоматический повтор отключён.'
+        lastError: `Gemini не ответил за ${_formatGeminiWait(_geminiResponseTimeoutMs())}. Автоматический повтор отключён.`
       });
     } else if (status === 400 || status === 401 || status === 403 || status === 404) {
       _setAutoReceiveRecord(record._key, {
@@ -8153,7 +8454,7 @@ function _startAutoReceiveMonitor() {
   if (!_autoReceiveMonitorTimer) {
     _autoReceiveMonitorTimer = setInterval(
       _autoReceiveMonitorTick,
-      AUTO_RECEIVE_FOLDER_CHECK_INTERVAL_MS
+      _autoReceiveCheckIntervalMs()
     );
   }
   _runAutoReceiveQueue();
@@ -8534,24 +8835,69 @@ const GEMINI_ALLOWED_MODELS = new Set([
   'gemini-3.6-flash'
 ]);
 const GEMINI_MAX_INLINE_BYTES = 8 * 1024 * 1024;
-const GEMINI_REQUEST_INTERVAL_MS = 60 * 1000;
+const GEMINI_REQUEST_INTERVAL_DEFAULT_MS = 60 * 1000;
 // Автоприём документов работает отдельной очередью. Между файлами и
 // повторными попытками выдерживаем минуту, чтобы не отправлять следующий
 // документ до завершения предыдущего и не попадать под блокировку Gemini.
-const GEMINI_AUTO_RECEIVE_BASE_DELAY_MS = 60 * 1000;
+const GEMINI_AUTO_RECEIVE_BASE_DELAY_DEFAULT_MS = 60 * 1000;
 const GEMINI_AUTO_RECEIVE_LONG_PAUSE_MS = 60 * 1000;
 const GEMINI_AUTO_RECEIVE_MAX_BACKOFF_MS = 30 * 60 * 1000;
-const GEMINI_RESPONSE_TIMEOUT_MS = 90 * 1000;
+const GEMINI_RESPONSE_TIMEOUT_DEFAULT_MS = 90 * 1000;
 const GEMINI_AUTO_INSTRUCTION_DATE_KEY = 'bi_gemini_auto_instruction_date';
 // API-level retries are deliberately short and bounded. The auto-receive
 // queue applies its own longer delay between files, while this retry handles
 // transient 429/503/timeout responses without leaving the current file stuck.
-const GEMINI_RETRY_MAX_ATTEMPTS = 3;
+const GEMINI_RETRY_MAX_ATTEMPTS_DEFAULT = 3;
 const GEMINI_RETRY_BASE_DELAY_MS = 15 * 1000;
 const GEMINI_RETRY_MAX_DELAY_MS = 15 * 1000;
 const GEMINI_429_RETRY_DELAY_MS = 30 * 1000;
 const GEMINI_429_RETRY_MESSAGE = 'Google API перегружен. Автоматический повтор через 30 секунд...';
 let _geminiRequestNextAt = 0;
+
+// Настройки отправки в Gemini (окно «Настройки»): время ожидания ответа,
+// пауза между отправками и число попыток. Хранятся на устройстве.
+const GEMINI_SEND_SETTINGS = {
+  timeout:  {key: 'wh_gemini_timeout_sec',  options: [30, 60, 90, 120, 180, 300, 600], fallback: GEMINI_RESPONSE_TIMEOUT_DEFAULT_MS / 1000,      selectId: 'settingsGeminiTimeoutSelect'},
+  pause:    {key: 'wh_gemini_pause_sec',    options: [10, 20, 30, 60, 120, 180, 300],   fallback: GEMINI_REQUEST_INTERVAL_DEFAULT_MS / 1000,      selectId: 'settingsGeminiPauseSelect'},
+  attempts: {key: 'wh_gemini_max_attempts', options: [1, 2, 3, 4, 5],                   fallback: GEMINI_RETRY_MAX_ATTEMPTS_DEFAULT,              selectId: 'settingsGeminiAttemptsSelect'}
+};
+
+function _readGeminiSendSetting(name) {
+  const cfg = GEMINI_SEND_SETTINGS[name];
+  let value = cfg.fallback;
+  try {
+    const raw = localStorage.getItem(cfg.key);
+    if (raw !== null) value = Number(raw);
+  } catch (e) {}
+  return cfg.options.includes(value) ? value : cfg.fallback;
+}
+
+function _geminiResponseTimeoutMs() { return _readGeminiSendSetting('timeout') * 1000; }
+function _geminiPauseMs() { return _readGeminiSendSetting('pause') * 1000; }
+function _geminiMaxAttempts() { return _readGeminiSendSetting('attempts'); }
+
+function setGeminiSendSetting(name, value) {
+  const cfg = GEMINI_SEND_SETTINGS[name];
+  const number = Number(value);
+  if (!cfg || !cfg.options.includes(number)) return;
+  try { localStorage.setItem(cfg.key, String(number)); } catch (e) {}
+  if (name === 'pause') {
+    // Новая пауза применяется сразу: не ждём старую, более длинную.
+    const limit = Date.now() + _geminiPauseMs();
+    if (_geminiRequestNextAt > limit) _geminiRequestNextAt = limit;
+    if (_autoReceiveNextQueueAt > limit) {
+      _autoReceiveNextQueueAt = limit;
+      if (_autoReceiveQueueTimer) _scheduleAutoReceiveQueue(_geminiPauseMs());
+    }
+  }
+}
+
+function syncGeminiSendSelects() {
+  Object.keys(GEMINI_SEND_SETTINGS).forEach(name => {
+    const select = document.getElementById(GEMINI_SEND_SETTINGS[name].selectId);
+    if (select) select.value = String(_readGeminiSendSetting(name));
+  });
+}
 let _geminiRequestQueue = Promise.resolve();
 
 function _normalizeGeminiModel(model) {
@@ -8639,7 +8985,7 @@ function _createGeminiHttpError(data, response) {
     || /quota|rate.?limit|exceeded.*limit|limit.*exceeded/i.test(rawMessage);
   const message = isQuotaError
     ? `Лимит Gemini исчерпан. Следующая попытка будет не раньше чем через ${
-        _formatGeminiWait(Math.max(GEMINI_REQUEST_INTERVAL_MS, retryAfterMs || GEMINI_REQUEST_INTERVAL_MS))
+        _formatGeminiWait(Math.max(_geminiPauseMs(), retryAfterMs || _geminiPauseMs()))
       }.`
     : rawMessage;
   const error = new Error(message);
@@ -8709,7 +9055,7 @@ async function _handleGeminiRetry(waitMs, attempt, error) {
 
 async function _withGeminiRetry(task, onRetry) {
   let attempt = 0;
-  while (attempt < GEMINI_RETRY_MAX_ATTEMPTS) {
+  while (attempt < _geminiMaxAttempts()) {
     attempt++;
     try {
       return await task();
@@ -8720,7 +9066,7 @@ async function _withGeminiRetry(task, onRetry) {
       if (status === 400 || status === 401 || status === 403 || status === 404 || status === 429) {
         throw error;
       }
-      if (!_isGeminiRetryableError(error) || attempt >= GEMINI_RETRY_MAX_ATTEMPTS) {
+      if (!_isGeminiRetryableError(error) || attempt >= _geminiMaxAttempts()) {
         throw error;
       }
       const exponentialMs = GEMINI_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
@@ -8737,7 +9083,7 @@ async function _withGeminiRetry(task, onRetry) {
   throw new Error('Gemini не ответил после повторных попыток.');
 }
 
-function _enqueueGeminiRequest(task, onWait, intervalMs = GEMINI_REQUEST_INTERVAL_MS) {
+function _enqueueGeminiRequest(task, onWait, intervalMs = _geminiPauseMs()) {
   const run = _geminiRequestQueue.then(async () => {
     const waitMs = Math.max(0, _geminiRequestNextAt - Date.now());
     if (waitMs > 0) {
@@ -8751,7 +9097,7 @@ function _enqueueGeminiRequest(task, onWait, intervalMs = GEMINI_REQUEST_INTERVA
   return run;
 }
 
-async function _fetchGeminiJsonWithResponse(url, options, timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS) {
+async function _fetchGeminiJsonWithResponse(url, options, timeoutMs = _geminiResponseTimeoutMs()) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let abortedWhenOffline = false;
@@ -8794,7 +9140,7 @@ async function _fetchGeminiJsonWithResponse(url, options, timeoutMs = GEMINI_RES
   }
 }
 
-async function _fetchGeminiJson(url, options, timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS) {
+async function _fetchGeminiJson(url, options, timeoutMs = _geminiResponseTimeoutMs()) {
   const result = await _fetchGeminiJsonWithResponse(url, options, timeoutMs);
   return result.data;
 }
@@ -8812,7 +9158,7 @@ async function _processInvoiceThroughPython(
   file,
   settings,
   onStatus,
-  timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS
+  timeoutMs = _geminiResponseTimeoutMs()
 ) {
   if (!file) throw new Error('Файл накладной не выбран.');
   if (!settings?.apiKey) throw new Error('Сначала укажите API-ключ Gemini в настройках.');
@@ -8932,7 +9278,7 @@ async function _processInvoiceViaPreparedPages(
   file,
   settings,
   onStatus,
-  timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS
+  timeoutMs = _geminiResponseTimeoutMs()
 ) {
   if (!file) throw new Error('Файл накладной не выбран.');
   if (!settings?.apiKey) throw new Error('Сначала укажите API-ключ Gemini в настройках.');
@@ -9032,7 +9378,7 @@ async function _requestGeminiAutoReceiveFile(
   file,
   _prompt,
   settings,
-  timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS
+  timeoutMs = _geminiResponseTimeoutMs()
 ) {
   // Автоприём больше не отправляет PDF напрямую в Gemini из браузера.
   // Python сначала рендерит страницы, сжимает их и последовательно
@@ -9073,7 +9419,7 @@ function _geminiFrontendErrorMessage(error) {
   return `Не удалось получить ответ Gemini: ${error?.message || 'проверьте ключ и соединение.'}`;
 }
 
-async function _requestGeminiChat(text, files, settings, timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS, options = {}) {
+async function _requestGeminiChat(text, files, settings, timeoutMs = _geminiResponseTimeoutMs(), options = {}) {
   const parts = [];
   try {
     if (text) parts.push({ text });
@@ -9183,7 +9529,7 @@ async function _requestGeminiChat(text, files, settings, timeoutMs = GEMINI_RESP
 // non-streaming JSON response because it must be parsed and committed as one
 // atomic document operation.
 async function _requestGeminiChatStream(text, files, settings, onDelta,
-                                        timeoutMs = GEMINI_RESPONSE_TIMEOUT_MS,
+                                        timeoutMs = _geminiResponseTimeoutMs(),
                                         includeHistory = false) {
   const parts = [];
   if (text) parts.push({ text });
@@ -9352,7 +9698,7 @@ async function sendGeminiChatMessage() {
         typingBubble.textContent = streamedText;
       }
       _scrollGeminiChatToBottom();
-    }, GEMINI_RESPONSE_TIMEOUT_MS, includeHistory);
+    }, _geminiResponseTimeoutMs(), includeHistory);
     _removeGeminiChatTyping();
     _appendGeminiChatMessage('assistant', responseText, [], {
       keyLabel: `Ключ ${selectedKey.index + 1}`
@@ -9404,7 +9750,7 @@ async function sendGeminiChatMessageWithData(text, files, includeHistory = false
       ...getGeminiSettings(),
       apiKey: selectedKey.apiKey,
       keyId: selectedKey.id
-    }, GEMINI_RESPONSE_TIMEOUT_MS, {
+    }, _geminiResponseTimeoutMs(), {
       includeHistory
     });
     _removeGeminiChatTyping();
@@ -9704,6 +10050,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function openSettings() {
   applyTranslations();
+  syncAutoReceiveCheckSelect();
+  syncGeminiSendSelects();
   updateVirtualKeyboardSetting();
   loadInventoryData();
   _inventoryRefreshCleanupOptions();
@@ -12150,6 +12498,11 @@ async function _ensurePermission(handle, mode) {
   return false;
 }
 
+function _rehydrateFolderHandle(handle) {
+  return (handle && typeof window.__rehydrateNativeHandle === 'function')
+    ? window.__rehydrateNativeHandle(handle) : handle;
+}
+
 // Восстановить ранее выбранные дескрипторы (на этом же устройстве)
 async function restoreUserFolders() {
   try {
@@ -12177,16 +12530,16 @@ async function restoreUserFolders() {
       req.onerror = () => res(null);
     });
     let autoReceivePermissionGranted = !arh;
-    if (ph && ph.kind === 'directory') { _photoDirHandle = ph; await _ensurePermission(_photoDirHandle, 'readwrite'); }
-    if (ih && ih.kind === 'directory') { _invoiceDirHandle = ih; await _ensurePermission(_invoiceDirHandle, 'readwrite'); }
+    if (ph && ph.kind === 'directory') { _photoDirHandle = _rehydrateFolderHandle(ph); await _ensurePermission(_photoDirHandle, 'readwrite'); }
+    if (ih && ih.kind === 'directory') { _invoiceDirHandle = _rehydrateFolderHandle(ih); await _ensurePermission(_invoiceDirHandle, 'readwrite'); }
     if (phj && phj.kind === 'directory') {
-      _projectDirHandle = phj;
+      _projectDirHandle = _rehydrateFolderHandle(phj);
       // Project folders are no longer a database source. The catalog and
       // history now come from the Firebase/local-first sync layer.
       await _ensurePermission(_projectDirHandle, 'readwrite');
     }
     if (arh && arh.kind === 'directory') {
-      _autoReceiveDirHandle = arh;
+      _autoReceiveDirHandle = _rehydrateFolderHandle(arh);
       const savedMeta = await idbLoad(AUTO_RECEIVE_META_KEY);
       if (savedMeta && savedMeta.folderName) {
         _autoReceiveFolderNameStored = savedMeta.folderName;
@@ -12243,7 +12596,7 @@ function updateFolderSubtitles() {
     ? '✅ Накладные пишутся ТОЛЬКО в storage/emulated/0/warehouse/invoices/'
     : (unsupported ? '⚠️ Откройте приложение в Chrome/Edge или как PWA и выберите папку warehouse' : 'Сначала выберите папку warehouse');
   if (autoSub) autoSub.textContent = _autoReceiveDirHandle
-    ? `✅ Папка автоприёма: «${_autoReceiveDirHandle.name}» — ${_autoReceiveFiles.length} файлов · проверка каждые 15 минут`
+    ? `✅ Папка автоприёма: «${_autoReceiveDirHandle.name}» — ${_autoReceiveFiles.length} файлов · проверка ${_autoReceiveCheckLabel()}`
     : (_autoReceiveFiles.length ? `📁 Сохранённая папка: ${_autoReceiveFiles.length} файлов — выберите её снова для обновления` : 'Нажмите, чтобы выбрать любую папку для входящих файлов');
 }
 
@@ -12283,6 +12636,17 @@ async function _readAutoReceiveDirectory(dirHandle, parentPath = '') {
   for await (const entry of dirHandle.values()) {
     const path = parentPath ? `${parentPath}/${entry.name}` : entry.name;
     if (entry.kind === 'file') {
+      if (entry.__meta) {
+        // Android-мост: размер и дата уже пришли в списке, содержимое не читаем.
+        result.push({
+          name: entry.name,
+          path,
+          size: entry.__meta.size || 0,
+          modified: entry.__meta.modified || Date.now(),
+          type: entry.__meta.mime || ''
+        });
+        continue;
+      }
       try {
         const file = await entry.getFile();
         result.push({
@@ -12494,7 +12858,7 @@ async function pickAutoReceiveFolder() {
     await refreshAutoReceiveFiles(false);
     updateFolderSubtitles();
     _renderAutoReceiveFiles();
-    _setAutoReceiveNotice(`Папка подключена · найдено файлов: ${_autoReceiveFiles.length} · проверка каждые 15 минут`);
+    _setAutoReceiveNotice(`Папка подключена · найдено файлов: ${_autoReceiveFiles.length} · проверка ${_autoReceiveCheckLabel()}`);
     _startAutoReceiveMonitor();
   } catch (err) {
     if (err?.name !== 'AbortError') {
@@ -21454,7 +21818,7 @@ document.addEventListener('DOMContentLoaded', function () {
               }
             })
           },
-          GEMINI_RESPONSE_TIMEOUT_MS
+          _geminiResponseTimeoutMs()
         ),
         _handleGeminiRetry
       ),
@@ -22256,7 +22620,7 @@ ${lines}
     try {
       const responseText = await _requestGeminiChat(
         buildPrompt(sender, order, date), [], settings,
-        typeof GEMINI_RESPONSE_TIMEOUT_MS === 'number' ? GEMINI_RESPONSE_TIMEOUT_MS : 120000,
+        typeof _geminiResponseTimeoutMs() === 'number' ? _geminiResponseTimeoutMs() : 120000,
         {includeHistory: false}
       );
       // Gemini получает строгий HTML-промпт, но печатный шаблон собирается
