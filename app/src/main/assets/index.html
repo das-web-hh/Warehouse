@@ -370,6 +370,7 @@ window.onNativeBiometricCredentials = function (username, password) {
   if (email) email.value = String(username || '');
   if (pass) pass.value = String(password || '');
   if (remember) remember.checked = true;
+  biometricAutoAttempt = false;
   handleLogin({preventDefault() {}});
 };
 
@@ -379,10 +380,44 @@ window.onNativeBiometricError = function (message) {
     button.disabled = false;
     button.textContent = '🔐 Войти по отпечатку / лицу';
   }
-  if (message) showToast(message, true);
+  // Если пользователь сам отменил автоматический запрос — ошибку не показываем,
+  // просто даём ввести логин и пароль вручную.
+  const silent = biometricAutoAttempt;
+  biometricAutoAttempt = false;
+  if (message && !silent) showToast(message, true);
+  const email = document.getElementById('loginEmail');
+  const pass = document.getElementById('loginPassword');
+  try { (email && !email.value ? email : pass)?.focus(); } catch (e) {}
 };
 
-window.addEventListener('load', updateNativeLoginControls);
+// Биометрия запускается автоматически при открытии страницы входа.
+let biometricAutoStarted = false;
+let biometricAutoAttempt = false;
+const SKIP_BIOMETRIC_ONCE_KEY = 'wh_skip_biometric_once';
+
+function autoStartBiometricLogin() {
+  if (biometricAutoStarted) return;
+  biometricAutoStarted = true;
+
+  // После явного выхода из профиля биометрию сама не запускаем,
+  // иначе пользователь сразу войдёт обратно.
+  let skip = false;
+  try {
+    skip = sessionStorage.getItem(SKIP_BIOMETRIC_ONCE_KEY) === '1';
+    sessionStorage.removeItem(SKIP_BIOMETRIC_ONCE_KEY);
+  } catch (e) {}
+  if (skip) return;
+
+  const button = document.getElementById('biometricLoginButton');
+  if (!button || !button.classList.contains('visible')) return;
+  biometricAutoAttempt = true;
+  setTimeout(requestNativeBiometricLogin, 300);
+}
+
+window.addEventListener('load', () => {
+  updateNativeLoginControls();
+  autoStartBiometricLogin();
+});
 
 function switchMode(mode) {
   document.getElementById('loginForm').style.display = 'none';
@@ -461,26 +496,26 @@ function handleLogin(event) {
           localStorage.setItem('wh_is_admin', 'true');
           localStorage.setItem('wh_is_observer', 'false');
           showToast('Вход выполнен! Переход в панель администратора...');
-          setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+          setTimeout(() => { window.location.replace('admin.html'); }, 1000);
         } else if (isObserver) {
           localStorage.setItem('wh_is_admin', 'false');
           localStorage.setItem('wh_is_observer', 'true');
           showToast('Вход выполнен! Открывается режим наблюдателя...');
-          setTimeout(() => { window.location.href = 'observer.html'; }, 1000);
+          setTimeout(() => { window.location.replace('observer.html'); }, 1000);
         } else {
           localStorage.setItem('wh_is_admin', 'false');
           localStorage.setItem('wh_is_observer', 'false');
           showToast('Успешный вход! Перенаправление...');
-          setTimeout(() => { window.location.href = 'warehouse.html'; }, 1000);
+          setTimeout(() => { window.location.replace('warehouse.html'); }, 1000);
         }
       }).catch(() => {
         if (emailInput === ADMIN_EMAIL) {
           localStorage.setItem('wh_is_admin', 'true');
           localStorage.setItem('wh_is_observer', 'false');
-          window.location.href = 'admin.html';
+          window.location.replace('admin.html');
         } else {
           localStorage.setItem('wh_is_observer', 'false');
-          window.location.href = 'warehouse.html';
+          window.location.replace('warehouse.html');
         }
       });
     })
@@ -578,9 +613,9 @@ async function completeRegistration(event) {
     localStorage.setItem('wh_is_admin', 'false');
     localStorage.setItem('wh_is_observer', accountRole === 'observer' ? 'true' : 'false');
     setTimeout(() => {
-      window.location.href = accountRole === 'observer'
+      window.location.replace(accountRole === 'observer'
         ? 'observer.html'
-        : 'warehouse.html';
+        : 'warehouse.html');
     }, 1000);
 
   } catch (error) {

@@ -13208,7 +13208,7 @@ function logoutUser() {
   if (typeof window.__warehouseLogout === 'function') {
     window.__warehouseLogout();
   } else {
-    window.location.href = 'index.html';
+    window.location.replace('index.html');
   }
 }
 
@@ -19765,7 +19765,7 @@ document.addEventListener('DOMContentLoaded', function () {
       _wh_stopUserWarehouseListener();
       activeUserId = "";
       userWarehouseDocument = null;
-      window.location.href = 'index.html';
+      window.location.replace('index.html');
       return;
     }
     warehouseAuthReady = true;
@@ -19849,7 +19849,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   window.__warehouseLogout = function () {
     _wh_stopTasksListener();
-    signOut(auth).finally(() => { window.location.href = 'index.html'; });
+    try { sessionStorage.setItem('wh_skip_biometric_once', '1'); } catch (e) {}
+    signOut(auth).finally(() => { window.location.replace('index.html'); });
   };
 
   window.__warehouseUpdateTask = async function (taskId, updates) {
@@ -22276,17 +22277,30 @@ ${lines}
 }());
 </script>
 <script>
-/* Запрещаем вертикальный pull-to-refresh/свайп вниз вне прокручиваемых списков. */
+/* Блокируем pull-to-refresh, но не мешаем прокрутке списков вверх.
+   Свайп вниз блокируется только если под пальцем нет ничего, что можно
+   прокрутить вверх (scrollTop > 0). */
 (function () {
-  let startY = 0;
-  const scrollableSelector = '.nr-list,.nr-report-list,.bware-list,.modal-scroll-body,.list-container,.home-screen-pages';
+  let lastY = 0;
+  function canScrollUp(el) {
+    while (el && el.nodeType === 1 && el !== document.documentElement) {
+      const overflowY = getComputedStyle(el).overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay')
+          && el.scrollHeight > el.clientHeight && el.scrollTop > 0) return true;
+      el = el.parentElement;
+    }
+    const root = document.scrollingElement || document.documentElement;
+    return (root ? root.scrollTop : 0) > 0;
+  }
   document.addEventListener('touchstart', event => {
-    if (event.touches[0]) startY = event.touches[0].clientY;
+    if (event.touches[0]) lastY = event.touches[0].clientY;
   }, {passive:true});
   document.addEventListener('touchmove', event => {
     if (!event.touches[0]) return;
-    const deltaY = event.touches[0].clientY - startY;
-    if (deltaY > 8 && !event.target.closest(scrollableSelector)) event.preventDefault();
+    const y = event.touches[0].clientY;
+    const movingDown = y > lastY;
+    lastY = y;
+    if (movingDown && !canScrollUp(event.target)) event.preventDefault();
   }, {passive:false});
 }());
 </script>
