@@ -2324,7 +2324,7 @@ body.virtual-keyboard-disabled .fixed-bottom-card{
 }
 
 /* ── NAME RECEIVING (Web7, integrated into Warehouse) ── */
-.name-receive-modal{background:#0b1622;color:#f3f6f8;}
+.name-receive-modal{background:#0b1622;color:#f3f6f8;box-sizing:border-box;}
 .name-receive-modal.open{transform:translateX(0);}
 .name-receive-modal .nr-header{display:flex;align-items:center;gap:8px;flex-shrink:0;
   min-height:54px;padding:max(6px,env(safe-area-inset-top,6px)) 12px 6px;
@@ -2612,6 +2612,122 @@ body[data-theme="dark"] .share-route-subtitle{color:rgba(255,255,255,.65);}
 .nr-print-option{width:100%;margin-top:8px;padding:11px;border:0;border-radius:9px;background:#1a2f4a;color:#fff;
   font:inherit;font-size:12px;font-weight:800;text-align:left;cursor:pointer;}
 body[data-theme="dark"] .name-receive-modal{background:var(--md-surface);}
+
+/* ── Приём по имени: отступы между кнопками ── */
+.nr-start{gap:12px;}
+.nr-start>*{flex-shrink:0;}
+.nr-start .nr-main-btn,.nr-start .nr-camera-btn,.nr-start .nr-snapshot2-btn,.nr-start .nr-snapshot2-next{margin:0;}
+.nr-start-title{margin-bottom:0;}
+.nr-start-subtitle{margin-bottom:6px;}
+.nr-start .nr-status{margin-top:0;}
+.nr-start .nr-registry{margin-top:10px;}
+.nr-report-buttons{flex-wrap:wrap;}
+.nr-dialog-actions{gap:10px;}
+/* ── Приём по имени: светлая тема (тёмная — базовые стили выше) ── */
+body:not([data-theme="dark"]) .name-receive-modal{background:#eef2f7;color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-body{background:#eef2f7;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-start-title{color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-start-subtitle{color:#64748b;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-receive-progress{background:#e2e8f0;border-bottom-color:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-receive-progress-track{background:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-receive-progress-meta{color:#475569;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-info{background:#e2e8f0;color:#334155;border-bottom-color:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-search{background:#e8eef6;border-bottom-color:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-search input{background:#fff;color:#172b4d;border-color:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-search input::placeholder{color:#94a3b8;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-snapshot2-progress{background:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-snapshot2-progress-label{background:#e8eef6;color:#64748b;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-swipe-wrap{border-bottom-color:#dbe3ee;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-row{background:#fff;color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-row.zebra{background:#f1f5f9;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-row.green{color:#fff;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-row.yellow{color:#fff;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-plan{color:#64748b;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-row.green .nr-plan{color:rgba(255,255,255,.85);}
+body:not([data-theme="dark"]) .name-receive-modal .nr-row.yellow .nr-plan{color:rgba(255,255,255,.85);}
+body:not([data-theme="dark"]) .name-receive-modal .nr-qty-btn{background:#fff;color:#1c7ed6;border-color:#93c5fd;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-title{color:#334155;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-empty{border-color:#cbd5e1;color:#94a3b8;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-card{background:#fff;color:#172b4d;border-color:#dbe3ee;box-shadow:0 3px 10px rgba(15,23,42,.08);}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-card:active{background:#f1f5f9;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-order{color:#1c7ed6;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-meta{color:#64748b;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-status{background:#fff3bf;color:#a16207;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-status.complete{background:#d3f9d8;color:#2b8a3e;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-registry-count{background:#dbeafe;color:#1c7ed6;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-status{color:#a16207;background:#fff3bf;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-status.ok{color:#2b8a3e;background:#d3f9d8;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-status.error{color:#c92a2a;background:#ffe3e3;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-status.loading{color:#1864ab;background:#dbeafe;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-toolbar{background:#e8eef6;border-bottom-color:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-toolbar button{background:#cbd5e1;color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-toolbar button.primary{background:#2b8a3e;color:#fff;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-toolbar button.active{background:#1c7ed6;color:#fff;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-summary{color:#64748b;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-row{background:#fff;color:#172b4d;border-bottom-color:#dbe3ee;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-row:nth-child(even){background:#f1f5f9;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-report-values{color:#1c7ed6;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-pages{background:#eef2f7;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-page{background:#fff;border-color:#dbe3ee;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-page-title{background:#e2e8f0;color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-table{color:#334155;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-table th{color:#64748b;background:#f1f5f9;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-table th,body:not([data-theme="dark"]) .name-receive-modal .nr-delivery-table td{border-bottom-color:#e2e8f0;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-footer-note{color:#94a3b8;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-dialog{background:#fff;box-shadow:0 16px 50px rgba(15,23,42,.3);}
+body:not([data-theme="dark"]) .name-receive-modal .nr-dialog h3{color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-dialog p{color:#475569;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-dialog input{background:#f1f5f9;color:#172b4d;border-color:#cbd5e1;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-cancel{background:#e2e8f0;color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-print-option{background:#e2e8f0;color:#172b4d;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-wheel-item{color:#334155;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-wheel-item.active{color:#1c7ed6;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-wheel-selection{background:rgba(28,126,214,.12);}
+/* ── Циклический список-«барабан» ── */
+.nr-list.nr-carousel{position:relative;overflow:hidden;touch-action:none;}
+.nr-carousel .nr-swipe-wrap{position:absolute;left:0;right:0;box-sizing:border-box;will-change:top,height;}
+.nr-carousel .nr-row{height:100%;min-height:0;box-sizing:border-box;padding-top:2px;padding-bottom:2px;touch-action:none;}
+.nr-carousel .nr-product{flex:1;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;}
+.nr-carousel .nr-product-name{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:var(--nr-lines,2);overflow:hidden;font-size:calc(13px*var(--nr-s,1));line-height:1.25;}
+.nr-carousel .nr-plan{font-size:calc(10px*var(--nr-s,1));}
+.nr-carousel .nr-swipe-wrap.nr-tiny .nr-plan{display:none;}
+.nr-carousel .nr-qty-btn{font-size:calc(14px*var(--nr-s,1));min-width:calc(46px*var(--nr-s,1));
+  padding:calc(5px*var(--nr-s,1)) 9px;line-height:1.1;}
+.nr-carousel .nr-swipe-wrap.nr-focus .nr-product-name{font-weight:800;}
+/* ── Данные накладной в шапке ── */
+.nr-header h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nr-header-meta{display:none;flex:0 0 auto;text-align:right;font-size:12px;line-height:1.3;font-weight:800;
+  color:rgba(255,255,255,.9);white-space:nowrap;}
+.nr-header-meta.on{display:grid;}
+.nr-hm{grid-area:1/1;justify-self:end;opacity:0;transform:translateY(-5px);transition:opacity .4s ease,transform .4s ease;}
+.nr-hm.show{opacity:1;transform:none;}
+#nrHmPct{color:#69db7c;}
+.nr-info{display:none!important;}
+.nr-receive-progress-meta{display:none!important;}
+.nr-carousel .nr-swipe-wrap{background:transparent;border-bottom:0;
+  transition:top .09s ease-out,height .09s ease-out;}
+.nr-slot{position:absolute;left:0;right:0;box-sizing:border-box;background:#132035;
+  border-bottom:1px solid rgba(255,255,255,.08);pointer-events:none;}
+.nr-slot.odd{background:#10263e;}
+.nr-slot.nr-slot-center{background:#1b3a5e;box-shadow:inset 0 0 0 2px #4dabf7;}
+.name-receive-modal .nr-carousel .nr-row,.name-receive-modal .nr-carousel .nr-row.zebra,
+.name-receive-modal .nr-carousel .nr-row.green,.name-receive-modal .nr-carousel .nr-row.yellow{
+  background:transparent!important;border-left:0!important;color:#fff!important;}
+.name-receive-modal .nr-carousel .nr-row.green .nr-plan,.name-receive-modal .nr-carousel .nr-row.yellow .nr-plan{
+  color:rgba(255,255,255,.55)!important;}
+.name-receive-modal .nr-carousel .nr-row.green .nr-qty-btn{background:#267a45;color:#fff;border-color:#69db7c;}
+.name-receive-modal .nr-carousel .nr-row.yellow .nr-qty-btn{background:#8f641f;color:#fff;border-color:#ffd166;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-slot{background:#fff;border-bottom-color:#dbe3ee;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-slot.odd{background:#f1f5f9;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-slot.nr-slot-center{background:#dbeafe;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row,
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row.zebra,
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row.green,
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row.yellow{color:#172b4d!important;}
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row .nr-plan,
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row.green .nr-plan,
+body:not([data-theme="dark"]) .name-receive-modal .nr-carousel .nr-row.yellow .nr-plan{color:#64748b!important;}
 
 /* Не обновлять страницу и не выполнять pull-to-refresh при свайпе вниз. */
 html,body{overscroll-behavior-y:none;}
@@ -3039,7 +3155,11 @@ body{overscroll-behavior:none;}
 <div class="fullscreen-modal name-receive-modal" id="nameReceiveModal" aria-label="Приём по имени">
   <div class="nr-header">
     <button type="button" id="nrBackButton" onclick="nrBack()" aria-label="Назад">‹</button>
-    <h2>Приём по имени</h2>
+    <h2 id="nrTitle">Приём по имени</h2>
+    <div class="nr-header-meta" id="nrHeaderMeta" aria-live="polite">
+      <span class="nr-hm" id="nrHmOrder"></span><span class="nr-hm" id="nrHmDate"></span>
+      <span class="nr-hm" id="nrHmCount"></span><span class="nr-hm" id="nrHmPct"></span>
+    </div>
     <button type="button" id="nrNextButton" onclick="nrOpenReport()" aria-label="Сверка" style="display:none;">›</button>
   </div>
   <div class="nr-receive-progress" id="nrReceiveProgress" aria-live="polite">
@@ -8055,12 +8175,21 @@ async function _commitReceivedItems(items, options = {}) {
   const orderNumber = String(options.orderNumber || '');
   const receivedAt = String(options.receivedAt || currentDateTimeDMY());
   const sourceFileName = String(options.sourceFileName || '');
-  // If the order is known but the incoming date is not, keep the date already
-  // used by that order. A date without an order never blocks a new receive.
-  const normalizedOrderNumber = _normalizeOrderNumber(orderNumber);
+  // "EB_no_data"/пусто — это отсутствие номера заказа, а не настоящий номер.
+  // Без этой проверки все безномерные партии нормализовались бы в одно и то
+  // же значение и ошибочно считались бы одним и тем же заказом.
+  const _hasRealOrderNumber = value => {
+    const raw = String(value || '').trim();
+    return Boolean(raw) && !/^eb[\s_-]*no[\s_-]*data$/i.test(raw);
+  };
+  // Номер заказа — главный ключ партии, дата — второстепенный уточняющий
+  // признак. Если тот же номер заказа приходит повторно (ручной приём, авто
+  // или приём по имени — неважно), это тот же заказ, даже если дата в этот
+  // раз другая или не распознана.
+  const normalizedOrderNumber = _hasRealOrderNumber(orderNumber) ? _normalizeOrderNumber(orderNumber) : '';
   if (normalizedOrderNumber && (options.dateProvided === false || !options.date)) {
     const sameOrder = arrivals.find(a =>
-      _normalizeOrderNumber(a.orderNumber) === normalizedOrderNumber && a.date
+      _hasRealOrderNumber(a.orderNumber) && _normalizeOrderNumber(a.orderNumber) === normalizedOrderNumber && a.date
     );
     if (sameOrder) batchDate = sameOrder.date;
   }
@@ -8073,11 +8202,38 @@ async function _commitReceivedItems(items, options = {}) {
     const key = name.toLowerCase();
     incomingByName[key] = (incomingByName[key] || 0) + Math.max(0, parseInt(item?.menge, 10) || 0);
   });
-  const matchingBatch = arrivals.filter(a =>
-    a.date === batchDate &&
-    normalizedOrderNumber &&
-    _normalizeOrderNumber(a.orderNumber) === normalizedOrderNumber
-  );
+
+  // Довогружаем номер заказа задним числом: если раньше эта же партия была
+  // сохранена БЕЗ номера заказа (Gemini его не нашёл), а теперь номер известен
+  // и на ту же дату встречаются те же товары — прописываем номер заказа в
+  // старые записи, а не заводим по ним отдельный, никак не связанный заказ.
+  if (normalizedOrderNumber) {
+    const orderlessMatches = arrivals.filter(a =>
+      a.date === batchDate &&
+      !_hasRealOrderNumber(a.orderNumber) &&
+      incomingByName[String(a.name || '').trim().toLowerCase()] !== undefined
+    );
+    if (orderlessMatches.length) {
+      const backfillBatchIds = new Set(orderlessMatches.map(a => String(a.batchId || '')).filter(Boolean));
+      arrivals.forEach(a => {
+        if (backfillBatchIds.has(String(a.batchId || ''))) {
+          a.orderNumber = orderNumber;
+          if ((!a.senderName || a.senderName === 'no_name') && senderName) a.senderName = senderName;
+        }
+      });
+    }
+  }
+
+  // Разные, но настоящие (не "no_name") отправители при совпавшем номере
+  // заказа не объединяются — это подстраховка на случай, если два разных
+  // поставщика случайно используют один и тот же номер EB.
+  const matchingBatch = normalizedOrderNumber
+    ? arrivals.filter(a =>
+        _hasRealOrderNumber(a.orderNumber) &&
+        _normalizeOrderNumber(a.orderNumber) === normalizedOrderNumber &&
+        !(senderName && senderName !== 'no_name' && a.senderName && a.senderName !== 'no_name' && a.senderName !== senderName)
+      )
+    : [];
   const existingByName = {};
   matchingBatch.forEach(a => {
     const key = String(a.name || '').trim().toLowerCase();
@@ -9306,7 +9462,8 @@ async function _processInvoiceViaPreparedPages(
   file,
   settings,
   onStatus,
-  timeoutMs = _geminiResponseTimeoutMs()
+  timeoutMs = _geminiResponseTimeoutMs(),
+  onPage = null
 ) {
   if (!file) throw new Error('Файл накладной не выбран.');
   if (!settings?.apiKey) throw new Error('Сначала укажите API-ключ Gemini в настройках.');
@@ -9365,6 +9522,7 @@ async function _processInvoiceViaPreparedPages(
     }
     const rawText = await _requestGeminiChat('', [pageFile], settings, timeoutMs, {structured: true});
     let parsed = null;
+    const pageItems = [];
     try { parsed = JSON.parse(String(rawText || '')); } catch (parseError) {
       console.warn(`Страница ${index + 1}: Gemini вернул невалидный JSON`, parseError);
     }
@@ -9378,6 +9536,7 @@ async function _processInvoiceViaPreparedPages(
         if (!itemKey.startsWith('|') && !seenItemKeys.has(itemKey)) {
           seenItemKeys.add(itemKey);
           items.push(item);
+          pageItems.push(item);
         }
       });
     }
@@ -9386,6 +9545,25 @@ async function _processInvoiceViaPreparedPages(
     }
     if (parsed?.orderNumber && parsed.orderNumber !== 'EB_no_data' && !detectedOrderNumber) {
       detectedOrderNumber = String(parsed.orderNumber).trim();
+    }
+    if (typeof onPage === 'function') {
+      // Страница уже распознана — сразу отдаём её вызывающему коду, не дожидаясь остальных.
+      try {
+        await onPage({
+          pageNumber: index + 1,
+          totalPages: total,
+          items: pageItems,
+          senderName: _normalizeInvoiceSender(
+            detectedSenderName || payload.senderName || payload.metadata?.senderName
+          ),
+          orderNumber: _normalizeInvoiceOrderNumber(
+            detectedOrderNumber || payload.orderNumber || payload.metadata?.orderNumber
+          ),
+          date: _filenameDateTime(file.name)
+        });
+      } catch (pageError) {
+        console.warn('Не удалось показать страницу сразу:', pageError);
+      }
     }
   }
 
@@ -20614,7 +20792,66 @@ document.addEventListener('DOMContentLoaded', function () {
     el.textContent = message || '';
     el.className = 'nr-status' + (message ? ' show' : '') + (type ? ' ' + type : '');
   }
+  const nrHm = {timer: 0, key: ''};
+  const NR_HM_KEYS = ['Order', 'Date', 'Count', 'Pct'];
+  const NR_HM_INTERVAL_MS = 5000;
+  function nrHmAvailable() {
+    return NR_HM_KEYS.filter(key => String($('nrHm' + key)?.textContent || '').trim());
+  }
+  function nrHmShow(key) {
+    nrHm.key = key;
+    NR_HM_KEYS.forEach(item => $('nrHm' + item)?.classList.toggle('show', item === key));
+  }
+  function nrHmStop() {
+    clearInterval(nrHm.timer);
+    nrHm.timer = 0;
+  }
+  function nrHeaderReset() {
+    nrHmStop();
+    nrHmShow('');
+  }
+  // Каждые 5 секунд показываем следующую по очереди информацию: №, дата, позиции, процент.
+  function nrHmNext() {
+    if (!$('nameReceiveModal')?.classList.contains('open')) { nrHeaderReset(); return; }
+    const list = nrHmAvailable();
+    if (!list.length) { nrHmShow(''); return; }
+    nrHmShow(list[(list.indexOf(nrHm.key) + 1) % list.length]);
+  }
+  function nrSyncHeader() {
+    const title = $('nrTitle'), meta = $('nrHeaderMeta');
+    if (!title || !meta) return;
+    const active = Boolean($('nrScreenList')?.classList.contains('active')
+      || $('nrScreenReport')?.classList.contains('active'));
+    const sender = String($('nrSender')?.textContent || '').trim();
+    title.textContent = active && sender && sender !== '-' ? sender : 'Приём по имени';
+    meta.classList.toggle('on', active);
+    if (!active) { nrHeaderReset(); return; }
+    const n = state.products.length;
+    const totalPlan = state.products.reduce((sum, item) => sum + Math.max(0, qty(item.qtyPlan)), 0);
+    const totalActual = state.products.reduce((sum, item) => sum + Math.max(0, qty(item.qtyActual)), 0);
+    const percent = totalPlan ? Math.min(100, Math.round((totalActual / totalPlan) * 100)) : 0;
+    const complete = state.products.filter(item =>
+      qty(item.qtyActual) >= qty(item.qtyPlan) && qty(item.qtyDamage) === 0
+    ).length;
+    const order = String($('nrOrder')?.textContent || '').trim();
+    const date = String($('nrDate')?.textContent || '').trim().split(/\s+/)[0];
+    const values = {
+      Order: order && order !== '-' ? '№ ' + order : '',
+      Date: date && date !== '-' ? date : '',
+      Count: n ? `${complete}/${n} поз.` : '',
+      Pct: n ? `Готово ${percent}%` : ''
+    };
+    NR_HM_KEYS.forEach(key => {
+      const el = $('nrHm' + key);
+      if (el) el.textContent = values[key];
+    });
+    const list = nrHmAvailable();
+    if (!list.includes(nrHm.key)) nrHmShow(list[0] || '');
+    if (list.length > 1 && !nrHm.timer) nrHm.timer = setInterval(nrHmNext, NR_HM_INTERVAL_MS);
+    if (list.length <= 1) nrHmStop();
+  }
   function nrUpdateReceiveProgress() {
+    nrSyncHeader();
     const progress = $('nrReceiveProgress');
     const fill = $('nrReceiveProgressFill');
     const label = $('nrReceiveProgressLabel');
@@ -20641,6 +20878,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     const next = $('nrNextButton');
     if (next) next.style.display = name === 'List' ? 'flex' : 'none';
+    if (name === 'List') {
+      requestAnimationFrame(() => nrCarouselLayout(true));
+    } else {
+      const searchInput = $('nrSearchInput');
+      if (searchInput) { searchInput.dataset.keepKb = ''; searchInput.blur(); }
+    }
     nrUpdateReceiveProgress();
   }
   function persistActiveRegistryBatch() {
@@ -20682,12 +20925,16 @@ document.addEventListener('DOMContentLoaded', function () {
       qtyActual: qty(item.qtyActual),
       qtyDamage: qty(item.qtyDamage)
     }));
+    carousel.pos = 0; carousel.vel = 0; carousel.target = null;
     renderList();
     switchScreen('List');
   };
   // The camera workflow runs in a separate IIFE and calls this helper.
   // Expose the existing screen switcher so that workflow can reach it.
   window.switchScreen = switchScreen;
+  window.nrGetProducts = () => state.products;
+  window.nrSetActiveRegistryId = id => { state.activeRegistryId = String(id || ''); };
+  window.nrPersistActive = persistActiveRegistryBatch;
   window.openNameReceive = function () {
     const modal = $('nameReceiveModal');
     if (!modal) return;
@@ -20708,7 +20955,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   window.closeNameReceive = function () {
     const modal = $('nameReceiveModal');
-    if (modal) modal.classList.remove('open');
+    if (modal) { modal.classList.remove('open'); modal.style.paddingBottom = ''; }
     nrCloseQty();
     const dropdown = $('nrDropdown');
     if (dropdown) dropdown.innerHTML = '';
@@ -20717,12 +20964,53 @@ document.addEventListener('DOMContentLoaded', function () {
     if (product.qtyActual === 0) return '';
     return product.qtyActual === product.qtyPlan ? 'green' : 'yellow';
   }
-  function renderList() {
-    const list = $('nrProductList');
-    if (!list) return;
-    list.innerHTML = state.products
-      .map((product, index) => `
-        <div class="nr-swipe-wrap" id="nr-wrap-${esc(product.id)}">
+  /* ══ Циклический список: после последнего товара — пустая строка и снова первый.
+     Строка в центре в 2 раза выше, верхняя и нижняя — ниже (эффект барабана). ══ */
+  const NR_ROW_BASE = 52, NR_TABLE_STEP = 0.02, NR_BUMP = 1.22;
+  const carousel = {pos: 0, vel: 0, target: null, dragging: false, raf: 0, last: 0,
+    H: 0, T: 4, table: [0], els: new Map(), touch: null, bound: false, frames: []};
+  function nrSpacing(t, T) {
+    const a = Math.abs(t);
+    const bump = 0.5 * (1 + Math.cos(Math.PI * Math.min(1, a)));
+    const e = Math.max(0, Math.min(1, (a - T * 0.55) / (T * 0.45)));
+    const edge = e * e * (3 - 2 * e);
+    return NR_ROW_BASE * (1 + NR_BUMP * bump) * (1 - 0.45 * edge);
+  }
+  function nrBuildTable(H) {
+    let T = Math.max(2, H / (2 * NR_ROW_BASE));
+    let table = [0];
+    for (let pass = 0; pass < 6; pass++) {
+      table = [0];
+      let sum = 0, t = 0, reached = 0;
+      const limit = T + 3;
+      for (let i = 1; t < limit; i++) {
+        sum += nrSpacing((i - 0.5) * NR_TABLE_STEP, T) * NR_TABLE_STEP;
+        table.push(sum);
+        t = i * NR_TABLE_STEP;
+        if (!reached && sum >= H / 2) reached = t;
+      }
+      if (reached) T = Math.max(1.5, reached);
+    }
+    carousel.T = T; carousel.table = table; carousel.H = H;
+  }
+  function nrY(v) {
+    const a = Math.abs(v) / NR_TABLE_STEP;
+    const table = carousel.table;
+    const i = Math.floor(a);
+    let y;
+    if (i >= table.length - 1) {
+      y = table[table.length - 1] + (a - (table.length - 1)) * NR_TABLE_STEP * NR_ROW_BASE * 0.55;
+    } else {
+      y = table[i] + (table[i + 1] - table[i]) * (a - i);
+    }
+    return v < 0 ? -y : y;
+  }
+  function nrCreateRowEl(index) {
+    const product = state.products[index];
+    if (!product) return null;
+    const holder = document.createElement('div');
+    holder.innerHTML = `
+        <div class="nr-swipe-wrap">
           <div class="nr-actions">
             <button class="nr-damage" type="button" onclick="nrOpenQty('${esc(product.id)}','damage')">Брак: ${product.qtyDamage}</button>
             <button class="nr-delete" type="button" onclick="nrDelete('${esc(product.id)}')">Удалить</button>
@@ -20733,13 +21021,230 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="nr-product"><span class="nr-product-name">${esc(product.name)}</span><span class="nr-plan">Пл: ${product.qtyPlan}</span></div>
             <button class="nr-qty-btn" type="button" onclick="nrOpenQty('${esc(product.id)}','actual')">${product.qtyActual}</button>
           </div>
-        </div>`).join('');
+        </div>`;
+    return holder.firstElementChild;
+  }
+  function nrBuildFrames(host, H) {
+    carousel.frames.forEach(frame => frame.remove());
+    carousel.frames = [];
+    const cy = H / 2, K = Math.ceil(carousel.T) + 1;
+    for (let k = -K; k <= K; k++) {
+      const top = cy + nrY(k - 0.5), bottom = cy + nrY(k + 0.5);
+      if (bottom < 0 || top > H) continue;
+      const frame = document.createElement('div');
+      frame.className = 'nr-slot' + (k === 0 ? ' nr-slot-center' : (Math.abs(k) % 2 ? ' odd' : ''));
+      frame.style.top = top.toFixed(1) + 'px';
+      frame.style.height = Math.max(1, bottom - top).toFixed(1) + 'px';
+      host.insertBefore(frame, host.firstChild);
+      carousel.frames.push(frame);
+    }
+  }
+  function nrCarouselClear() {
+    carousel.els.forEach(el => el.remove());
+    carousel.els.clear();
+  }
+  function nrCarouselLayout(force) {
+    const host = $('nrProductList');
+    if (!host) return;
+    const n = state.products.length;
+    const H = host.clientHeight;
+    if (!n || !H) {
+      if (!n && carousel.els.size) nrCarouselClear();
+      return;
+    }
+    if (force || carousel.H !== H || !carousel.frames.length) {
+      nrBuildTable(H);
+      nrBuildFrames(host, H);
+    }
+    const L = n + 1, T = carousel.T, cy = H / 2;
+    const first = Math.floor(carousel.pos - T - 1);
+    const last = Math.ceil(carousel.pos + T + 1);
+    const seen = new Set();
+    for (let k = first; k <= last; k++) {
+      const idx = ((k % L) + L) % L;
+      if (idx === n) continue; // пустая строка между последним и первым товаром
+      // Привязка к рамке: товар всегда целиком в одной строке, а не между двумя.
+      const u = Math.round(k - carousel.pos);
+      const top = cy + nrY(u - 0.5);
+      const bottom = cy + nrY(u + 0.5);
+      if (bottom < -1 || top > H + 1) continue;
+      const height = Math.max(1, bottom - top);
+      let el = carousel.els.get(k);
+      if (!el) {
+        el = nrCreateRowEl(idx);
+        if (!el) continue;
+        host.appendChild(el);
+        carousel.els.set(k, el);
+      }
+      seen.add(k);
+      const scale = Math.max(0.85, Math.min(1.25, 0.8 + 0.2 * (height / NR_ROW_BASE)));
+      el.style.top = top.toFixed(1) + 'px';
+      el.style.height = height.toFixed(1) + 'px';
+      el.style.setProperty('--nr-s', scale.toFixed(3));
+      el.style.setProperty('--nr-lines', height >= 84 ? 3 : (height >= 44 ? 2 : 1));
+      el.classList.toggle('nr-tiny', height < 40);
+      el.classList.toggle('nr-focus', u === 0);
+    }
+    carousel.els.forEach((el, k) => {
+      if (!seen.has(k)) { el.remove(); carousel.els.delete(k); }
+    });
+  }
+  function nrCarouselStart() {
+    if (carousel.raf) return;
+    carousel.last = performance.now();
+    carousel.raf = requestAnimationFrame(nrCarouselStep);
+  }
+  function nrCarouselStep(now) {
+    carousel.raf = 0;
+    const dt = Math.min(48, Math.max(1, now - carousel.last));
+    carousel.last = now;
+    if (!carousel.dragging) {
+      if (carousel.target !== null) {
+        const diff = carousel.target - carousel.pos;
+        carousel.pos += diff * (1 - Math.exp(-dt / 90));
+        if (Math.abs(diff) < 0.002) { carousel.pos = carousel.target; carousel.target = null; }
+      } else if (Math.abs(carousel.vel) > 0.0004) {
+        carousel.pos += carousel.vel * dt;
+        carousel.vel *= Math.exp(-dt / 320);
+        if (Math.abs(carousel.vel) <= 0.0004) { carousel.vel = 0; carousel.target = Math.round(carousel.pos); }
+      } else if (Math.abs(carousel.pos - Math.round(carousel.pos)) > 0.002) {
+        carousel.target = Math.round(carousel.pos);
+      }
+    }
+    nrCarouselLayout();
+    if (carousel.dragging || carousel.target !== null || Math.abs(carousel.vel) > 0.0004) nrCarouselStart();
+  }
+  function nrCenterOn(id) {
+    const n = state.products.length;
+    const idx = state.products.findIndex(item => item.id === id);
+    if (idx < 0) return;
+    const L = n + 1;
+    carousel.vel = 0;
+    carousel.target = Math.round((carousel.pos - idx) / L) * L + idx;
+    nrCarouselStart();
+  }
+  window.nrCenterOn = nrCenterOn;
+  window.nrCarouselLayout = nrCarouselLayout;
+  function nrCarouselBind() {
+    const host = $('nrProductList');
+    if (!host || carousel.bound) return;
+    carousel.bound = true;
+    host.classList.add('nr-carousel');
+    host.addEventListener('touchstart', event => {
+      if (event.touches.length !== 1) return;
+      const t = event.touches[0];
+      carousel.touch = {x: t.clientX, y: t.clientY, lastY: t.clientY, lastT: performance.now(), axis: '', v: 0};
+      carousel.vel = 0;
+      carousel.target = null;
+    }, {passive: true});
+    host.addEventListener('touchmove', event => {
+      const s = carousel.touch;
+      if (!s || !event.touches.length) return;
+      const t = event.touches[0];
+      const dx = t.clientX - s.x, dy = t.clientY - s.y;
+      if (!s.axis) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+        s.axis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+        if (s.axis === 'y') { carousel.dragging = true; state.tapBlocked = true; }
+      }
+      if (s.axis !== 'y') return;
+      const now = performance.now();
+      const moved = t.clientY - s.lastY;
+      const elapsed = Math.max(1, now - s.lastT);
+      carousel.pos -= moved / NR_ROW_BASE;
+      s.v = 0.8 * s.v + 0.2 * (-moved / NR_ROW_BASE / elapsed);
+      s.lastY = t.clientY; s.lastT = now;
+      nrCarouselStart();
+      if (event.cancelable) event.preventDefault();
+    }, {passive: false});
+    const finish = () => {
+      const s = carousel.touch;
+      carousel.touch = null;
+      if (!s || s.axis !== 'y') return;
+      carousel.dragging = false;
+      carousel.vel = Math.max(-0.02, Math.min(0.02, s.v));
+      setTimeout(() => { state.tapBlocked = false; }, 260);
+      nrCarouselStart();
+    };
+    host.addEventListener('touchend', finish);
+    host.addEventListener('touchcancel', finish);
+    host.addEventListener('wheel', event => {
+      event.preventDefault();
+      carousel.vel = 0;
+      carousel.pos += event.deltaY / (NR_ROW_BASE * 1.5);
+      carousel.target = Math.round(carousel.pos);
+      nrCarouselStart();
+    }, {passive: false});
+    if (typeof ResizeObserver === 'function') {
+      new ResizeObserver(() => nrCarouselLayout(true)).observe(host);
+    }
+    // Клавиатура перекрывает низ окна (visualViewport уменьшается, а layout — нет).
+    // Сжимаем окно на высоту клавиатуры: список и выбранная строка остаются над ней.
+    const applyKeyboardInset = () => {
+      const modal = $('nameReceiveModal');
+      if (!modal) return;
+      const vv = window.visualViewport;
+      let kb = vv ? Math.round(window.innerHeight - vv.height - vv.offsetTop) : 0;
+      if (kb < 80) kb = 0;
+      const value = kb ? kb + 'px' : '';
+      if (modal.style.paddingBottom === value) return;
+      modal.style.paddingBottom = value;
+      requestAnimationFrame(() => nrCarouselLayout(true));
+    };
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', applyKeyboardInset);
+      window.visualViewport.addEventListener('scroll', applyKeyboardInset);
+    }
+    window.addEventListener('resize', applyKeyboardInset);
+    window.nrApplyKeyboardInset = applyKeyboardInset;
+  }
+
+  /* ══ Клавиатура не прячется, пока открыт список подсчёта ══ */
+  function nrOverlayOpen() {
+    return Boolean(document.querySelector('#nameReceiveModal .nr-overlay:not(.hidden)'));
+  }
+  function nrRefocusSearch() {
+    const input = $('nrSearchInput');
+    if (!input || input.dataset.keepKb !== '1') return;
+    if (!$('nameReceiveModal')?.classList.contains('open')) return;
+    if (!$('nrScreenList')?.classList.contains('active') || nrOverlayOpen()) return;
+    if (document.activeElement !== input) input.focus({preventScroll: true});
+  }
+  window.nrRefocusSearch = nrRefocusSearch;
+  (function bindKeyboardKeeper() {
+    const screen = $('nrScreenList');
+    const input = $('nrSearchInput');
+    if (!screen || !input) return;
+    let lastTouch = 0;
+    input.addEventListener('focus', () => { input.dataset.keepKb = '1'; });
+    screen.addEventListener('touchstart', () => { lastTouch = Date.now(); }, {passive: true, capture: true});
+    screen.addEventListener('mousedown', event => {
+      lastTouch = Date.now();
+      if (input.dataset.keepKb === '1' && !event.target.closest('input,textarea')) event.preventDefault();
+    }, true);
+    input.addEventListener('blur', () => {
+      if (input.dataset.keepKb !== '1') return;
+      setTimeout(() => { if (Date.now() - lastTouch < 700) nrRefocusSearch(); }, 0);
+    });
+  })();
+
+  function renderList() {
+    const list = $('nrProductList');
+    if (!list) return;
+    nrCarouselBind();
+    nrCarouselClear();
+    const L = state.products.length + 1;
+    const before = carousel.pos;
+    carousel.pos = state.products.length ? ((before % L) + L) % L : 0;
+    if (carousel.target !== null) carousel.target += carousel.pos - before;
+    nrCarouselLayout();
     nrUpdateReceiveProgress();
   }
   window.nrTapRow = function (event, element) {
     if (state.tapBlocked || event?.target?.closest('.nr-qty-btn,.nr-actions')) return;
     const product = state.products.find(item => item.id === element?.dataset?.id);
     if (!product) return;
+    if (!element.parentElement?.classList.contains('nr-focus')) { nrCenterOn(product.id); return; }
     product.qtyActual = Math.min(NR_MAX_QTY, qty(product.qtyActual) + 1);
     if (product.qtyActual < qty(product.qtyDamage)) product.qtyActual = qty(product.qtyDamage);
     state.highlighted = product.id;
@@ -20772,17 +21277,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const product = state.products.find(item => item.id === id);
     if (!product) return;
     state.highlighted = id;
-    $('nrSearchInput').value = product.name;
+    const searchInput = $('nrSearchInput');
+    if (searchInput) searchInput.value = '';
     $('nrDropdown').innerHTML = '';
     renderList();
-    $('nr-wrap-' + id)?.scrollIntoView({behavior:'smooth', block:'center'});
+    nrCenterOn(id);
+    nrRefocusSearch();
   };
   window.nrAddProduct = function () {
     $('nrNewProductName').value = '';
     $('nrAddOverlay').classList.remove('hidden');
     setTimeout(() => $('nrNewProductName').focus(), 100);
   };
-  window.nrCloseAdd = function () { $('nrAddOverlay')?.classList.add('hidden'); };
+  window.nrCloseAdd = function () { $('nrAddOverlay')?.classList.add('hidden'); nrRefocusSearch(); };
   window.nrConfirmAdd = function () {
     const name = String($('nrNewProductName')?.value || '').trim();
     if (!name) return;
@@ -20791,7 +21298,10 @@ document.addEventListener('DOMContentLoaded', function () {
     nrCloseAdd();
     renderList();
     persistActiveRegistryBatch();
-    $('nr-wrap-' + id)?.scrollIntoView({behavior:'smooth', block:'center'});
+    state.highlighted = id;
+    renderList();
+    nrCenterOn(id);
+    nrRefocusSearch();
   };
   window.nrDelete = function (id) {
     const product = state.products.find(item => item.id === id);
@@ -20803,6 +21313,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.nrCloseDelete = function () {
     state.rowToDeleteId = null;
     $('nrDeleteOverlay')?.classList.add('hidden');
+    nrRefocusSearch();
   };
   window.nrConfirmDelete = function () {
     const id = state.rowToDeleteId;
@@ -20816,7 +21327,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('nrInfoText').textContent = `Товар "${product?.name || 'Позиция'}" успешно удален.`;
     $('nrInfoOverlay').classList.remove('hidden');
   };
-  window.nrCloseInfo = function () { $('nrInfoOverlay')?.classList.add('hidden'); };
+  window.nrCloseInfo = function () { $('nrInfoOverlay')?.classList.add('hidden'); nrRefocusSearch(); };
   window.nrOpenQty = function (id, mode) {
     const product = state.products.find(item => item.id === id);
     if (!product) return;
@@ -20836,6 +21347,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.nrCloseQty = function () {
     $('nrQtyOverlay')?.classList.add('hidden');
     state.qtyId = null;
+    nrRefocusSearch();
   };
   window.nrConfirmQty = function () {
     nrCommitQty();
@@ -20929,6 +21441,8 @@ document.addEventListener('DOMContentLoaded', function () {
     $('nrOrder').textContent = '-';
     $('nrDate').textContent = '-';
     $('nrSnapshot2Progress').style.display = 'block';
+    carousel.pos = 0; carousel.vel = 0; carousel.target = null;
+    nrHeaderReset();
     renderList();
   };
   window.nrSetReceiveSourceFiles = function (files, filename, append = false) {
@@ -22033,68 +22547,114 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     window.closeNrCamera();
     setProcessingUi(true);
+    const files = queue.files.slice();
+    const pages = [];
+    let supplier = '';
+    let orderNumber = '';
+    let listOpened = false;
+    let registryBatch = null;
+    let processedFiles = 0;
     try {
-      const loaderText = 'Подготавливаем снимки и запускаем Gemini OCR…';
-      setStatus(loaderText, 'loading');
-      const settings = getGeminiSettings();
+      setStatus('Python готовит снимки, затем Gemini распознаёт страницы…', 'loading');
+      const baseSettings = getGeminiSettings();
       const selectedKey = _selectGeminiKey();
       const requestSettings = {
-        ...settings,
-        apiKey: selectedKey?.apiKey || settings.apiKey,
-        keyId: selectedKey?.id || settings.keyId || ''
+        ...baseSettings,
+        apiKey: selectedKey?.apiKey || baseSettings.apiKey,
+        keyId: selectedKey?.id || baseSettings.keyId || '',
+        attachInstructionPerFile: false,
+        instruction: ''
       };
       if (!requestSettings.apiKey) {
         throw new Error('Сначала укажите API-ключ Gemini в настройках.');
       }
-      const pages = [];
-      let supplier = '';
-      let orderNumber = '';
-      const files = queue.files.slice();
       window.nrSetSnapshot2Progress(0, files.length, `Подготовка страницы 1 из ${files.length}…`);
+
+      // Каждая распознанная страница сразу попадает в список: первая открывает
+      // экран подсчёта, остальные добавляются снизу и мигают.
+      const handlePage = page => {
+        const sender = page.senderName && page.senderName !== 'no_name' ? page.senderName : '';
+        const order = page.orderNumber && page.orderNumber !== 'EB_no_data' ? page.orderNumber : '';
+        const docDate = page.date && page.date !== 'no_date'
+          ? page.date
+          : new Date().toLocaleDateString('ru-RU');
+        supplier = supplier || sender;
+        orderNumber = orderNumber || order;
+        pages.push({page: pages.length + 1, items: page.items});
+        if (!listOpened) {
+          listOpened = true;
+          $('nameReceiveModal')?.classList.add('open');
+          window.nrBeginGeminiReceive();
+          window.nrSetReceiveSourceFiles([], files[0]?.name || 'приемка');
+          window.switchScreen('List');
+        }
+        window.nrApplyGeminiResult({invoice: {
+          senderName: sender, orderNumber: order, date: docDate, items: page.items
+        }});
+        if (!registryBatch) {
+          const products = window.nrGetProducts().map(item => ({...item}));
+          const meta = registryPayloadMeta({senderName: sender, orderNumber: order, date: docDate});
+          const now = Date.now();
+          registryBatch = mergeRegistryRecord({
+            id: `registry-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            key: registryKey(meta.senderName, meta.orderNumber) || `unknown-${now}`,
+            senderName: meta.senderName,
+            orderNumber: meta.orderNumber || 'Без номера',
+            date: meta.date,
+            pages: 1,
+            positions: products.length,
+            products,
+            status: 'in_progress',
+            createdAt: now,
+            updatedAt: now
+          });
+          window.nrSetActiveRegistryId(registryBatch.id);
+        }
+        window.nrPersistActive();
+      };
+
       for (let index = 0; index < files.length; index++) {
         const file = files[index];
-        window.nrSetSnapshot2Progress(index, files.length,
-          `Подготовка страницы ${index + 1} из ${files.length}…`);
-        setStatus('Идёт оптимизация и анализ страниц...', 'loading');
-        const invoice = await _processInvoiceThroughPython(
+        const prefix = `Страница ${index + 1} из ${files.length}`;
+        setStatus(`${prefix}: Python готовит снимок…`, 'loading');
+        window.nrSetSnapshot2Progress(index, files.length, `${prefix}: подготовка и распознавание…`);
+        const invoice = await _processInvoiceViaPreparedPages(
           file,
           requestSettings,
-          message => setStatus(
-            `${message} Страница ${index + 1} из ${files.length}.`,
-            'loading'
-          )
+          message => {
+            setStatus(`${message} ${prefix}.`, 'loading');
+            window.nrSetSnapshot2Progress(index, files.length, `${message} ${prefix}.`);
+          },
+          _geminiResponseTimeoutMs(),
+          handlePage
         );
-        supplier = supplier || String(invoice.senderName || '').trim();
-        orderNumber = orderNumber || String(invoice.orderNumber || '').trim();
-        const invoicePages = Array.isArray(invoice.pages) && invoice.pages.length
-          ? invoice.pages
-          : [{items: invoice.items || []}];
-        invoicePages.forEach((page, pageIndex) => {
-          pages.push({
-            page: index + pageIndex + 1,
-            items: Array.isArray(page?.items) ? page.items : []
-          });
-        });
+        window.nrSetReceiveSourceInvoices([file], true);
+        window.nrSetReceiveSourceFiles(
+          Array.isArray(invoice.processedFiles) ? invoice.processedFiles : [],
+          file.name || files[0]?.name || 'приемка',
+          true
+        );
+        processedFiles = index + 1;
         window.nrSetSnapshot2Progress(index + 1, files.length,
           `Распознано страниц: ${index + 1} из ${files.length}.`);
       }
-      const payload = {
-        supplier,
-        order_number: orderNumber,
-        pages
-      };
-      renderDeliveryPages(payload);
-      window.nrSetSnapshot2Progress(files.length, files.length, 'Распознавание накладных завершено.');
-      const batch = mergeRegistryRecord(registryRecordFromPayload(payload));
-      const result = `${batch.senderName} · ${batch.orderNumber} · ${batch.pages} стр. · ${batch.positions} поз.`;
-      setStatus(`Распознавание завершено. ${result}`, 'ok');
-      window.switchScreen('Start');
+
+      if (!listOpened) throw new Error('Gemini не вернул ни одной страницы.');
+      try { renderDeliveryPages({supplier, order_number: orderNumber, pages}); } catch (ignore) {}
+      window.nrSetSnapshot2Progress(files.length, files.length,
+        `Распознавание завершено: страниц ${files.length}. Проверьте список.`);
+      setStatus('Распознавание завершено.', 'ok');
       releaseShots();
       queue.files = [];
     } catch (error) {
       const message = error instanceof TypeError
         ? 'Ошибка сети: проверьте Python-сервер и соединение с Gemini.'
         : (error.message || 'Не удалось распознать накладные.');
+      // Уже обработанные кадры убираем из очереди, чтобы при повторе они не задвоились.
+      queue.files = files.slice(processedFiles);
+      if (listOpened) {
+        window.nrSetSnapshot2Progress(processedFiles, files.length, 'Ошибка обработки: ' + message);
+      }
       setStatus('Ошибка обработки накладных: ' + message, 'error');
     } finally {
       setProcessingUi(false);
