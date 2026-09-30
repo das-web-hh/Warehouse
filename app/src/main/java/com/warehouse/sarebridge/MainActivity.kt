@@ -7,6 +7,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.print.PrintAttributes
 import android.print.PrintManager
 import android.provider.DocumentsContract
@@ -703,6 +706,47 @@ class MainActivity : AppCompatActivity() {
                 DocumentsContract.deleteDocument(context.contentResolver, docUri(tree, entry.id))
             } catch (e: Exception) {
                 false
+            }
+        }
+
+        // ───── Вибрация: нативно, чтобы работала сразу и не зависела от WebView ─────
+        private val vibrator: Vibrator? by lazy {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)
+                    ?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+        }
+
+        // pattern: "25" (одна вибрация, мс) или "30,40,30" (вибрация, пауза, вибрация…)
+        @JavascriptInterface
+        fun vibrate(pattern: String) {
+            try {
+                val v = vibrator ?: return
+                if (!v.hasVibrator()) return
+                val parts = pattern.split(',')
+                    .mapNotNull { it.trim().toLongOrNull() }
+                    .filter { it > 0 }
+                if (parts.isEmpty()) return
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (parts.size == 1) {
+                        v.vibrate(
+                            VibrationEffect.createOneShot(parts[0], VibrationEffect.DEFAULT_AMPLITUDE)
+                        )
+                    } else {
+                        v.vibrate(
+                            VibrationEffect.createWaveform(longArrayOf(0) + parts.toLongArray(), -1)
+                        )
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (parts.size == 1) v.vibrate(parts[0])
+                    else v.vibrate(longArrayOf(0) + parts.toLongArray(), -1)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
