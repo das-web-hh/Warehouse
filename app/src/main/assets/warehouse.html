@@ -4720,6 +4720,46 @@ body{overscroll-behavior:none;}
       <p class="feedback-settings-hint">Изменения сохраняются сразу и действуют после закрытия настроек.</p>
     </div>
 
+    <!-- Voice announcement of added quantity -->
+    <div class="settings-section-label">Голос и счётчик количества</div>
+    <div class="feedback-settings-card">
+      <p class="feedback-settings-intro">
+        В «Приёме по наименованию» голос называет только последнее число со счётчика: например, «пятнадцать».
+        Изменения сохраняются сразу.
+      </p>
+      <label class="feedback-settings-label" for="voiceEnabled">Голос</label>
+      <select class="feedback-settings-select" id="voiceEnabled" onchange="warehouseVoiceSaveUi()">
+        <option value="1">Включён</option>
+        <option value="0">Выключен</option>
+      </select>
+      <label class="feedback-settings-label" for="voiceSelect">Кто говорит (голос)</label>
+      <select class="feedback-settings-select" id="voiceSelect" onchange="warehouseVoiceSaveUi()"></select>
+      <label class="feedback-settings-label" for="voiceRate">Скорость: <b id="voiceRateVal">1.0</b></label>
+      <input class="voice-range" id="voiceRate" type="range" min="0.5" max="2" step="0.1" value="1" oninput="warehouseVoiceSaveUi()">
+      <label class="feedback-settings-label" for="voicePitch">Тембр (высота голоса): <b id="voicePitchVal">1.0</b></label>
+      <input class="voice-range" id="voicePitch" type="range" min="0.5" max="2" step="0.1" value="1" oninput="warehouseVoiceSaveUi()">
+      <label class="feedback-settings-label" for="voiceVolume">Громкость: <b id="voiceVolumeVal">100%</b></label>
+      <input class="voice-range" id="voiceVolume" type="range" min="0" max="1" step="0.1" value="1" oninput="warehouseVoiceSaveUi()">
+      <label class="feedback-settings-label" for="voicePhrase">Слово перед числом (необязательно)</label>
+      <input class="feedback-settings-select" id="voicePhrase" type="text" maxlength="40" placeholder="Пусто — голос говорит только число" autocomplete="off" oninput="warehouseVoiceSaveUi()">
+      <label class="feedback-settings-label" for="voiceSpeakTaps">Озвучивать серию тапов (в конце серии)</label>
+      <select class="feedback-settings-select" id="voiceSpeakTaps" onchange="warehouseVoiceSaveUi()">
+        <option value="1">Да</option>
+        <option value="0">Нет</option>
+      </select>
+      <label class="feedback-settings-label" for="voiceShowSec">Сколько секунд держать добавленное число на экране</label>
+      <select class="feedback-settings-select" id="voiceShowSec" onchange="warehouseVoiceSaveUi()">
+        <option value="1">1 сек</option><option value="2">2 сек</option><option value="3">3 сек (стандарт)</option>
+        <option value="4">4 сек</option><option value="5">5 сек</option><option value="7">7 сек</option><option value="10">10 сек</option>
+      </select>
+      <label class="feedback-settings-label" for="voiceAutoSec">Авто-подтверждение количества в окне прокрутки</label>
+      <select class="feedback-settings-select" id="voiceAutoSec" onchange="warehouseVoiceSaveUi()">
+        <option value="0">Выключено</option><option value="3">Через 3 сек</option><option value="5">Через 5 сек (стандарт)</option>
+        <option value="8">Через 8 сек</option><option value="10">Через 10 сек</option><option value="15">Через 15 сек</option>
+      </select>
+      <button class="voice-test-btn" type="button" onclick="warehouseVoiceTest()">🔊 Проверить голос</button>
+    </div>
+
     <!-- External wireless barcode scanner -->
     <div class="settings-section-label" data-i18n="settingsExternalScannerSection" style="display:none;">Внешний сканер</div>
     <div class="settings-group" style="display:none;">
@@ -7609,15 +7649,96 @@ function updateHomeMenuPager(scroller) {
     dot.setAttribute('aria-current', index === pageIndex ? 'page' : 'false');
   });
 }
+/* Свой пейджер главного экрана: блокировка оси (горизонталь/вертикаль), лёгкий флик, плавная доводка.
+   Родной scroll-snap в WebView конфликтовал с вертикальной прокруткой страниц и «залипал». */
+const homePager = {anim: 0, drag: null, suppressClick: 0};
+function homePagerCount(scroller) {
+  return Math.max(1, scroller.querySelectorAll(':scope > .home-screen-page').length);
+}
+function homePagerAnimate(scroller, target, duration) {
+  cancelAnimationFrame(homePager.anim);
+  const from = scroller.scrollLeft;
+  const dist = target - from;
+  if (Math.abs(dist) < 1) { scroller.scrollLeft = target; return; }
+  const t0 = performance.now();
+  const ms = duration || Math.max(180, Math.min(340, Math.abs(dist) * 0.6));
+  const step = now => {
+    const k = Math.min(1, (now - t0) / ms);
+    const e = 1 - Math.pow(1 - k, 3);
+    scroller.scrollLeft = from + dist * e;
+    if (k < 1) homePager.anim = requestAnimationFrame(step);
+  };
+  homePager.anim = requestAnimationFrame(step);
+}
 function goHomeMenuPage(index) {
   const scroller = document.getElementById('homeScreenPages');
   if (!scroller) return;
-  const pageIndex = Math.max(0, Math.min(1, Number(index) || 0));
-  scroller.scrollTo({
-    left: pageIndex * scroller.clientWidth,
-    behavior: 'smooth'
+  const pageIndex = Math.max(0, Math.min(homePagerCount(scroller) - 1, Number(index) || 0));
+  homePagerAnimate(scroller, pageIndex * scroller.clientWidth);
+}
+function initHomePager() {
+  const scroller = document.getElementById('homeScreenPages');
+  if (!scroller || scroller.dataset.pager === '1') return;
+  scroller.dataset.pager = '1';
+  scroller.addEventListener('touchstart', event => {
+    if (event.touches.length !== 1) { homePager.drag = null; return; }
+    cancelAnimationFrame(homePager.anim);
+    const t = event.touches[0];
+    homePager.drag = {x: t.clientX, y: t.clientY, startLeft: scroller.scrollLeft, axis: '',
+      lastX: t.clientX, lastT: performance.now(), v: 0};
+  }, {passive: true});
+  scroller.addEventListener('touchmove', event => {
+    const d = homePager.drag;
+    if (!d || event.touches.length !== 1) return;
+    const t = event.touches[0];
+    const dx = t.clientX - d.x, dy = t.clientY - d.y;
+    if (!d.axis) {
+      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+      // Горизонталь выигрывает уже при лёгком наклоне: свайп больше не «съедается» вертикальной прокруткой.
+      d.axis = Math.abs(dx) > Math.abs(dy) * 0.8 ? 'x' : 'y';
+      if (d.axis === 'x') d.x = t.clientX - dx + (dx > 0 ? 7 : -7), d.lastX = t.clientX;
+    }
+    if (d.axis !== 'x') return;
+    const now = performance.now();
+    const dt = Math.max(1, now - d.lastT);
+    d.v = 0.75 * d.v + 0.25 * ((t.clientX - d.lastX) / dt);
+    d.lastX = t.clientX; d.lastT = now;
+    const max = (homePagerCount(scroller) - 1) * scroller.clientWidth;
+    let left = d.startLeft - (t.clientX - d.x);
+    if (left < 0) left = left * 0.35;
+    else if (left > max) left = max + (left - max) * 0.35;
+    scroller.scrollLeft = left;
+    if (event.cancelable) event.preventDefault();
+  }, {passive: false});
+  const finish = () => {
+    const d = homePager.drag;
+    homePager.drag = null;
+    if (!d || d.axis !== 'x') return;
+    homePager.suppressClick = Date.now() + 350;
+    const w = Math.max(1, scroller.clientWidth);
+    const count = homePagerCount(scroller);
+    const pos = scroller.scrollLeft / w;
+    const base = Math.round(d.startLeft / w);
+    let target = Math.round(pos);
+    if (Math.abs(d.v) > 0.3) target = d.v < 0 ? base + 1 : base - 1;      // флик
+    else if (Math.abs(pos - base) > 0.18) target = pos > base ? base + 1 : base - 1; // оттянули > 18%
+    else target = base;
+    target = Math.max(0, Math.min(count - 1, target));
+    homePagerAnimate(scroller, target * w);
+  };
+  scroller.addEventListener('touchend', finish);
+  scroller.addEventListener('touchcancel', finish);
+  // После свайпа палец не должен «нажать» иконку под собой.
+  scroller.addEventListener('click', event => {
+    if (Date.now() < homePager.suppressClick) { event.stopPropagation(); event.preventDefault(); }
+  }, true);
+  window.addEventListener('resize', () => {
+    const w = scroller.clientWidth;
+    scroller.scrollLeft = Math.round(scroller.scrollLeft / Math.max(1, w)) * w;
   });
 }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHomePager);
+else initHomePager();
 
 function updateGboardLayoutMetrics() {
   const dock = document.getElementById('gboardDock');
@@ -10218,6 +10339,7 @@ function openSettings() {
   syncAutoReceiveCheckSelect();
   syncGeminiSendSelects();
   updateVirtualKeyboardSetting();
+  try { warehouseVoiceLoadUi(); } catch (e) {}
   loadInventoryData();
   _inventoryRefreshCleanupOptions();
   settingsDeletionScope = '';
@@ -20672,7 +20794,7 @@ document.addEventListener('DOMContentLoaded', function () {
     source: 'excel', newIds: new Set(), savedBatchId: '', saving: false, activeRegistryId: '',
     tapId: null, tapBlocked: false
   };
-  const NR_ITEM_HEIGHT = 30, NR_RADIUS = 75, NR_MAX_QTY = 9999;
+  const NR_ITEM_HEIGHT = 60, NR_RADIUS = 150, NR_MAX_QTY = 9999;
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -20692,7 +20814,7 @@ document.addEventListener('DOMContentLoaded', function () {
     Array.from(list.children).forEach((item, i) => {
       const offset = i * NR_ITEM_HEIGHT + deg;
       const angle = (offset / NR_ITEM_HEIGHT) * 18;
-      if (Math.abs(offset) < 100) {
+      if (Math.abs(offset) < 200) {
         item.style.display = 'block';
         item.style.transform = `rotateX(${-angle}deg) translateZ(${NR_RADIUS}px)`;
         item.classList.toggle('active', Math.abs(offset) < NR_ITEM_HEIGHT / 2);
@@ -20712,9 +20834,25 @@ document.addEventListener('DOMContentLoaded', function () {
     list.appendChild(fragment);
     nrUpdateWheelTransform(0);
   }
+  function nrClearAutoCommit() {
+    clearTimeout(state.wheelTimer);
+    state.wheelTimer = 0;
+  }
+  // Цифра осталась на месте N секунд → она сама встаёт как количество (N задаётся в настройках, по умолчанию 5).
+  function nrScheduleAutoCommit() {
+    nrClearAutoCommit();
+    const sec = warehouseVoiceGetSettings().autoSec;
+    if (!sec) return;
+    state.wheelTimer = setTimeout(() => {
+      state.wheelTimer = 0;
+      if (state.qtyId && !$('nrQtyOverlay')?.classList.contains('hidden')) nrCommitQty();
+    }, sec * 1000);
+  }
   function nrCommitQty() {
+    nrClearAutoCommit();
     const product = state.products.find(item => item.id === state.qtyId);
     if (!product) return nrCloseQty();
+    const qtyBefore = product.qtyActual;
     const row = Array.from(document.querySelectorAll('.nr-row')).find(item => item.dataset.id === state.qtyId);
     if (state.qtyMode === 'actual') {
       if (state.selectedValue < product.qtyDamage) state.selectedValue = product.qtyDamage;
@@ -20724,12 +20862,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (product.qtyActual < product.qtyDamage) product.qtyActual = product.qtyDamage;
     }
     state.highlighted = product.id;
+    const qtyAdded = state.qtyMode === 'actual' ? product.qtyActual - qtyBefore : 0;
     nrCloseQty();
     renderList();
     persistActiveRegistryBatch();
+    if (qtyAdded > 0) nrShowAddedFx(qtyAdded);
   }
   const nrWheelContainer = $('nrWheelContainer');
   nrWheelContainer?.addEventListener('touchstart', event => {
+    nrClearAutoCommit();
     state.wheelStartY = event.touches[0].clientY;
   });
   nrWheelContainer?.addEventListener('touchmove', event => {
@@ -20739,6 +20880,8 @@ document.addEventListener('DOMContentLoaded', function () {
     state.wheelRotation = Math.max(-NR_MAX_QTY * NR_ITEM_HEIGHT, Math.min(0, state.wheelRotation));
     nrUpdateWheelTransform(state.wheelRotation);
   });
+  nrWheelContainer?.addEventListener('touchend', nrScheduleAutoCommit);
+  nrWheelContainer?.addEventListener('touchcancel', nrScheduleAutoCommit);
   nrWheelContainer?.addEventListener('click', () => {
     state.wheelRotation = -state.selectedValue * NR_ITEM_HEIGHT;
     nrUpdateWheelTransform(state.wheelRotation);
@@ -21244,10 +21387,53 @@ document.addEventListener('DOMContentLoaded', function () {
       el.classList.remove('show');
     }, 2000);
     nrTapFx.reset = setTimeout(() => {
+      const finalCount = nrTapFx.count;
       nrTapFx.count = 0;
       nrTapFx.el = null;
       el.remove();
+      if (finalCount > 0) warehouseVoiceAnnounce(finalCount, 'tap');
     }, 3000);
+  }
+  /* ══ Добавленное количество (было 10 → стало 25 = 15): показывается на счётчике, потом плавно гаснет ══ */
+  function nrShowAddedFx(added) {
+    let host = document.getElementById('nrTapFx');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'nrTapFx';
+      host.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(host);
+    }
+    const listRect = $('nrProductList')?.getBoundingClientRect();
+    if (listRect && listRect.height) {
+      host.style.setProperty('--nr-tap-x', (listRect.left + listRect.width / 2) + 'px');
+      host.style.setProperty('--nr-tap-y', (listRect.top + listRect.height / 2) + 'px');
+    }
+    clearTimeout(nrTapFx.hold);
+    clearTimeout(nrTapFx.reset);
+    nrTapFx.count = 0;
+    host.querySelectorAll('.nr-tapfx-num').forEach(node => node.remove());
+    const el = document.createElement('span');
+    el.className = 'nr-tapfx-num';
+    el.textContent = String(added);
+    const digits = el.textContent.length;
+    if (digits === 3) el.style.fontSize = '190px';
+    else if (digits >= 4) el.style.fontSize = '140px';
+    host.appendChild(el);
+    nrTapFx.el = el;
+    const showMs = warehouseVoiceGetSettings().showSec * 1000;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transitionDuration = '.25s';
+      el.classList.add('show');
+    }));
+    nrTapFx.hold = setTimeout(() => {
+      el.style.transitionDuration = '.9s';
+      el.classList.remove('show');
+    }, showMs);
+    nrTapFx.reset = setTimeout(() => {
+      el.remove();
+      if (nrTapFx.el === el) nrTapFx.el = null;
+    }, showMs + 1000);
+    warehouseVoiceAnnounce(added, 'wheel');
   }
   window.nrTapRow = function (event, element) {
     if (state.tapBlocked || event?.target?.closest('.nr-qty-btn,.nr-actions')) return;
@@ -21347,6 +21533,7 @@ document.addEventListener('DOMContentLoaded', function () {
       row.style.transform = 'translateX(0)';
     }
     state.qtyId = id; state.qtyMode = mode;
+    nrClearAutoCommit();
     state.selectedValue = mode === 'damage' ? product.qtyDamage : product.qtyActual;
     state.wheelRotation = -state.selectedValue * NR_ITEM_HEIGHT;
     state.wheelLastIndex = -1;
@@ -21355,6 +21542,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('nrQtyOverlay').classList.remove('hidden');
   };
   window.nrCloseQty = function () {
+    nrClearAutoCommit();
     $('nrQtyOverlay')?.classList.add('hidden');
     state.qtyId = null;
     nrRefocusSearch();
@@ -22772,6 +22960,143 @@ function warehouseLoadFeedbackSettings() {
   fill('feedbackScanSound', settings.scanSound);
   fill('feedbackWheelSound', settings.wheelSound);
   fill('feedbackVibrationLevel', settings.vibrationLevel);
+}
+
+/* ══ Голос: озвучивание добавленного количества ══ */
+const WAREHOUSE_VOICE_STORAGE_KEY = 'warehouse_voice_settings_v1';
+function warehouseVoiceLangCode() {
+  const l = (typeof currentLang !== 'undefined' && currentLang) || 'ru';
+  return l === 'de' ? 'de-DE' : l === 'en' ? 'en-US' : 'ru-RU';
+}
+function warehouseVoiceDefaultPhrase() {
+  const l = (typeof currentLang !== 'undefined' && currentLang) || 'ru';
+  return l === 'de' ? 'Hinzugefügt' : l === 'en' ? 'Added' : 'Добавлено';
+}
+function warehouseVoiceGetSettings() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(WAREHOUSE_VOICE_STORAGE_KEY) || '{}') || {}; } catch (e) {}
+  const num = (v, min, max, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d; };
+  return {
+    enabled: saved.enabled !== false,
+    voiceURI: String(saved.voiceURI || ''),
+    rate: num(saved.rate, 0.5, 2, 1),
+    pitch: num(saved.pitch, 0.5, 2, 1),
+    volume: num(saved.volume, 0, 1, 1),
+    phrase: String(saved.phrase || '').slice(0, 40),
+    speakTaps: saved.speakTaps !== false,
+    showSec: num(saved.showSec, 1, 10, 3),
+    autoSec: num(saved.autoSec, 0, 30, 5)
+  };
+}
+function warehouseVoiceSpeak(text) {
+  const s = warehouseVoiceGetSettings();
+  if (!s.enabled || !text || !('speechSynthesis' in window)) return;
+  try {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(String(text));
+    const voice = s.voiceURI ? synth.getVoices().find(v => v.voiceURI === s.voiceURI) : null;
+    utterance.lang = voice ? voice.lang : warehouseVoiceLangCode();
+    if (voice) utterance.voice = voice;
+    utterance.rate = s.rate;
+    utterance.pitch = s.pitch;
+    utterance.volume = s.volume;
+    synth.speak(utterance);
+  } catch (e) {}
+}
+function warehouseVoiceAnnounce(count, source) {
+  const s = warehouseVoiceGetSettings();
+  if (!s.enabled || !(count > 0)) return;
+  if (source === 'tap' && !s.speakTaps) return;
+  warehouseVoiceSpeak((s.phrase ? s.phrase + ' ' : '') + count);
+}
+function warehouseVoiceFillVoices() {
+  const select = document.getElementById('voiceSelect');
+  if (!select) return;
+  const s = warehouseVoiceGetSettings();
+  let voices = [];
+  try { voices = window.speechSynthesis ? Array.from(window.speechSynthesis.getVoices()) : []; } catch (e) {}
+  const lang = warehouseVoiceLangCode().slice(0, 2);
+  voices.sort((a, b) => (b.lang.slice(0, 2) === lang) - (a.lang.slice(0, 2) === lang) || a.name.localeCompare(b.name));
+  select.innerHTML = '';
+  const auto = document.createElement('option');
+  auto.value = '';
+  auto.textContent = 'Авто (по языку приложения)';
+  select.appendChild(auto);
+  voices.forEach(v => {
+    const option = document.createElement('option');
+    option.value = v.voiceURI;
+    option.textContent = v.name + ' (' + v.lang + ')';
+    select.appendChild(option);
+  });
+  select.value = s.voiceURI;
+  if (select.value !== s.voiceURI) select.value = '';
+}
+function warehouseVoiceUpdateLabels() {
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  set('voiceRateVal', Number(document.getElementById('voiceRate')?.value || 1).toFixed(1));
+  set('voicePitchVal', Number(document.getElementById('voicePitch')?.value || 1).toFixed(1));
+  set('voiceVolumeVal', Math.round(Number(document.getElementById('voiceVolume')?.value || 1) * 100) + '%');
+}
+function warehouseVoiceLoadUi() {
+  const s = warehouseVoiceGetSettings();
+  const fill = (id, value) => { const el = document.getElementById(id); if (el) el.value = String(value); };
+  fill('voiceEnabled', s.enabled ? '1' : '0');
+  fill('voiceRate', s.rate);
+  fill('voicePitch', s.pitch);
+  fill('voiceVolume', s.volume);
+  fill('voicePhrase', s.phrase);
+  fill('voiceSpeakTaps', s.speakTaps ? '1' : '0');
+  fill('voiceShowSec', s.showSec);
+  fill('voiceAutoSec', s.autoSec);
+  const phrase = document.getElementById('voicePhrase');
+  if (phrase) phrase.placeholder = 'Пусто — голос говорит только число';
+  warehouseVoiceFillVoices();
+  warehouseVoiceUpdateLabels();
+  if (window.speechSynthesis && !window.__warehouseVoicesBound) {
+    window.__warehouseVoicesBound = true;
+    try { window.speechSynthesis.addEventListener('voiceschanged', warehouseVoiceFillVoices); } catch (e) {}
+  }
+}
+window.warehouseVoiceSaveUi = function () {
+  const read = id => document.getElementById(id)?.value;
+  const next = {
+    enabled: read('voiceEnabled') !== '0',
+    voiceURI: String(read('voiceSelect') || ''),
+    rate: Number(read('voiceRate')) || 1,
+    pitch: Number(read('voicePitch')) || 1,
+    volume: Number(read('voiceVolume')),
+    phrase: String(read('voicePhrase') || '').trim(),
+    speakTaps: read('voiceSpeakTaps') !== '0',
+    showSec: Number(read('voiceShowSec')) || 3,
+    autoSec: Number(read('voiceAutoSec'))
+  };
+  if (!Number.isFinite(next.volume)) next.volume = 1;
+  if (!Number.isFinite(next.autoSec)) next.autoSec = 5;
+  try { localStorage.setItem(WAREHOUSE_VOICE_STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+  warehouseVoiceUpdateLabels();
+};
+window.warehouseVoiceTest = function () {
+  window.warehouseVoiceSaveUi();
+  const s = warehouseVoiceGetSettings();
+  const saved = s.enabled;
+  const text = (s.phrase ? s.phrase + ' ' : '') + '15';
+  if (!saved) { warehouseVoiceSpeakForce(text); return; }
+  warehouseVoiceSpeak(text);
+};
+function warehouseVoiceSpeakForce(text) {
+  try {
+    const s = warehouseVoiceGetSettings();
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = s.voiceURI ? synth.getVoices().find(v => v.voiceURI === s.voiceURI) : null;
+    utterance.lang = voice ? voice.lang : warehouseVoiceLangCode();
+    if (voice) utterance.voice = voice;
+    utterance.rate = s.rate; utterance.pitch = s.pitch; utterance.volume = s.volume;
+    synth.speak(utterance);
+  } catch (e) {}
 }
 
 function warehouseVibrate(pattern) {
@@ -24389,6 +24714,19 @@ body[data-theme] .home-screen-page .quick-action-label{white-space:normal;overfl
   opacity:0;transform:translate(-50%,-50%) scale(.72);transition-property:opacity,transform;
   transition-timing-function:ease-out;transition-duration:.15s;will-change:opacity,transform;}
 .nr-tapfx-num.show{opacity:.88;transform:translate(-50%,-50%) scale(1);}
+.home-screen-pages.home-screen-pages{overflow-x:hidden;scroll-snap-type:none;touch-action:pan-y;}
+.home-screen-pages .home-screen-page{scroll-snap-align:none;scroll-snap-stop:normal;overscroll-behavior-y:contain;}
+/* Мини-окно выбора количества (Приём по наименованию): в 2 раза больше */
+#nrQtyOverlay .nr-wheel-dialog{width:290px;padding:20px 16px;}
+#nrQtyOverlay .nr-wheel-container{width:200px;height:300px;perspective:2000px;}
+#nrQtyOverlay .nr-wheel-selection{height:60px;margin-top:-30px;border-radius:12px;}
+#nrQtyOverlay .nr-wheel-list{margin-top:-30px;}
+#nrQtyOverlay .nr-wheel-item{height:60px;line-height:60px;font-size:28px;}
+#nrQtyOverlay .nr-wheel-item.active{font-size:32px;}
+/* Настройки голоса */
+.voice-range{width:100%;margin:0 0 14px;accent-color:var(--blue);}
+.voice-test-btn{width:100%;margin-top:4px;padding:12px;border:0;border-radius:9px;background:var(--blue);color:#fff;font:inherit;font-weight:800;cursor:pointer;}
+.voice-test-btn:active{transform:scale(.98);}
 /* Кнопка сканера в поиске: белый фон */
 body .search-box .scan-btn{background:#fff;color:#111827;border:2px solid #fff;box-shadow:0 0 0 1px #fff;}
 body .search-box .scan-btn svg{stroke:#111827;}
