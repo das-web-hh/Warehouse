@@ -10,6 +10,7 @@ import android.os.Environment
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.speech.tts.TextToSpeech
 import android.print.PrintAttributes
 import android.print.PrintManager
 import android.provider.DocumentsContract
@@ -31,6 +32,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -57,6 +59,8 @@ class MainActivity : AppCompatActivity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var pendingFolderRequestId: String? = null
     private var printWebView: WebView? = null
+    private var tts: TextToSpeech? = null
+    @Volatile private var ttsReady = false
 
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 51426
@@ -128,6 +132,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        tts = TextToSpeech(this) { status -> ttsReady = (status == TextToSpeech.SUCCESS) }
+
         webView.addJavascriptInterface(WebAppInterface(this), "Android")
         webView.loadUrl(localUrl)
 
@@ -139,6 +145,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        try { tts?.stop(); tts?.shutdown() } catch (e: Exception) { }
+        tts = null
         stopPythonServer()
         super.onDestroy()
     }
@@ -745,6 +753,44 @@ class MainActivity : AppCompatActivity() {
                     if (parts.size == 1) v.vibrate(parts[0])
                     else v.vibrate(longArrayOf(0) + parts.toLongArray(), -1)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // Озвучка чисел через нативный Android TextToSpeech (в WebView нет голосов speechSynthesis).
+        @JavascriptInterface
+        fun getVoices(): String {
+            val arr = JSONArray()
+            val engine = tts
+            if (engine == null || !ttsReady) return arr.toString()
+            try {
+                engine.voices?.sortedBy { it.name }?.forEach { v ->
+                    arr.put(JSONObject().put("name", v.name).put("lang", v.locale.toLanguageTag()))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return arr.toString()
+        }
+
+        @JavascriptInterface
+        fun speak(text: String, voice: String, lang: String, rate: String, pitch: String, volume: String) {
+            val engine = tts ?: return
+            if (!ttsReady) return
+            try {
+                val chosen = if (voice.isNotEmpty()) engine.voices?.firstOrNull { it.name == voice } else null
+                if (chosen != null) engine.voice = chosen
+                else engine.language = Locale.forLanguageTag(lang)
+                engine.setSpeechRate(rate.toFloatOrNull() ?: 1f)
+                engine.setPitch(pitch.toFloatOrNull() ?: 1f)
+                val params = Bundle().apply {
+                    putFloat(
+                        TextToSpeech.Engine.KEY_PARAM_VOLUME,
+                        (volume.toFloatOrNull() ?: 1f).coerceIn(0f, 1f)
+                    )
+                }
+                engine.speak(text, TextToSpeech.QUEUE_FLUSH, params, "warehouse-tts")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
