@@ -24663,11 +24663,46 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
     if (!match) throw new Error('Python вернул изображение в неизвестном формате.');
     return {mime: match[1].toLowerCase(), base64: match[2].replace(/\s+/g, '')};
   }
+  async function pythonAlive(base, timeoutMs) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), timeoutMs);
+    try {
+      const r = await fetch(base + '/health', {cache: 'no-store', signal: c.signal});
+      return r.ok;
+    } catch (ignore) { return false; } finally { clearTimeout(t); }
+  }
+  // Если Python ещё не поднялся (или Termux его остановил) — просим APK
+  // запустить start-server.sh и ждём ответа /health до 25 секунд.
+  async function ensurePythonRunning(base) {
+    if (await pythonAlive(base, 2500)) return true;
+    const bridge = window.Android && window.Android.ensurePythonServer;
+    if (!bridge) return false;
+    try { window.Android.ensurePythonServer(); } catch (ignore) {}
+    status('Запускаю Python-сервер…', 'loading');
+    const until = Date.now() + 25000;
+    while (Date.now() < until) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (await pythonAlive(base, 2500)) return true;
+    }
+    return false;
+  }
   async function prepareOnPython(file, isPdf) {
     const base = typeof _warehousePythonBaseUrl === 'function' ? _warehousePythonBaseUrl() : '';
     if (!base) throw new Error('Не указан адрес Python-сервера в настройках.');
+    await ensurePythonRunning(base);
+    const fileName = file.name || (isPdf ? 'document.pdf' : 'snapshot.jpg');
+    // Копируем файл в память ДО отправки: файл из камеры/выбора в WebView —
+    // ленивая ссылка на временный content://-файл, и fetch(FormData(File))
+    // падает с «Failed to fetch», если WebView уже не может его прочитать.
+    let payloadBlob;
+    try {
+      payloadBlob = new Blob([await file.arrayBuffer()],
+        {type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg')});
+    } catch (error) {
+      throw new Error('Не удалось прочитать выбранный файл: ' + (error?.message || error));
+    }
     const form = new FormData();
-    form.append('file', file, file.name || (isPdf ? 'document.pdf' : 'snapshot.jpg'));
+    form.append('file', payloadBlob, fileName);
     if (isPdf) form.append('first_page_only', '1');
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5 * 60 * 1000);
@@ -24676,9 +24711,18 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
       response = await fetch(base + (isPdf ? '/prepare-pdf' : '/prepare-image'),
         {method: 'POST', body: form, signal: controller.signal});
     } catch (error) {
-      throw new Error(error?.name === 'AbortError'
-        ? 'Python-сервер слишком долго обрабатывает файл.'
-        : 'Не удалось подключиться к Python-серверу.');
+      if (error?.name === 'AbortError') {
+        throw new Error('Python-сервер слишком долго обрабатывает файл.');
+      }
+      // Различаем «сервер не запущен» и «сервер жив, но запрос не прошёл».
+      let alive = false;
+      try {
+        const probe = await fetch(base + '/health', {cache: 'no-store'});
+        alive = probe.ok;
+      } catch (ignore) {}
+      throw new Error(alive
+        ? 'Не удалось подключиться к Python-серверу: сервер отвечает, но отправка файла не удалась (' + (error?.message || error) + ').'
+        : 'Не удалось подключиться к Python-серверу (' + base + '). Проверьте, что server.py запущен.');
     } finally {
       clearTimeout(timer);
     }
@@ -24771,7 +24815,14 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
       notes.length ? 'error' : 'ok');
   }
   window.bwareHandleFile = async function (input) {
-    const file = input?.files?.[0];
+    let file = input?.files?.[0];
+    if (file) {
+      try {
+        file = new File([await file.arrayBuffer()], file.name || 'document', {
+          type: file.type || '', lastModified: file.lastModified || Date.now()
+        });
+      } catch (ignore) {}
+    }
     if (input) input.value = '';
     if (!file || state.scanning) return;
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
