@@ -845,7 +845,9 @@ class MainActivity : AppCompatActivity() {
                         printManager.print(
                             "Warehouse Document",
                             adapter,
-                            PrintAttributes.Builder().build()
+                            PrintAttributes.Builder()
+                                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                .build()
                         )
                     }
                 }
