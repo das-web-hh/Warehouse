@@ -4734,6 +4734,7 @@ body{overscroll-behavior:none;}
       </select>
       <label class="feedback-settings-label" for="voiceSelect">Кто говорит (голос)</label>
       <select class="feedback-settings-select" id="voiceSelect" onchange="warehouseVoiceSaveUi()"></select>
+      <div id="voiceStatus" class="feedback-settings-intro" style="margin:-6px 0 12px;font-size:12px;"></div>
       <label class="feedback-settings-label" for="voiceRate">Скорость: <b id="voiceRateVal">1.0</b></label>
       <input class="voice-range" id="voiceRate" type="range" min="0.5" max="2" step="0.1" value="1" oninput="warehouseVoiceSaveUi()">
       <label class="feedback-settings-label" for="voicePitch">Тембр (высота голоса): <b id="voicePitchVal">1.0</b></label>
@@ -5469,6 +5470,810 @@ const LANGS = {
     batchLabel:"Charge"
   }
 };
+/* ══════════════════════════════════════════════
+   Перевод остального интерфейса ru → en/de.
+   Словарь (точные строки + шаблоны ~regex) применяется к тексту и атрибутам DOM
+   и к alert/confirm/prompt, поэтому покрывает и динамические сообщения.
+══════════════════════════════════════════════ */
+const RU_TR_RAW = String.raw`Принять товары ¦ Receive goods ¦ Waren annehmen
+Приём товаров - вручную ¦ Receiving goods – manual ¦ Wareneingang – manuell
+Приём товаров по называниями ¦ Receiving goods by name ¦ Wareneingang nach Namen
+Автоприём ¦ Auto receiving ¦ Auto-Annahme
+Приём B-Ware ¦ B-Ware receiving ¦ B-Ware-Annahme
+Приём по заданию ¦ Receiving by task ¦ Annahme nach Auftrag
+Инвентар. ¦ Invent. ¦ Inventur
+История ¦ History ¦ Verlauf
+Каталог ¦ Catalog ¦ Katalog
+Импорт / Экспорт ¦ Import / Export ¦ Import / Export
+Настройки ¦ Settings ¦ Einstellungen
+Товар+ШК ¦ Item+Barcode ¦ Artikel+Barcode
+Задачи ¦ Tasks ¦ Aufgaben
+Профиль ¦ Profile ¦ Profil
+Приём по имени ¦ Receiving by name ¦ Annahme nach Name
+Готово: 0% ¦ Done: 0% ¦ Fertig: 0 %
+0/0 позиций ¦ 0/0 items ¦ 0/0 Positionen
+Загрузите PDF-накладную, Excel или снимите несколько страниц камерой для распознавания. ¦ Upload a PDF delivery note or Excel file, or photograph several pages with the camera for recognition. ¦ Laden Sie einen PDF-Lieferschein oder eine Excel-Datei hoch oder fotografieren Sie mehrere Seiten zur Erkennung.
+📂 Выбрать Excel файл ¦ 📂 Choose Excel file ¦ 📂 Excel-Datei wählen
+📄 Выбрать PDF-накладную ¦ 📄 Choose PDF delivery note ¦ 📄 PDF-Lieferschein wählen
+📷 Снимок ¦ 📷 Snapshot ¦ 📷 Foto
+Реестр сканирований ¦ Scan registry ¦ Scan-Register
+Здесь появятся успешно распознанные накладные. ¦ Successfully recognized delivery notes will appear here. ¦ Erfolgreich erkannte Lieferscheine erscheinen hier.
+Обработка кадров: 0% ¦ Processing frames: 0% ¦ Bilder werden verarbeitet: 0 %
+Отпр: ¦ Sender: ¦ Abs.:
+Дата: ¦ Date: ¦ Datum:
+🖨️ Печать ¦ 🖨️ Print ¦ 🖨️ Drucken
+📊 Экспорт ¦ 📊 Export ¦ 📊 Export
+💾 Сохранить ¦ 💾 Save ¦ 💾 Speichern
+Все ¦ All ¦ Alle
+Не сверялось ¦ Not checked ¦ Nicht abgeglichen
+Приёмка по имени · Warehouse ¦ Receiving by name · Warehouse ¦ Annahme nach Name · Warehouse
+Добавить товар ¦ Add item ¦ Artikel hinzufügen
+Введите наименование товара, которого нет в накладной: ¦ Enter the name of an item that is not on the delivery note: ¦ Geben Sie den Namen eines Artikels ein, der nicht im Lieferschein steht:
+Отмена ¦ Cancel ¦ Abbrechen
+Добавить ¦ Add ¦ Hinzufügen
+Удаление товара ¦ Delete item ¦ Artikel löschen
+Удалить позицию? ¦ Delete this line? ¦ Position löschen?
+Нет ¦ No ¦ Nein
+Да ¦ Yes ¦ Ja
+Удалить партию? ¦ Delete batch? ¦ Charge löschen?
+Удалить эту партию из списка? ¦ Delete this batch from the list? ¦ Diese Charge aus der Liste löschen?
+Удалить ¦ Delete ¦ Löschen
+Выберите тип печати ¦ Choose print type ¦ Druckart wählen
+📄 Полный отчёт ¦ 📄 Full report ¦ 📄 Vollständiger Bericht
+⚠️ Печать расхождения ¦ ⚠️ Print discrepancies ¦ ⚠️ Abweichungen drucken
+Далее ¦ Next ¦ Weiter
+Absender / Отправитель ¦ Sender ¦ Absender
+Добавленные товары появятся здесь. ¦ Added items will appear here. ¦ Hinzugefügte Artikel erscheinen hier.
+История B-Ware ¦ B-Ware history ¦ B-Ware-Verlauf
+0 кадров ¦ 0 frames ¦ 0 Bilder
+Файлы получены ¦ Files received ¦ Dateien empfangen
+Выберите, куда направить документы из Android «Поделиться». ¦ Choose where to send documents shared from Android. ¦ Wählen Sie, wohin die über „Teilen“ von Android empfangenen Dokumente gehen sollen.
+⚡ Автоприём — отправить в Gemini автоматически ¦ ⚡ Auto receiving – send to Gemini automatically ¦ ⚡ Auto-Annahme – automatisch an Gemini senden
+📋 Приём по имени — распознать накладную ¦ 📋 Receiving by name – recognize delivery note ¦ 📋 Annahme nach Name – Lieferschein erkennen
+Оставить в очереди ¦ Keep in queue ¦ In Warteschlange lassen
+Инфо ¦ Info ¦ Info
+Кол-во ¦ Qty ¦ Menge
+Имя отправителя ¦ Sender name ¦ Name des Absenders
+Номер заказа ¦ Order number ¦ Bestellnummer
+📷 Фото ¦ 📷 Photo ¦ 📷 Foto
+📄 Накладная ¦ 📄 Delivery note ¦ 📄 Lieferschein
+Принять ¦ Receive ¦ Annehmen
+Инвентаризация ¦ Inventory count ¦ Inventur
+Автоприем ¦ Auto receiving ¦ Auto-Annahme
+О программе ¦ About ¦ Über die App
+Склад ¦ Warehouse ¦ Lager
+Ряд ¦ Row ¦ Reihe
+Этаж ¦ Level ¦ Ebene
+Полка ¦ Shelf ¦ Regal
+Инвентаризация готова ¦ Inventory count complete ¦ Inventur abgeschlossen
+📥 Импорт Excel ¦ 📥 Import Excel ¦ 📥 Excel importieren
+Адрес хранения ¦ Storage address ¦ Lagerplatz
+Срок годности ¦ Expiry date ¦ Haltbarkeitsdatum
+Год — прокрутите по горизонтали ¦ Year – scroll horizontally ¦ Jahr – horizontal scrollen
+Пн ¦ Mon ¦ Mo
+Вт ¦ Tue ¦ Di
+Ср ¦ Wed ¦ Mi
+Чт ¦ Thu ¦ Do
+Пт ¦ Fri ¦ Fr
+Сб ¦ Sat ¦ Sa
+Вс ¦ Sun ¦ So
+Сохранить срок ¦ Save expiry date ¦ Haltbarkeit speichern
+Товар не найден ¦ Item not found ¦ Artikel nicht gefunden
+Введите имя товара, чтобы сохранить его в базе. ¦ Enter the item name to save it in the database. ¦ Geben Sie den Artikelnamen ein, um ihn in der Datenbank zu speichern.
+Пропустить ¦ Skip ¦ Überspringen
+Сохранить ¦ Save ¦ Speichern
+Изменить строку ¦ Edit line ¦ Zeile bearbeiten
+Имя товара ¦ Item name ¦ Artikelname
+Штрихкод ¦ Barcode ¦ Barcode
+Количество ¦ Quantity ¦ Menge
+Место хранения ¦ Storage location ¦ Lagerort
+Изменить адрес ¦ Change address ¦ Adresse ändern
+Адрес уже существует ¦ Address already exists ¦ Adresse existiert bereits
+Объединить товары с этим адресом? ¦ Merge items with this address? ¦ Artikel mit dieser Adresse zusammenführen?
+Да, объединить ¦ Yes, merge ¦ Ja, zusammenführen
+📥 Импорт Excel в строки ¦ 📥 Import Excel into lines ¦ 📥 Excel in Zeilen importieren
+Строки добавятся в выбранное место. Одинаковые товар, срок годности и адрес объединяются в одно количество. ¦ Lines will be added to the selected location. Identical item, expiry date and address are merged into one quantity. ¦ Die Zeilen werden am gewählten Ort hinzugefügt. Gleicher Artikel, gleiches Haltbarkeitsdatum und gleiche Adresse werden zu einer Menge zusammengeführt.
+Выбрать файл Excel (.xlsx, .csv) ¦ Choose Excel file (.xlsx, .csv) ¦ Excel-Datei wählen (.xlsx, .csv)
+Обнаруженные столбцы ¦ Detected columns ¦ Erkannte Spalten
+Настройка столбцов ¦ Column mapping ¦ Spaltenzuordnung
+Наименование ¦ Name ¦ Bezeichnung
+Адрес (необязательно) ¦ Address (optional) ¦ Adresse (optional)
+Предпросмотр ¦ Preview ¦ Vorschau
+📥 Добавить в сканированные строки ¦ 📥 Add to scanned lines ¦ 📥 Zu gescannten Zeilen hinzufügen
+Вставить ¦ Paste ¦ Einfügen
+📷 Сканировать товары ¦ 📷 Scan items ¦ 📷 Artikel scannen
+Нажмите кнопку сканирования, чтобы считать штрихкод из локальной базы. ¦ Press the scan button to read a barcode from the local database. ¦ Tippen Sie auf die Scan-Schaltfläche, um einen Barcode aus der lokalen Datenbank zu lesen.
+Результат сверки ¦ Reconciliation result ¦ Abgleichergebnis
+Товар + Штрихкод ¦ Item + Barcode ¦ Artikel + Barcode
+Наименование товара ¦ Item name ¦ Artikelbezeichnung
+Штрихкод (EAN) ¦ Barcode (EAN) ¦ Barcode (EAN)
+📊 Импорт из Excel ¦ 📊 Import from Excel ¦ 📊 Import aus Excel
+Артикул ¦ Article no. ¦ Artikelnummer
+Предпросмотр (первая строка) ¦ Preview (first row) ¦ Vorschau (erste Zeile)
+📊 Импортировать в базу ¦ 📊 Import into database ¦ 📊 In Datenbank importieren
+Имя ¦ First name ¦ Vorname
+Фамилия ¦ Last name ¦ Nachname
+Эмайл ¦ Email ¦ E-Mail
+Логин ¦ Login ¦ Login
+Пароль ¦ Password ¦ Passwort
+ID аккаунта ¦ Account ID ¦ Konto-ID
+Выход ¦ Log out ¦ Abmelden
+Принять товар ¦ Receive item ¦ Artikel annehmen
+Партии ¦ Batches ¦ Chargen
+Список пуст — найдите товар выше ¦ List is empty – find an item above ¦ Liste ist leer – suchen Sie oben einen Artikel
+✅ Принять товар ¦ ✅ Receive item ¦ ✅ Artikel annehmen
+Введите название товара. После сохранения он появится в онлайн-каталоге и будет добавлен в приёмку. ¦ Enter the item name. After saving it will appear in the online catalog and be added to receiving. ¦ Geben Sie den Artikelnamen ein. Nach dem Speichern erscheint er im Online-Katalog und wird zur Annahme hinzugefügt.
+Добавить в приёмку ¦ Add to receiving ¦ Zur Annahme hinzufügen
+Номер заказа партии ¦ Batch order number ¦ Bestellnummer der Charge
+📷 Фото (макс. 20) ¦ 📷 Photos (max. 20) ¦ 📷 Fotos (max. 20)
+Выбрать фото ¦ Choose photos ¦ Fotos wählen
+Сделать фото ¦ Take photo ¦ Foto aufnehmen
+📄 Накладные (фото или PDF, макс. 30) ¦ 📄 Delivery notes (photo or PDF, max. 30) ¦ 📄 Lieferscheine (Foto oder PDF, max. 30)
+Выбрать файлы ¦ Choose files ¦ Dateien wählen
+Сканировать ¦ Scan ¦ Scannen
+Папка не выбрана ¦ No folder selected ¦ Kein Ordner gewählt
+Проверить PDF ¦ Check PDF ¦ PDF prüfen
+Сервер ¦ Server ¦ Server
+Чат ¦ Chat ¦ Chat
+Выбрать папку ¦ Choose folder ¦ Ordner wählen
+Ожидают ¦ Waiting ¦ Wartend
+Обработка ¦ Processing ¦ Verarbeitung
+Готово ¦ Done ¦ Fertig
+Ошибки ¦ Errors ¦ Fehler
+Адрес Termux/Python-сервера ¦ Termux/Python server address ¦ Adresse des Termux/Python-Servers
+Проверить ¦ Check ¦ Prüfen
+0 файлов ¦ 0 files ¦ 0 Dateien
+Полноэкранный режим автоматического приема открыт. ¦ Full-screen auto receiving mode is open. ¦ Der Vollbildmodus der automatischen Annahme ist geöffnet.
+Чат с Gemini ¦ Chat with Gemini ¦ Chat mit Gemini
+Расход токенов ¦ Token usage ¦ Token-Verbrauch
+Вход: ¦ Input: ¦ Eingabe:
+Выход: ¦ Output: ¦ Ausgabe:
+Всего: ¦ Total: ¦ Gesamt:
+Напишите вопрос Gemini или прикрепите документ для анализа. ¦ Ask Gemini a question or attach a document for analysis. ¦ Stellen Sie Gemini eine Frage oder hängen Sie ein Dokument zur Analyse an.
+Добавить API-ключ ¦ Add API key ¦ API-Schlüssel hinzufügen
+Для каждого ключа укажите отдельный дневной лимит токенов. Максимум — 10 ключей. ¦ Set a separate daily token limit for each key. Maximum – 10 keys. ¦ Legen Sie für jeden Schlüssel ein eigenes Tageslimit an Tokens fest. Maximal 10 Schlüssel.
+API-ключ Gemini ¦ Gemini API key ¦ Gemini-API-Schlüssel
+Дневной лимит токенов ¦ Daily token limit ¦ Tägliches Token-Limit
+Экспорт ¦ Export ¦ Export
+Экспорт в Excel ¦ Export to Excel ¦ Export nach Excel
+Экспорт базы ¦ Export database ¦ Datenbank exportieren
+Экспорт инвентаризации в Excel ¦ Export inventory count to Excel ¦ Inventur nach Excel exportieren
+📤 Поделиться (WhatsApp, Telegram, Email…) ¦ 📤 Share (WhatsApp, Telegram, Email…) ¦ 📤 Teilen (WhatsApp, Telegram, E-Mail …)
+💾 Сохранить в память телефона ¦ 💾 Save to phone storage ¦ 💾 Im Telefonspeicher speichern
+Выберите дату сканирования. Просроченные до 11.2026 будут на отдельном листе. ¦ Choose the scan date. Items expired before 11.2026 will be on a separate sheet. ¦ Wählen Sie das Scan-Datum. Abgelaufene Artikel bis 11.2026 stehen auf einem separaten Blatt.
+Редактирование ¦ Editing ¦ Bearbeiten
+EAN (Штрихкод) ¦ EAN (Barcode) ¦ EAN (Barcode)
+📎 Прикрепить файлы ¦ 📎 Attach files ¦ 📎 Dateien anhängen
+✏️ Изменить количество (последнее принятие) ¦ ✏️ Change quantity (last receipt) ¦ ✏️ Menge ändern (letzter Eingang)
+📅 Дата: ¦ 📅 Date: ¦ 📅 Datum:
+📄 Накладная (фото или PDF) ¦ 📄 Delivery note (photo or PDF) ¦ 📄 Lieferschein (Foto oder PDF)
+Выбрать файл ¦ Choose file ¦ Datei wählen
+Товар принят! ¦ Item received! ¦ Artikel angenommen!
+Закрыть ¦ Close ¦ Schließen
+Товар принят ¦ Item received ¦ Artikel angenommen
+Инфо о партии ¦ Batch info ¦ Chargeninfo
+История партии ¦ Batch history ¦ Chargenverlauf
+Отправитель ¦ Sender ¦ Absender
+Дата приёма ¦ Receipt date ¦ Eingangsdatum
+Накладная ¦ Delivery note ¦ Lieferschein
+Google Диск ¦ Google Drive ¦ Google Drive
+История приёмок ¦ Receiving history ¦ Annahme-Verlauf
+⬇️ Скачать PDF ¦ ⬇️ Download PDF ¦ ⬇️ PDF herunterladen
+Накладная не прикреплена ¦ No delivery note attached ¦ Kein Lieferschein angehängt
+Для этой приёмки накладная не была загружена. Вы можете прикрепить её через кнопку «Прикрепить файлы». ¦ No delivery note was uploaded for this receipt. You can attach it with the “Attach files” button. ¦ Für diese Annahme wurde kein Lieferschein hochgeladen. Sie können ihn über die Schaltfläche „Dateien anhängen“ hinzufügen.
+📷 Сканировать ¦ 📷 Scan ¦ 📷 Scannen
+Наведите камеру на штрихкод ¦ Point the camera at the barcode ¦ Richten Sie die Kamera auf den Barcode
+🔄 Разрешить камеру ¦ 🔄 Allow camera ¦ 🔄 Kamera erlauben
+Импорт базы ¦ Import database ¦ Datenbank importieren
+Выберите файл бэкапа (.json) ¦ Choose backup file (.json) ¦ Backup-Datei wählen (.json)
+Содержимое файла ¦ File contents ¦ Dateiinhalt
+📂 Импортировать в базу ¦ 📂 Import into database ¦ 📂 In Datenbank importieren
+Импорт из Excel ¦ Import from Excel ¦ Import aus Excel
+Импорт базы (.json) ¦ Import database (.json) ¦ Datenbank importieren (.json)
+Экспорт базы (.json) ¦ Export database (.json) ¦ Datenbank exportieren (.json)
+Оформление ¦ Appearance ¦ Darstellung
+Язык ¦ Language ¦ Sprache
+Тема ¦ Theme ¦ Design
+Светлая ¦ Light ¦ Hell
+Тёмная ¦ Dark ¦ Dunkel
+Фон ¦ Background ¦ Hintergrund
+Главное окно · светлая тема ¦ Main window · light theme ¦ Hauptfenster · helles Design
+Укажите URL опубликованного Google Apps Script Web App и ID папки Google Диска. Эти параметры сохраняются только в localStorage этого браузера. ¦ Enter the URL of the published Google Apps Script Web App and the Google Drive folder ID. These settings are stored only in this browser's localStorage. ¦ Geben Sie die URL der veröffentlichten Google-Apps-Script-Web-App und die ID des Google-Drive-Ordners ein. Diese Einstellungen werden nur im localStorage dieses Browsers gespeichert.
+ID папки Google Диска ¦ Google Drive folder ID ¦ Google-Drive-Ordner-ID
+Поле кода файла ¦ File code field ¦ Feld für den Dateicode
+EAN / штрихкод ¦ EAN / barcode ¦ EAN / Barcode
+Номер партии / накладной ¦ Batch / delivery note number ¦ Chargen-/Lieferscheinnummer
+Автоматически: EAN → артикул → партия ¦ Automatic: EAN → article no. → batch ¦ Automatisch: EAN → Artikelnummer → Charge
+Разрешить просмотр загруженных файлов по ссылке (нужно для показа без входа в Google) ¦ Allow viewing uploaded files by link (needed to show them without signing in to Google) ¦ Ansicht hochgeladener Dateien per Link erlauben (nötig für die Anzeige ohne Google-Anmeldung)
+Файлы получают имена вида ¦ Files are named like ¦ Dateien erhalten Namen wie
+код_дата_имя-файла ¦ code_date_file-name ¦ Code_Datum_Dateiname
+. При открытии карточки приложение ищет этот код в указанной папке и показывает найденные фото/PDF. ¦ . When a card is opened, the app looks for this code in the given folder and shows the photos/PDFs found. ¦ . Beim Öffnen einer Karte sucht die App diesen Code im angegebenen Ordner und zeigt gefundene Fotos/PDFs an.
+Интерфейс ¦ Interface ¦ Oberfläche
+Виртуальная клавиатура ¦ Virtual keyboard ¦ Virtuelle Tastatur
+Включена · окно уменьшено ¦ Enabled · window reduced ¦ Aktiviert · Fenster verkleinert
+Камера ¦ Camera ¦ Kamera
+Автоматический выбор ¦ Automatic selection ¦ Automatische Auswahl
+Звук и вибрация ¦ Sound and vibration ¦ Ton und Vibration
+Выберите отдельный сигнал для нажатия на товар, сканирования камерой и прокрутки количества. Настройка уровня вибрации применяется ко всем вибрациям приложения. ¦ Choose a separate signal for tapping an item, camera scanning and quantity scrolling. The vibration level applies to all vibrations in the app. ¦ Wählen Sie ein eigenes Signal für das Antippen eines Artikels, das Kamera-Scannen und das Scrollen der Menge. Die Vibrationsstärke gilt für alle Vibrationen der App.
+Сигнал при тапе ¦ Tap signal ¦ Signal beim Antippen
+Сигнал при сканировании камерой ¦ Camera scan signal ¦ Signal beim Kamera-Scan
+Сигнал при выборе количества прокруткой ¦ Quantity scroll signal ¦ Signal beim Scrollen der Menge
+Уровень вибрации ¦ Vibration level ¦ Vibrationsstärke
+Выключена ¦ Off ¦ Aus
+Низкая ¦ Low ¦ Niedrig
+Средняя ¦ Medium ¦ Mittel
+Высокая ¦ High ¦ Hoch
+Изменения сохраняются сразу и действуют после закрытия настроек. ¦ Changes are saved immediately and take effect after closing settings. ¦ Änderungen werden sofort gespeichert und gelten nach dem Schließen der Einstellungen.
+Голос и счётчик количества ¦ Voice and quantity counter ¦ Stimme und Mengenzähler
+В «Приёме по наименованию» голос называет только последнее число со счётчика: например, «пятнадцать». Изменения сохраняются сразу. ¦ In “Receiving by name” the voice says only the last number from the counter, e.g. “fifteen”. Changes are saved immediately. ¦ In „Annahme nach Name“ nennt die Stimme nur die letzte Zahl vom Zähler, z. B. „fünfzehn“. Änderungen werden sofort gespeichert.
+Голос ¦ Voice ¦ Stimme
+Включён ¦ On ¦ Ein
+Выключен ¦ Off ¦ Aus
+Кто говорит (голос) ¦ Who speaks (voice) ¦ Wer spricht (Stimme)
+Авто (по языку приложения) ¦ Auto (by app language) ¦ Auto (nach App-Sprache)
+Скорость: ¦ Speed: ¦ Geschwindigkeit:
+Тембр (высота голоса): ¦ Pitch (voice height): ¦ Tonhöhe (Stimmlage):
+Громкость: ¦ Volume: ¦ Lautstärke:
+Слово перед числом (необязательно) ¦ Word before the number (optional) ¦ Wort vor der Zahl (optional)
+Озвучивать серию тапов (в конце серии) ¦ Announce tap series (at the end of the series) ¦ Tipp-Serie ansagen (am Ende der Serie)
+Сколько секунд держать добавленное число на экране ¦ How many seconds to keep the added number on screen ¦ Wie viele Sekunden die hinzugefügte Zahl angezeigt wird
+1 сек ¦ 1 sec ¦ 1 Sek.
+2 сек ¦ 2 sec ¦ 2 Sek.
+3 сек (стандарт) ¦ 3 sec (default) ¦ 3 Sek. (Standard)
+4 сек ¦ 4 sec ¦ 4 Sek.
+5 сек ¦ 5 sec ¦ 5 Sek.
+7 сек ¦ 7 sec ¦ 7 Sek.
+10 сек ¦ 10 sec ¦ 10 Sek.
+Авто-подтверждение количества в окне прокрутки ¦ Auto-confirm quantity in the scroll window ¦ Menge im Scroll-Fenster automatisch bestätigen
+Выключено ¦ Off ¦ Aus
+Через 3 сек ¦ After 3 sec ¦ Nach 3 Sek.
+Через 5 сек (стандарт) ¦ After 5 sec (default) ¦ Nach 5 Sek. (Standard)
+Через 8 сек ¦ After 8 sec ¦ Nach 8 Sek.
+Через 10 сек ¦ After 10 sec ¦ Nach 10 Sek.
+Через 15 сек ¦ After 15 sec ¦ Nach 15 Sek.
+🔊 Проверить голос ¦ 🔊 Test voice ¦ 🔊 Stimme testen
+Внешний сканер ¦ External scanner ¦ Externer Scanner
+Беспроводной сканер ¦ Wireless scanner ¦ Kabelloser Scanner
+Выключен · подключите Bluetooth-сканер как клавиатуру ¦ Off · connect a Bluetooth scanner as a keyboard ¦ Aus · Bluetooth-Scanner als Tastatur verbinden
+Сопрягите сканер в настройках телефона или компьютера. В приложении отдельное подключение не требуется. После включения откройте «Сканер» и нажимайте кнопку сканирования на устройстве. ¦ Pair the scanner in your phone or computer settings. No separate connection is needed in the app. After enabling, open “Scanner” and press the scan button on the device. ¦ Koppeln Sie den Scanner in den Einstellungen von Telefon oder Computer. In der App ist keine separate Verbindung nötig. Öffnen Sie nach dem Aktivieren „Scanner“ und drücken Sie die Scan-Taste am Gerät.
+Сканер через Wi‑Fi ¦ Scanner via Wi‑Fi ¦ Scanner über WLAN
+Введите IP-адрес компьютера, к которому подключён сканер. На компьютере должен работать WebSocket-мост. ¦ Enter the IP address of the computer the scanner is connected to. A WebSocket bridge must be running on the computer. ¦ Geben Sie die IP-Adresse des Computers ein, an den der Scanner angeschlossen ist. Auf dem Computer muss eine WebSocket-Brücke laufen.
+IP-адрес компьютера ¦ Computer IP address ¦ IP-Adresse des Computers
+Подключить ¦ Connect ¦ Verbinden
+Пример: сканер → компьютер → WebSocket на порту 8080 → этот телефон. Bluetooth-сканер выше продолжает работать отдельно. ¦ Example: scanner → computer → WebSocket on port 8080 → this phone. The Bluetooth scanner above keeps working separately. ¦ Beispiel: Scanner → Computer → WebSocket auf Port 8080 → dieses Telefon. Der Bluetooth-Scanner oben funktioniert weiterhin separat.
+Укажите адрес Python-сервера. При запуске приложение отправит на него GET-запрос и ожидает JSON-ответ. ¦ Enter the Python server address. On start the app sends a GET request to it and expects a JSON response. ¦ Geben Sie die Adresse des Python-Servers ein. Beim Start sendet die App eine GET-Anfrage und erwartet eine JSON-Antwort.
+Адрес Python-сервера ¦ Python server address ¦ Adresse des Python-Servers
+Папка входящих файлов ¦ Incoming files folder ¦ Ordner für eingehende Dateien
+Папка обработанных файлов ¦ Processed files folder ¦ Ordner für verarbeitete Dateien
+Проверять при запуске ¦ Check on start ¦ Beim Start prüfen
+Включено · запрос отправляется при открытии страницы ¦ On · request is sent when the page opens ¦ Ein · Anfrage wird beim Öffnen der Seite gesendet
+Пример: http://localhost:8050. Сервер Python должен разрешать запросы из браузера (CORS) и возвращать JSON. ¦ Example: http://localhost:8050. The Python server must allow browser requests (CORS) and return JSON. ¦ Beispiel: http://localhost:8050. Der Python-Server muss Browser-Anfragen (CORS) erlauben und JSON zurückgeben.
+Очистка мест ¦ Clear locations ¦ Lagerplätze leeren
+Выберите склад, ряд, этаж или полку с товарами. Пустые места не показываются. ¦ Choose a warehouse, row, level or shelf with items. Empty locations are not shown. ¦ Wählen Sie Lager, Reihe, Ebene oder Regal mit Artikeln. Leere Plätze werden nicht angezeigt.
+Текущее место ¦ Current location ¦ Aktueller Platz
+Искусственный интеллект ¦ Artificial intelligence ¦ Künstliche Intelligenz
+Эти параметры используются для обработки документов через Google Gemini. Ключ сохраняется только в этом браузере. ¦ These settings are used to process documents with Google Gemini. The key is stored only in this browser. ¦ Diese Einstellungen werden zur Verarbeitung von Dokumenten über Google Gemini verwendet. Der Schlüssel wird nur in diesem Browser gespeichert.
+API-ключи Gemini ¦ Gemini API keys ¦ Gemini-API-Schlüssel
+＋ Добавить API-ключ ¦ ＋ Add API key ¦ ＋ API-Schlüssel hinzufügen
+Вариант Gemini ¦ Gemini variant ¦ Gemini-Variante
+Gemini 3.6 Flash — универсальный вариант ¦ Gemini 3.6 Flash – all-round option ¦ Gemini 3.6 Flash – vielseitige Variante
+Gemini 2.5 Pro — глубокий анализ ¦ Gemini 2.5 Pro – deep analysis ¦ Gemini 2.5 Pro – tiefe Analyse
+Инструкция для обработки ¦ Processing instruction ¦ Verarbeitungsanweisung
+Прикреплять инструкцию к каждому файлу ¦ Attach the instruction to every file ¦ Anweisung an jede Datei anhängen
+Выключено · инструкция отправляется один раз в день ¦ Off · the instruction is sent once a day ¦ Aus · die Anweisung wird einmal täglich gesendet
+Промт для «Снимок» ¦ Prompt for “Snapshot” ¦ Prompt für „Foto“
+Прикреплять промт к PNG ¦ Attach the prompt to PNG ¦ Prompt an PNG anhängen
+Выключено · используется системная инструкция ¦ Off · the system instruction is used ¦ Aus · die Systemanweisung wird verwendet
+Расход Gemini за сегодня ¦ Gemini usage today ¦ Gemini-Verbrauch heute
+Вход ¦ Input ¦ Eingabe
+Всего ¦ Total ¦ Gesamt
+Лимит ¦ Limit ¦ Limit
+Для безопасности не передавайте этот файл другим людям после сохранения ключа. Документы отправляются по очереди доступным ключам. ¦ For security, do not pass this file to other people after saving the key. Documents are sent to the available keys in turn. ¦ Geben Sie diese Datei aus Sicherheitsgründen nach dem Speichern des Schlüssels nicht an andere weiter. Dokumente werden nacheinander an verfügbare Schlüssel gesendet.
+Хранилище данных ¦ Data storage ¦ Datenspeicher
+Место хранения каталога ¦ Catalog storage location ¦ Speicherort des Katalogs
+Нажмите, чтобы выбрать папку проекта ¦ Tap to choose the project folder ¦ Tippen, um den Projektordner zu wählen
+Папка автоприёма ¦ Auto receiving folder ¦ Ordner der Auto-Annahme
+Папка для входящих файлов автоприёма ¦ Folder for incoming auto-receiving files ¦ Ordner für eingehende Dateien der Auto-Annahme
+Время проверки папки автоприёма ¦ Auto receiving folder check interval ¦ Prüfintervall des Auto-Annahme-Ordners
+Как часто приложение ищет новые файлы в выбранной папке ¦ How often the app looks for new files in the selected folder ¦ Wie oft die App im gewählten Ordner nach neuen Dateien sucht
+Каждую минуту ¦ Every minute ¦ Jede Minute
+Каждые 2 минуты ¦ Every 2 minutes ¦ Alle 2 Minuten
+Каждые 5 минут ¦ Every 5 minutes ¦ Alle 5 Minuten
+Каждые 10 минут ¦ Every 10 minutes ¦ Alle 10 Minuten
+Каждые 15 минут ¦ Every 15 minutes ¦ Alle 15 Minuten
+Каждые 30 минут ¦ Every 30 minutes ¦ Alle 30 Minuten
+Каждый час ¦ Every hour ¦ Jede Stunde
+Время ожидания ответа Gemini ¦ Gemini response timeout ¦ Wartezeit auf Gemini-Antwort
+Сколько ждать ответ на распознавание документа ¦ How long to wait for a document recognition response ¦ Wie lange auf die Antwort der Dokumenterkennung gewartet wird
+30 секунд ¦ 30 seconds ¦ 30 Sekunden
+1 минута ¦ 1 minute ¦ 1 Minute
+90 секунд ¦ 90 seconds ¦ 90 Sekunden
+2 минуты ¦ 2 minutes ¦ 2 Minuten
+3 минуты ¦ 3 minutes ¦ 3 Minuten
+5 минут ¦ 5 minutes ¦ 5 Minuten
+10 минут ¦ 10 minutes ¦ 10 Minuten
+Пауза между отправками в Gemini ¦ Pause between Gemini submissions ¦ Pause zwischen Gemini-Sendungen
+Через сколько отправлять следующий документ. Слишком короткая пауза может вызвать лимит Gemini ¦ How long to wait before sending the next document. A pause that is too short may trigger the Gemini limit ¦ Wie lange bis zum Senden des nächsten Dokuments gewartet wird. Eine zu kurze Pause kann das Gemini-Limit auslösen
+10 секунд ¦ 10 seconds ¦ 10 Sekunden
+20 секунд ¦ 20 seconds ¦ 20 Sekunden
+Количество попыток отправки в Gemini ¦ Number of Gemini submission attempts ¦ Anzahl der Sendeversuche an Gemini
+Сколько раз повторять запрос при сбое сети или перегрузке сервера ¦ How many times to retry the request on a network failure or server overload ¦ Wie oft die Anfrage bei Netzausfall oder Serverüberlastung wiederholt wird
+1 (без повторов) ¦ 1 (no retries) ¦ 1 (keine Wiederholung)
+2 попытки ¦ 2 attempts ¦ 2 Versuche
+3 попытки ¦ 3 attempts ¦ 3 Versuche
+4 попытки ¦ 4 attempts ¦ 4 Versuche
+5 попыток ¦ 5 attempts ¦ 5 Versuche
+Состояние данных ¦ Data status ¦ Datenstatus
+IndexedDB + LocalStorage · офлайн ¦ IndexedDB + LocalStorage · offline ¦ IndexedDB + LocalStorage · offline
+Синхронизация с Firebase ¦ Firebase sync ¦ Firebase-Synchronisierung
+Ещё не выполнялась ¦ Not performed yet ¦ Noch nicht durchgeführt
+Синхр. ¦ Sync ¦ Sync.
+📷 Папка для фото ¦ 📷 Photo folder ¦ 📷 Fotoordner
+Раздельная папка — только фото товаров ¦ Separate folder – item photos only ¦ Separater Ordner – nur Artikelfotos
+📄 Папка для накладных ¦ 📄 Delivery notes folder ¦ 📄 Lieferschein-Ordner
+Раздельная папка — только накладные ¦ Separate folder – delivery notes only ¦ Separater Ordner – nur Lieferscheine
+Удалять фото старше месяца ¦ Delete photos older than a month ¦ Fotos löschen, die älter als ein Monat sind
+Выключено · фото сохраняются ¦ Off · photos are kept ¦ Aus · Fotos werden behalten
+🗑 Стереть весь каталог ¦ 🗑 Erase the entire catalog ¦ 🗑 Gesamten Katalog löschen
+Удалить все товары из базы ¦ Delete all items from the database ¦ Alle Artikel aus der Datenbank löschen
+Выбор камеры ¦ Camera selection ¦ Kameraauswahl
+Выберите камеру, которую будет использовать сканер. ¦ Choose the camera the scanner will use. ¦ Wählen Sie die Kamera, die der Scanner verwenden soll.
+Поиск камер… ¦ Searching for cameras… ¦ Kameras werden gesucht …
+Обновить ¦ Refresh ¦ Aktualisieren
+AI-ассистент разработки ¦ AI development assistant ¦ KI-Entwicklungsassistent
+Дизайн-концепция ¦ Design concept ¦ Design-Konzept
+Движок приложения ¦ App engine ¦ App-Engine
+Автор идеи и постановщик ¦ Author of the idea and project lead ¦ Projektidee und Leitung
+Полностью офлайн — без сервера ¦ Fully offline – no server ¦ Vollständig offline – kein Server
+Закрыть ¦ Close ¦ Schließen
+Экран 1 из 2 ¦ Screen 1 of 2 ¦ Bildschirm 1 von 2
+Очистить ¦ Clear ¦ Leeren
+Быстрые операции ¦ Quick actions ¦ Schnellaktionen
+Экран 2 из 2 ¦ Screen 2 of 2 ¦ Bildschirm 2 von 2
+Навигация по экранам ¦ Screen navigation ¦ Bildschirmnavigation
+Экран 1 ¦ Screen 1 ¦ Bildschirm 1
+Экран 2 ¦ Screen 2 ¦ Bildschirm 2
+Назад ¦ Back ¦ Zurück
+Сверка ¦ Reconciliation ¦ Abgleich
+Поиск товара… ¦ Search item… ¦ Artikel suchen …
+Название товара… ¦ Item name… ¦ Artikelname …
+Введите название товара… ¦ Enter the item name… ¦ Artikelnamen eingeben …
+Данные документа ¦ Document data ¦ Dokumentdaten
+Поставщик ¦ Supplier ¦ Lieferant
+Камера для снимков накладной ¦ Camera for delivery note photos ¦ Kamera für Lieferschein-Fotos
+Снятые кадры ¦ Captured frames ¦ Aufgenommene Bilder
+Сделать снимок ¦ Take snapshot ¦ Foto aufnehmen
+Сканер ¦ Scanner ¦ Scanner
+Запятая ¦ Comma ¦ Komma
+Пробел ¦ Space ¦ Leerzeichen
+Показать товары за эту дату ¦ Show items for this date ¦ Artikel für dieses Datum anzeigen
+Показать товары этого отправителя ¦ Show items from this sender ¦ Artikel dieses Absenders anzeigen
+Показать товары этого заказа ¦ Show items from this order ¦ Artikel dieser Bestellung anzeigen
+Введите EAN ¦ Enter EAN ¦ EAN eingeben
+Сканировать EAN ¦ Scan EAN ¦ EAN scannen
+Выбор года ¦ Choose year ¦ Jahr wählen
+Выбор месяца ¦ Choose month ¦ Monat wählen
+Выбор дня ¦ Choose day ¦ Tag wählen
+ГГГГ, ГГГГ-ММ или ГГГГ-ММ-ДД ¦ YYYY, YYYY-MM or YYYY-MM-DD ¦ JJJJ, JJJJ-MM oder JJJJ-MM-TT
+Вставить из буфера ¦ Paste from clipboard ¦ Aus Zwischenablage einfügen
+Добавить задача ¦ Add task ¦ Aufgabe hinzufügen
+Начните вводить название… ¦ Start typing a name… ¦ Namen eingeben …
+Введите код или отсканируйте ¦ Enter a code or scan ¦ Code eingeben oder scannen
+Сканировать штрихкод ¦ Scan barcode ¦ Barcode scannen
+Открыть партии ¦ Open batches ¦ Chargen öffnen
+Сохранить приёмку ¦ Save receipt ¦ Annahme speichern
+Название товара ¦ Item name ¦ Artikelname
+Дата приёмки ¦ Receipt date ¦ Annahmedatum
+Ещё ¦ More ¦ Mehr
+Дневной расход токенов ¦ Daily token usage ¦ Täglicher Token-Verbrauch
+Фильтр по статусу ¦ Filter by status ¦ Nach Status filtern
+Добавить файл ¦ Add file ¦ Datei hinzufügen
+Напишите сообщение… ¦ Write a message… ¦ Nachricht schreiben …
+Сообщение Gemini ¦ Message to Gemini ¦ Nachricht an Gemini
+Отправить ¦ Send ¦ Senden
+Показать API-ключ ¦ Show API key ¦ API-Schlüssel anzeigen
+Показать товары в этом месте хранения ¦ Show items at this storage location ¦ Artikel an diesem Lagerort anzeigen
+Предыдущая накладная ¦ Previous delivery note ¦ Vorheriger Lieferschein
+Следующая накладная ¦ Next delivery note ¦ Nächster Lieferschein
+Пусто — голос говорит только число ¦ Empty – the voice says only the number ¦ Leer – die Stimme spricht nur die Zahl
+Порт ¦ Port ¦ Port
+Не получена от Python-сервера ¦ Not received from the Python server ¦ Nicht vom Python-Server empfangen
+Адрес удаления ¦ Deletion address ¦ Löschadresse
+Например: извлеки название товара, количество, артикул и штрихкод… ¦ E.g.: extract item name, quantity, article number and barcode… ¦ Z. B.: Artikelname, Menge, Artikelnummer und Barcode extrahieren …
+Например: извлекай только товары и количество с этой страницы документа… ¦ E.g.: extract only items and quantities from this document page… ¦ Z. B.: nur Artikel und Mengen von dieser Dokumentseite extrahieren …
+Неизвестная ошибка ¦ Unknown error ¦ Unbekannter Fehler
+Ошибка ¦ Error ¦ Fehler
+~^Ошибка JS: (.+)$ ¦ JS error: $1 ¦ JS-Fehler: $1
+~^Необработанное обещание: (.+)$ ¦ Unhandled promise: $1 ¦ Unbehandeltes Promise: $1
+Не удалось записать файл ¦ Could not write the file ¦ Datei konnte nicht geschrieben werden
+~^Файл не найден: (.+)$ ¦ File not found: $1 ¦ Datei nicht gefunden: $1
+Нет доступа к папке ¦ No access to the folder ¦ Kein Zugriff auf den Ordner
+~^Папка не найдена: (.+)$ ¦ Folder not found: $1 ¦ Ordner nicht gefunden: $1
+~^Не удалось создать папку: (.+)$ ¦ Could not create folder: $1 ¦ Ordner konnte nicht erstellt werden: $1
+~^Не удалось создать файл: (.+)$ ¦ Could not create file: $1 ¦ Datei konnte nicht erstellt werden: $1
+~^Не удалось удалить: (.+)$ ¦ Could not delete: $1 ¦ Löschen nicht möglich: $1
+~^(.+) — это файл$ ¦ $1 is a file ¦ $1 ist eine Datei
+~^(.+) — это папка$ ¦ $1 is a folder ¦ $1 ist ein Ordner
+Оформление ¦ Appearance ¦ Darstellung
+Язык, тема, фон ¦ Language, theme, background ¦ Sprache, Design, Hintergrund
+Сканирование ¦ Scanning ¦ Scannen
+Камера, внешний сканер, сканер через Wi‑Fi ¦ Camera, external scanner, Wi‑Fi scanner ¦ Kamera, externer Scanner, WLAN-Scanner
+Звук и голос ¦ Sound and voice ¦ Ton und Stimme
+Сигналы, вибрация, озвучка чисел ¦ Signals, vibration, number announcements ¦ Signale, Vibration, Zahlenansage
+Искусственный интеллект ¦ Artificial intelligence ¦ Künstliche Intelligenz
+Gemini: ключи, модель, расход ¦ Gemini: keys, model, usage ¦ Gemini: Schlüssel, Modell, Verbrauch
+Серверы и Google Диск ¦ Servers and Google Drive ¦ Server und Google Drive
+Python-сервер, Google Диск ¦ Python server, Google Drive ¦ Python-Server, Google Drive
+Данные и склад ¦ Data and warehouse ¦ Daten und Lager
+Хранилище, инвентаризация, каталог ¦ Storage, inventory, catalog ¦ Speicher, Inventur, Katalog
+1 товар ¦ 1 item ¦ 1 Artikel
+1 кадр ¦ 1 frame ¦ 1 Bild
+~^(\d+) товар(?:ов)?$ ¦ $1 items ¦ $1 Artikel
+~^Страница (\d+) / (\d+)$ ¦ Page $1 / $2 ¦ Seite $1 / $2
+~^Сервер отвечает: (.+)$ ¦ Server responds: $1 ¦ Server antwortet: $1
+~^Нет ответа от (.+)$ ¦ No response from $1 ¦ Keine Antwort von $1
+каждую минуту ¦ every minute ¦ jede Minute
+каждый час ¦ every hour ¦ jede Stunde
+~^каждые (\d+) мин$ ¦ every $1 min ¦ alle $1 Min.
+~^Проверка папки: (.+)$ ¦ Folder check: $1 ¦ Ordnerprüfung: $1
+Сеть недоступна. Автоприём продолжится после восстановления сети. ¦ Network unavailable. Auto receiving will continue when the network is restored. ¦ Netzwerk nicht verfügbar. Die Auto-Annahme wird nach Wiederherstellung des Netzes fortgesetzt.
+~^Ошибка обработки файла «(.+)»\. Нажмите на файл, чтобы повторить вручную\.$ ¦ Error processing file “$1”. Tap the file to retry manually. ¦ Fehler bei der Verarbeitung der Datei „$1“. Tippen Sie auf die Datei, um es manuell zu wiederholen.
+~^Ключ (\d+)$ ¦ Key $1 ¦ Schlüssel $1
+Файл уже отправлялся. Сеть недоступна, автоматический повтор отключён. ¦ The file was already sent. Network unavailable, automatic retry is off. ¦ Die Datei wurde bereits gesendet. Netzwerk nicht verfügbar, automatische Wiederholung ist aus.
+Лимит Gemini исчерпан. Автоматические повторы отключены. ¦ Gemini limit reached. Automatic retries are off. ¦ Gemini-Limit erreicht. Automatische Wiederholungen sind aus.
+~^Gemini не ответил за (.+)\. Автоматический повтор отключён\.$ ¦ Gemini did not respond within $1. Automatic retry is off. ¦ Gemini hat nicht innerhalb von $1 geantwortet. Automatische Wiederholung ist aus.
+~^Gemini отклонил запрос \(HTTP (\d+)\)\.$ ¦ Gemini rejected the request (HTTP $1). ¦ Gemini hat die Anfrage abgelehnt (HTTP $1).
+Gemini не ответил. Автоматический повтор отключён. ¦ Gemini did not respond. Automatic retry is off. ¦ Gemini hat nicht geantwortet. Automatische Wiederholung ist aus.
+Не удалось открыть файл. Разрешите доступ к выбранной папке. ¦ Could not open the file. Allow access to the selected folder. ¦ Datei konnte nicht geöffnet werden. Erlauben Sie den Zugriff auf den gewählten Ordner.
+~^([\d.,\s]+) / ([\d.,\s]+) токенов за сегодня$ ¦ $1 / $2 tokens today ¦ $1 / $2 Tokens heute
+~^([\d.,]+) Б$ ¦ $1 B ¦ $1 B
+~^([\d.,]+) КБ$ ¦ $1 KB ¦ $1 KB
+~^([\d.,]+) МБ$ ¦ $1 MB ¦ $1 MB
+~^([\d.,]+) ГБ$ ¦ $1 GB ¦ $1 GB
+~^Файл «(.+)» больше 8 МБ и не добавлен\.$ ¦ File “$1” is larger than 8 MB and was not added. ¦ Datei „$1“ ist größer als 8 MB und wurde nicht hinzugefügt.
+~^Удалить (.+)$ ¦ Delete $1 ¦ $1 löschen
+~^Не удалось прочитать файл «(.+)»$ ¦ Could not read file “$1” ¦ Datei „$1“ konnte nicht gelesen werden
+Ошибка обработки. Пожалуйста, отправьте файл еще раз ¦ Processing error. Please send the file again ¦ Verarbeitungsfehler. Bitte senden Sie die Datei erneut
+Google API перегружен. Автоматический повтор через 30 секунд... ¦ Google API overloaded. Automatic retry in 30 seconds... ¦ Google-API überlastet. Automatische Wiederholung in 30 Sekunden ...
+~^Не удалось прочитать таблицу «(.+)»\. Обновите страницу и попробуйте снова\.$ ¦ Could not read spreadsheet “$1”. Refresh the page and try again. ¦ Tabelle „$1“ konnte nicht gelesen werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.
+~^Таблица «(.+)» пустая\.$ ¦ Spreadsheet “$1” is empty. ¦ Tabelle „$1“ ist leer.
+~^Файл «(.+)» больше 8 МБ\. Уменьшите файл и повторите\.$ ¦ File “$1” is larger than 8 MB. Reduce the file size and try again. ¦ Datei „$1“ ist größer als 8 MB. Verkleinern Sie die Datei und versuchen Sie es erneut.
+~^Файл «(.+)» пустой или не удалось его прочитать\.$ ¦ File “$1” is empty or could not be read. ¦ Datei „$1“ ist leer oder konnte nicht gelesen werden.
+~^(\d+) мин (\d+) сек$ ¦ $1 min $2 sec ¦ $1 Min. $2 Sek.
+~^(\d+) мин$ ¦ $1 min ¦ $1 Min.
+~^(\d+) сек$ ¦ $1 sec ¦ $1 Sek.
+~^Google API перегружен\. Автоматический повтор через (\d+) секунд\.\.\.$ ¦ Google API overloaded. Automatic retry in $1 seconds... ¦ Google-API überlastet. Automatische Wiederholung in $1 Sekunden ...
+Повторяю запрос к Google API... ¦ Retrying the Google API request... ¦ Anfrage an die Google-API wird wiederholt ...
+~^Gemini временно недоступен\. Повтор (\d+) через (.+)\.$ ¦ Gemini is temporarily unavailable. Retry $1 in $2. ¦ Gemini ist vorübergehend nicht verfügbar. Wiederholung $1 in $2.
+Gemini не ответил после повторных попыток. ¦ Gemini did not respond after repeated attempts. ¦ Gemini hat nach wiederholten Versuchen nicht geantwortet.
+Сеть недоступна. ¦ Network unavailable. ¦ Netzwerk nicht verfügbar.
+~^Превышено максимальное время ожидания ответа Gemini \((\d+) секунд\)\.$ ¦ Maximum wait time for the Gemini response exceeded ($1 seconds). ¦ Maximale Wartezeit auf die Gemini-Antwort überschritten ($1 Sekunden).
+Файл накладной не выбран. ¦ No delivery note file selected. ¦ Keine Lieferschein-Datei ausgewählt.
+Сначала укажите API-ключ Gemini в настройках. ¦ First enter the Gemini API key in settings. ¦ Geben Sie zuerst den Gemini-API-Schlüssel in den Einstellungen ein.
+Идёт оптимизация и анализ страниц... ¦ Optimizing and analyzing pages... ¦ Seiten werden optimiert und analysiert ...
+~^Идёт оптимизация и анализ страниц: (.+)…$ ¦ Optimizing and analyzing pages: $1… ¦ Seiten werden optimiert und analysiert: $1 …
+Python-сервер слишком долго обрабатывает накладную. ¦ The Python server is taking too long to process the delivery note. ¦ Der Python-Server braucht zu lange für die Verarbeitung des Lieferscheins.
+Не удалось подключиться к Python-серверу. ¦ Could not connect to the Python server. ¦ Verbindung zum Python-Server nicht möglich.
+~^Обработка накладной завершилась с HTTP (\d+)\.$ ¦ Delivery note processing ended with HTTP $1. ¦ Die Verarbeitung des Lieferscheins endete mit HTTP $1.
+Python-сервер вернул неполный JSON накладной. ¦ The Python server returned incomplete delivery note JSON. ¦ Der Python-Server hat unvollständiges Lieferschein-JSON zurückgegeben.
+Пустая обработанная страница. ¦ Empty processed page. ¦ Leere verarbeitete Seite.
+Не удалось подготовить PNG страницы. ¦ Could not prepare the page PNG. ¦ PNG der Seite konnte nicht vorbereitet werden.
+Браузер не поддерживает подготовку PNG. ¦ The browser does not support PNG preparation. ¦ Der Browser unterstützt die PNG-Vorbereitung nicht.
+Не удалось создать PNG страницы. ¦ Could not create the page PNG. ¦ PNG der Seite konnte nicht erstellt werden.
+~^Не удалось получить ответ Gemini: (.+)$ ¦ Could not get a Gemini response: $1 ¦ Gemini-Antwort konnte nicht abgerufen werden: $1
+проверьте ключ и соединение. ¦ check the key and the connection. ¦ Schlüssel und Verbindung prüfen.
+Повторить отправку ¦ Retry sending ¦ Senden wiederholen
+Все API-ключи Gemini исчерпали заданные лимиты токенов. ¦ All Gemini API keys have used up their token limits. ¦ Alle Gemini-API-Schlüssel haben ihre Token-Limits erreicht.
+Загрузка конфигурации… ¦ Loading configuration… ¦ Konfiguration wird geladen …
+~^Python вернул не JSON \(HTTP (\d+)\)$ ¦ Python did not return JSON (HTTP $1) ¦ Python hat kein JSON zurückgegeben (HTTP $1)
+~^Успех! Python проверил папку:\s*(.*)$ ¦ Success! Python checked the folder: $1 ¦ Erfolg! Python hat den Ordner geprüft: $1
+~^Ошибка в Python:\s*(.*)$ ¦ Python error: $1 ¦ Fehler in Python: $1
+Сервер вернул статус ошибки. ¦ The server returned an error status. ¦ Der Server hat einen Fehlerstatus zurückgegeben.
+Название склада ¦ Warehouse name ¦ Lagername
+Нет мест с товарами ¦ No locations with items ¦ Keine Plätze mit Artikeln
+~^(\d+) мест · (\d+) позиций · (\d+) сканирований$ ¦ $1 locations · $2 items · $3 scans ¦ $1 Plätze · $2 Positionen · $3 Scans
+~^(.+): (\d+) записей$ ¦ $1: $2 records ¦ $1: $2 Einträge
+Дата сканирования ¦ Scan date ¦ Scan-Datum
+Адрес ¦ Address ¦ Adresse
+Товар ¦ Item ¦ Artikel
+Первое сканирование ¦ First scan ¦ Erster Scan
+Последнее сканирование ¦ Last scan ¦ Letzter Scan
+Дата и время ¦ Date and time ¦ Datum und Uhrzeit
+Сканирования ¦ Scans ¦ Scans
+Выберите место хранения ¦ Choose a storage location ¦ Lagerort wählen
+Библиотека QR-кода недоступна ¦ QR code library unavailable ¦ QR-Code-Bibliothek nicht verfügbar
+~^(.+) · код готов к печати$ ¦ $1 · code ready to print ¦ $1 · Code druckbereit
+Изменить ¦ Change ¦ Ändern
+Настройки Gemini сохранены. ¦ Gemini settings saved. ¦ Gemini-Einstellungen gespeichert.
+Не удалось сохранить настройки в памяти браузера. ¦ Could not save the settings in browser storage. ¦ Einstellungen konnten nicht im Browserspeicher gespeichert werden.
+Включено · промт отправляется с каждой PNG-страницей ¦ On · the prompt is sent with every PNG page ¦ Ein · der Prompt wird mit jeder PNG-Seite gesendet
+Скрыть API-ключ ¦ Hide API key ¦ API-Schlüssel ausblenden
+Изменить API-ключ ¦ Change API key ¦ API-Schlüssel ändern
+Ключ должен начинаться с AIza или AQ.Ab и не содержать пробелов. ¦ The key must start with AIza or AQ.Ab and contain no spaces. ¦ Der Schlüssel muss mit AIza oder AQ.Ab beginnen und darf keine Leerzeichen enthalten.
+Укажите лимит от 1 до 10 000 000 токенов. ¦ Enter a limit from 1 to 10,000,000 tokens. ¦ Geben Sie ein Limit von 1 bis 10.000.000 Tokens an.
+Такой ключ уже добавлен. ¦ This key has already been added. ¦ Dieser Schlüssel wurde bereits hinzugefügt.
+~^Можно добавить не больше (\d+) ключей\.$ ¦ You can add no more than $1 keys. ¦ Es können höchstens $1 Schlüssel hinzugefügt werden.
+API-ключ сохранён. ¦ API key saved. ¦ API-Schlüssel gespeichert.
+API-ключ удалён. ¦ API key deleted. ¦ API-Schlüssel gelöscht.
+Сначала укажите API-ключ Gemini. ¦ First enter the Gemini API key. ¦ Geben Sie zuerst den Gemini-API-Schlüssel ein.
+Проверка… ¦ Checking… ¦ Prüfung …
+Проверяем соединение с Gemini… ¦ Checking the connection to Gemini… ¦ Verbindung zu Gemini wird geprüft …
+~^Соединение работает\. Модель ответила: «(.*)»$ ¦ Connection works. The model replied: “$1” ¦ Verbindung funktioniert. Das Modell antwortete: „$1“
+~^Не удалось подключиться: (.+)$ ¦ Could not connect: $1 ¦ Verbindung fehlgeschlagen: $1
+проверьте ключ и доступ к сети ¦ check the key and network access ¦ Schlüssel und Netzwerkzugang prüfen
+~^Firebase \+ LocalStorage · (\d+) товаров · (\d+) записей$ ¦ Firebase + LocalStorage · $1 items · $2 records ¦ Firebase + LocalStorage · $1 Artikel · $2 Einträge
+~^(\d+) товаров · (\d+) записей истории · ~(\d+) KB$ ¦ $1 items · $2 history records · ~$3 KB ¦ $1 Artikel · $2 Verlaufseinträge · ~$3 KB
+Папка автоприёма сохранена. Разрешите доступ к ней в окне автоприёма. ¦ Auto receiving folder saved. Allow access to it in the auto receiving window. ¦ Ordner der Auto-Annahme gespeichert. Erlauben Sie den Zugriff im Fenster der Auto-Annahme.
+~^(.*)каталог и история сохраняются сюда$ ¦ $1catalog and history are saved here ¦ $1Katalog und Verlauf werden hier gespeichert
+✅ Фото пишутся ТОЛЬКО в storage/emulated/0/warehouse/photos/ ¦ ✅ Photos are written ONLY to storage/emulated/0/warehouse/photos/ ¦ ✅ Fotos werden NUR in storage/emulated/0/warehouse/photos/ geschrieben
+⚠️ Откройте приложение в Chrome/Edge или как PWA и выберите папку warehouse ¦ ⚠️ Open the app in Chrome/Edge or as a PWA and choose the warehouse folder ¦ ⚠️ Öffnen Sie die App in Chrome/Edge oder als PWA und wählen Sie den Ordner warehouse
+Сначала выберите папку warehouse ¦ First choose the warehouse folder ¦ Wählen Sie zuerst den Ordner warehouse
+✅ Накладные пишутся ТОЛЬКО в storage/emulated/0/warehouse/invoices/ ¦ ✅ Delivery notes are written ONLY to storage/emulated/0/warehouse/invoices/ ¦ ✅ Lieferscheine werden NUR in storage/emulated/0/warehouse/invoices/ geschrieben
+~^✅ Папка автоприёма: «(.+)» — (\d+) файлов · проверка (.+)$ ¦ ✅ Auto receiving folder: “$1” — $2 files · check $3 ¦ ✅ Ordner der Auto-Annahme: „$1“ — $2 Dateien · Prüfung $3
+~^📁 Сохранённая папка: (\d+) файлов — выберите её снова для обновления$ ¦ 📁 Saved folder: $1 files — choose it again to refresh ¦ 📁 Gespeicherter Ordner: $1 Dateien — wählen Sie ihn erneut zur Aktualisierung
+Нажмите, чтобы выбрать любую папку для входящих файлов ¦ Tap to choose any folder for incoming files ¦ Tippen, um einen beliebigen Ordner für eingehende Dateien zu wählen
+~^Список файлов: (\d+)$ ¦ File list: $1 ¦ Dateiliste: $1
+В выбранной папке пока нет файлов. ¦ There are no files in the selected folder yet. ¦ Im gewählten Ordner sind noch keine Dateien.
+Выберите папку в настройках, чтобы увидеть её содержимое. ¦ Choose a folder in settings to see its contents. ¦ Wählen Sie in den Einstellungen einen Ordner, um den Inhalt zu sehen.
+Нажмите, чтобы открыть файл в чате и повторить обработку ¦ Tap to open the file in chat and retry processing ¦ Tippen, um die Datei im Chat zu öffnen und die Verarbeitung zu wiederholen
+Нажмите, чтобы открыть сохранённые товары ¦ Tap to open the saved items ¦ Tippen, um die gespeicherten Artikel zu öffnen
+Без названия ¦ Untitled ¦ Ohne Namen
+Подробнее ¦ Details ¦ Details
+~^Товар уже есть в базе\. Текущий штрихкод: (.+)$ ¦ The item is already in the database. Current barcode: $1 ¦ Der Artikel ist bereits in der Datenbank. Aktueller Barcode: $1
+Товар есть в базе, но штрихкод пока не указан. ¦ The item is in the database, but no barcode is set yet. ¦ Der Artikel ist in der Datenbank, aber es ist noch kein Barcode angegeben.
+~^Штрихкод найден в базе: «(.+)»$ ¦ Barcode found in the database: “$1” ¦ Barcode in der Datenbank gefunden: „$1“
+Такого штрихкода в базе нет — можно сохранить как новый. ¦ This barcode is not in the database – you can save it as new. ¦ Dieser Barcode ist nicht in der Datenbank – er kann neu gespeichert werden.
+Введите наименование товара. ¦ Enter the item name. ¦ Geben Sie die Artikelbezeichnung ein.
+Введите или отсканируйте штрихкод. ¦ Enter or scan a barcode. ¦ Barcode eingeben oder scannen.
+~^Штрихкод (.+) уже привязан к товару «(.+)»\. Перепривязать его к «(.+)»\?$ ¦ Barcode $1 is already linked to item “$2”. Relink it to “$3”? ¦ Barcode $1 ist bereits mit dem Artikel „$2“ verknüpft. Mit „$3“ neu verknüpfen?
+~^Товар «(.+)» привязан к штрихкоду (.+)\.$ ¦ Item “$1” is linked to barcode $2. ¦ Artikel „$1“ ist mit Barcode $2 verknüpft.
+📦 Товаров в базе: ¦ 📦 Items in database: ¦ 📦 Artikel in der Datenbank:
+📋 Записей истории: ¦ 📋 History records: ¦ 📋 Verlaufseinträge:
+📅 Дата экспорта: ¦ 📅 Export date: ¦ 📅 Exportdatum:
+🔖 Версия: ¦ 🔖 Version: ¦ 🔖 Version:
+~^✅ Товаров добавлено: (\d+), записей истории: (\d+)$ ¦ ✅ Items added: $1, history records: $2 ¦ ✅ Artikel hinzugefügt: $1, Verlaufseinträge: $2
+Нет задач ¦ No tasks ¦ Keine Aufgaben
+Заказ: ¦ Order: ¦ Bestellung:
+~^Заказ: (.+)$ ¦ Order: $1 ¦ Bestellung: $1
+~^Google Диск: загружено (\d+) файл(?:ов)?$ ¦ Google Drive: $1 files uploaded ¦ Google Drive: $1 Dateien hochgeladen
+~^Нет связи с Google Диском: (\d+) файл\(ов\) сохранены на устройстве и уйдут позже$ ¦ No connection to Google Drive: $1 file(s) saved on the device and will be sent later ¦ Keine Verbindung zu Google Drive: $1 Datei(en) auf dem Gerät gespeichert und werden später gesendet
+~^Сохранено на устройстве: (\d+) файл\(ов\)\. Уйдут на Google Диск после настройки$ ¦ Saved on the device: $1 file(s). They will go to Google Drive after setup ¦ Auf dem Gerät gespeichert: $1 Datei(en). Sie gehen nach der Einrichtung an Google Drive
+Не удалось сохранить партию. Проверьте данные и попробуйте ещё раз. ¦ Could not save the batch. Check the data and try again. ¦ Charge konnte nicht gespeichert werden. Prüfen Sie die Daten und versuchen Sie es erneut.
+~^На Google Диск загружено файлов: (\d+)$ ¦ Files uploaded to Google Drive: $1 ¦ Dateien auf Google Drive hochgeladen: $1
+~^Нет связи: (\d+) файл\(ов\) в очереди на отправку$ ¦ No connection: $1 file(s) queued for sending ¦ Keine Verbindung: $1 Datei(en) in der Sendewarteschlange
+Товар не принят ¦ Item not received ¦ Artikel nicht angenommen
+~^Принято: (\d+) шт\. · Не принято: (\d+) шт\. · Дата: (.+)$ ¦ Received: $1 pcs · Not received: $2 pcs · Date: $3 ¦ Angenommen: $1 Stk. · Nicht angenommen: $2 Stk. · Datum: $3
+~^Дата: (.+)$ ¦ Date: $1 ¦ Datum: $1
+~^· Отправитель: (.+)$ ¦ · Sender: $1 ¦ · Absender: $1
+принято ¦ received ¦ angenommen
+не принято ¦ not received ¦ nicht angenommen
+~^❌ Firebase ещё подключается · (.+)$ ¦ ❌ Firebase is still connecting · $1 ¦ ❌ Firebase verbindet sich noch · $1
+Firebase ещё подключается… ¦ Firebase is still connecting… ¦ Firebase verbindet sich noch …
+~^⏳ Выполняется · (.+)$ ¦ ⏳ In progress · $1 ¦ ⏳ Läuft · $1
+~^✅ Успешно · (.+)$ ¦ ✅ Success · $1 ¦ ✅ Erfolgreich · $1
+~^❌ Не выполнено · (.+)$ ¦ ❌ Failed · $1 ¦ ❌ Fehlgeschlagen · $1
+~^Штрихкод: (.+)$ ¦ Barcode: $1 ¦ Barcode: $1
+Штрихкод не указан ¦ No barcode specified ¦ Kein Barcode angegeben
+Удалить строку ¦ Delete line ¦ Zeile löschen
+~^Строка удалена: (.+)\.$ ¦ Line deleted: $1. ¦ Zeile gelöscht: $1.
+~^Количество изменено: (\d+) из (\d+) шт\.$ ¦ Quantity changed: $1 of $2 pcs. ¦ Menge geändert: $1 von $2 Stk.
+~^Количество для товара изменено: (\d+) шт\.$ ¦ Item quantity changed: $1 pcs. ¦ Artikelmenge geändert: $1 Stk.
+Не удалось прочитать штрихкод. ¦ Could not read the barcode. ¦ Barcode konnte nicht gelesen werden.
+~^Штрихкод (.+) не найден в локальной базе — он будет отмечен в сверке\.$ ¦ Barcode $1 was not found in the local database – it will be marked in the reconciliation. ¦ Barcode $1 wurde in der lokalen Datenbank nicht gefunden – er wird im Abgleich markiert.
+~^Считано (\d+) из (\d+) шт\. для этого товара\.$ ¦ Scanned $1 of $2 pcs. for this item. ¦ $1 von $2 Stk. für diesen Artikel gescannt.
+~^Штрихкод (.+) найден в базе: (.+)\.$ ¦ Barcode $1 found in the database: $2. ¦ Barcode $1 in der Datenbank gefunden: $2.
+Не найдено в локальной базе ¦ Not found in the local database ¦ In der lokalen Datenbank nicht gefunden
+Совпало ¦ Matched ¦ Übereinstimmung
+Не совпало ¦ Mismatch ¦ Keine Übereinstimmung
+Лишнее ¦ Excess ¦ Überschuss
+Мало ¦ Shortage ¦ Fehlmenge
+Итого ¦ Total ¦ Summe
+Нет данных о приёмках. ¦ No receiving data. ¦ Keine Annahmedaten.
+~^Готово (\d+)%$ ¦ Done $1% ¦ Fertig $1 %
+~^Готово: (\d+)%$ ¦ Done: $1% ¦ Fertig: $1 %
+~^(\d+)/(\d+) позиций$ ¦ $1/$2 items ¦ $1/$2 Positionen
+приёмка ¦ receiving ¦ Annahme
+приемка ¦ receiving ¦ Annahme
+Приемка ¦ Receiving ¦ Annahme
+~^Совпало: (\d+) · Расхождений: (\d+)$ ¦ Matched: $1 · Discrepancies: $2 ¦ Übereinstimmungen: $1 · Abweichungen: $2
+Нет товаров для отображения ¦ No items to display ¦ Keine Artikel zur Anzeige
+~^Обработано страниц: (\d+)/(\d+) · (\d+)%$ ¦ Pages processed: $1/$2 · $3% ¦ Seiten verarbeitet: $1/$2 · $3 %
+Библиотека Excel ещё загружается. Повторите через секунду. ¦ The Excel library is still loading. Try again in a second. ¦ Die Excel-Bibliothek wird noch geladen. Versuchen Sie es in einer Sekunde erneut.
+Количество по накладной ¦ Quantity per delivery note ¦ Menge laut Lieferschein
+Фактическое количество ¦ Actual quantity ¦ Tatsächliche Menge
+Испорченный товар (Брак) ¦ Damaged item (defective) ¦ Beschädigter Artikel (Ausschuss)
+~^PNG загружено в Google Drive: (\d+)\.$ ¦ PNG uploaded to Google Drive: $1. ¦ PNG auf Google Drive hochgeladen: $1.
+~^Партия сохранена: (\d+) позиций, (\d+) шт\.(.*) Она отображается первой в истории приёмок\.$ ¦ Batch saved: $1 items, $2 pcs.$3 It is shown first in the receiving history. ¦ Charge gespeichert: $1 Positionen, $2 Stk.$3 Sie wird zuerst im Annahme-Verlauf angezeigt.
+~^Не удалось сохранить партию: (.*)$ ¦ Could not save the batch: $1 ¦ Charge konnte nicht gespeichert werden: $1
+проверьте данные и повторите. ¦ check the data and try again. ¦ Daten prüfen und erneut versuchen.
+Поставщик не указан ¦ Supplier not specified ¦ Lieferant nicht angegeben
+~^Кадр (\d+)$ ¦ Frame $1 ¦ Bild $1
+~^(\d+) кадр(?:ов)?$ ¦ $1 frames ¦ $1 Bilder
+Запрашиваем доступ к камере… ¦ Requesting camera access… ¦ Kamerazugriff wird angefordert …
+Браузер не поддерживает доступ к камере. ¦ The browser does not support camera access. ¦ Der Browser unterstützt keinen Kamerazugriff.
+~^Камера «(.+)» недоступна, пробуем основную…$ ¦ Camera “$1” is unavailable, trying the main one… ¦ Kamera „$1“ nicht verfügbar, die Hauptkamera wird versucht …
+Камера недоступна. Можно выбрать снимки из галереи. ¦ Camera unavailable. You can choose photos from the gallery. ¦ Kamera nicht verfügbar. Sie können Fotos aus der Galerie wählen.
+Камера ещё запускается. Повторите снимок через секунду. ¦ The camera is still starting. Retake the photo in a second. ¦ Die Kamera startet noch. Wiederholen Sie das Foto in einer Sekunde.
+Не удалось сохранить снимок в хорошем качестве. ¦ Could not save the snapshot in good quality. ¦ Foto konnte nicht in guter Qualität gespeichert werden.
+~^Не удалось подготовить кадр «(.+)»\.$ ¦ Could not prepare frame “$1”. ¦ Bild „$1“ konnte nicht vorbereitet werden.
+~^Не удалось прочитать файл «(.+)»\.$ ¦ Could not read file “$1”. ¦ Datei „$1“ konnte nicht gelesen werden.
+Браузер не поддерживает обработку изображений. ¦ The browser does not support image processing. ¦ Der Browser unterstützt keine Bildverarbeitung.
+~^Ожидание очереди Gemini: ещё (.+)\.$ ¦ Waiting for the Gemini queue: $1 more. ¦ Warten auf die Gemini-Warteschlange: noch $1.
+Gemini вернул ответ в неизвестном формате. ¦ Gemini returned a response in an unknown format. ¦ Gemini hat die Antwort in einem unbekannten Format zurückgegeben.
+~^Gemini заблокировал запрос: (.+)\.$ ¦ Gemini blocked the request: $1. ¦ Gemini hat die Anfrage blockiert: $1.
+Gemini не вернул распознанные данные. ¦ Gemini did not return recognized data. ¦ Gemini hat keine erkannten Daten zurückgegeben.
+Единица измерения ¦ Unit of measure ¦ Maßeinheit
+лист ¦ sheet ¦ Blatt
+Позиции не найдены. ¦ No items found. ¦ Keine Positionen gefunden.
+~^(.+): Python готовит снимок…$ ¦ $1: Python is preparing the snapshot… ¦ $1: Python bereitet das Foto vor …
+~^(.+): подготовка и распознавание…$ ¦ $1: preparing and recognizing… ¦ $1: Vorbereitung und Erkennung …
+Товары не указаны ¦ No items specified ¦ Keine Artikel angegeben
+Удалить запись ¦ Delete record ¦ Eintrag löschen
+Без отправителя ¦ No sender ¦ Ohne Absender
+ошибка Gemini ¦ Gemini error ¦ Gemini-Fehler
+~^Получено файлов: (\d+)\. Выберите режим обработки документов\.$ ¦ Files received: $1. Choose the document processing mode. ¦ Dateien empfangen: $1. Wählen Sie den Dokumentverarbeitungsmodus.
+Накладная обработана и товары объединены. ¦ Delivery note processed and items merged. ¦ Lieferschein verarbeitet und Artikel zusammengeführt.
+Обработка завершена. Проверьте список и сохраните партию. ¦ Processing finished. Check the list and save the batch. ¦ Verarbeitung abgeschlossen. Prüfen Sie die Liste und speichern Sie die Charge.
+Не удалось обработать PDF. ¦ Could not process the PDF. ¦ PDF konnte nicht verarbeitet werden.
+Нет PDF или изображений для автоприёма. ¦ No PDFs or images for auto receiving. ¦ Keine PDFs oder Bilder für die Auto-Annahme.
+~^Из «Поделиться» добавлено файлов: (\d+)$ ¦ Files added from Share: $1 ¦ Über „Teilen“ hinzugefügte Dateien: $1
+Нет PDF или изображений для приёма по имени. ¦ No PDFs or images for receiving by name. ¦ Keine PDFs oder Bilder für die Annahme nach Name.
+Модуль Gemini ещё не загрузился. ¦ The Gemini module has not loaded yet. ¦ Das Gemini-Modul ist noch nicht geladen.
+~^(.*)Файл (\d+) из (\d+)\.$ ¦ $1File $2 of $3. ¦ $1Datei $2 von $3.
+~^Обработано файлов: (\d+) из (\d+)\.$ ¦ Files processed: $1 of $2. ¦ Verarbeitete Dateien: $1 von $2.
+Распознавание завершено. Проверьте список и сохраните партию. ¦ Recognition finished. Check the list and save the batch. ¦ Erkennung abgeschlossen. Prüfen Sie die Liste und speichern Sie die Charge.
+Распознавание завершено. ¦ Recognition finished. ¦ Erkennung abgeschlossen.
+Не удалось обработать общие файлы. ¦ Could not process the shared files. ¦ Geteilte Dateien konnten nicht verarbeitet werden.
+Ошибка Share Target. ¦ Share Target error. ¦ Share-Target-Fehler.
+~^Не удалось получить файл из «Поделиться»(.*)\. Попробуйте отправить его ещё раз\.$ ¦ Could not get the file from Share$1. Try sending it again. ¦ Die Datei aus „Teilen“ konnte nicht abgerufen werden$1. Versuchen Sie es erneut.
+~^(.*) · осталось: (\d+)$ ¦ $1 · remaining: $2 ¦ $1 · übrig: $2
+~^Google Диск: отправлено из очереди (\d+)$ ¦ Google Drive: sent from queue $1 ¦ Google Drive: aus der Warteschlange gesendet $1
+~^Ожидают отправки на Google Диск: (\d+) файл\(ов\)\. Уйдут автоматически после настройки\.$ ¦ Waiting to be sent to Google Drive: $1 file(s). They will go automatically after setup. ¦ Warten auf Versand an Google Drive: $1 Datei(en). Sie gehen nach der Einrichtung automatisch raus.
+Не найден EAN, артикул или номер партии для имени файла. ¦ No EAN, article number or batch number found for the file name. ¦ Für den Dateinamen wurde keine EAN, Artikelnummer oder Chargennummer gefunden.
+Обработано ¦ Processed ¦ Verarbeitet
+Обрабатывается ¦ Processing ¦ Wird verarbeitet
+Ошибка обработки ¦ Processing error ¦ Verarbeitungsfehler
+Ожидает обработки ¦ Waiting for processing ¦ Wartet auf Verarbeitung
+Нет файлов с этим статусом. ¦ No files with this status. ¦ Keine Dateien mit diesem Status.
+Ключ Gemini № ¦ Gemini key no. ¦ Gemini-Schlüssel Nr.
+Выбранная папка ¦ Selected folder ¦ Gewählter Ordner
+Список пока пуст. ¦ The list is empty for now. ¦ Die Liste ist noch leer.
+Список для сверки пуст. ¦ The reconciliation list is empty. ¦ Die Abgleichliste ist leer.
+Совпадений не найдено ¦ No matches found ¦ Keine Treffer gefunden
+Позиция ¦ Item line ¦ Position
+Без номера ¦ No number ¦ Ohne Nummer
+Сервер не вернул распознанные позиции. ¦ The server did not return recognized items. ¦ Der Server hat keine erkannten Positionen zurückgegeben.
+Документ отправлен на авто-обрезку и сохранен в папку выгрузки ¦ The document was sent for auto-cropping and saved to the export folder ¦ Das Dokument wurde zum automatischen Zuschneiden gesendet und im Exportordner gespeichert
+Принудительная проверка запущена. ¦ Forced check started. ¦ Erzwungene Prüfung gestartet.
+Получен файл ¦ File received ¦ Datei empfangen
+В этой партии нет сохранённых товаров для печати. ¦ This batch has no saved items to print. ¦ Diese Charge enthält keine gespeicherten Artikel zum Drucken.
+Разрешите открытие окна печати в браузере. ¦ Allow the print window to open in the browser. ¦ Erlauben Sie im Browser das Öffnen des Druckfensters.
+Не удалось загрузить файлы на Google Диск. ¦ Could not upload the files to Google Drive. ¦ Dateien konnten nicht auf Google Drive hochgeladen werden.
+📡 Python подключён, папка входящих файлов не указана ¦ 📡 Python connected, incoming files folder not set ¦ 📡 Python verbunden, Ordner für eingehende Dateien nicht angegeben
+Использовано: ¦ Used: ¦ Verwendet:
+· лимит исчерпан ¦ · limit reached ¦ · Limit erreicht
+~^Озвучка: Android TTS, голосов: (\d+)$ ¦ Voice output: Android TTS, voices: $1 ¦ Sprachausgabe: Android TTS, Stimmen: $1
+Озвучка: Android TTS подключён, но движок не отдал голоса. Проверьте блок <queries> в AndroidManifest.xml и что в системе выбран модуль синтеза речи. ¦ Voice output: Android TTS is connected, but the engine returned no voices. Check the <queries> block in AndroidManifest.xml and that a speech synthesis engine is selected in the system. ¦ Sprachausgabe: Android TTS ist verbunden, aber die Engine hat keine Stimmen geliefert. Prüfen Sie den <queries>-Block in AndroidManifest.xml und ob im System ein Sprachsynthese-Modul gewählt ist.
+~^Озвучка: браузерная(.*)$ ¦ Voice output: browser$1 ¦ Sprachausgabe: Browser$1
+~^ — голосов нет\. В APK не подключён Android\.speak: обновите MainActivity\.kt и пересоберите\.$ ¦ — no voices. Android.speak is not connected in the APK: update MainActivity.kt and rebuild. ¦ — keine Stimmen. Android.speak ist im APK nicht angebunden: MainActivity.kt aktualisieren und neu bauen.
+~^, голосов: (\d+)$ ¦ , voices: $1 ¦ , Stimmen: $1
+Авто (по языку приложения) ¦ Auto (by app language) ¦ Auto (nach App-Sprache)`;
+const RuTr = (() => {
+  const CY = /[А-Яа-яЁё]/;
+  const PREFIX = /^([^A-Za-zА-Яа-яЁё0-9«"“(]+)(.+)$/u;
+  const exact = new Map(), rx = [];
+  RU_TR_RAW.split('\n').forEach(line => {
+    if (!line.trim()) return;
+    const p = line.split(' ¦ ');
+    if (p.length < 3) return;
+    const ru = p[0].trim(), en = p[1].trim(), de = p.slice(2).join(' ¦ ').trim();
+    if (ru[0] === '~') { try { rx.push([new RegExp(ru.slice(1)), en, de]); } catch (e) {} }
+    else exact.set(ru.replace(/\s+/g, ' '), [en, de]);
+  });
+  function one(core, idx, lang) {
+    const e = exact.get(core);
+    if (e) return e[idx];
+    for (const [re, en, de] of rx) {
+      const m = core.match(re);
+      if (m) return (idx ? de : en).replace(/\$(\d)/g, (_, n) => {
+        const g = m[+n] ?? '';
+        return CY.test(g) ? translate(g, lang) : g;
+      });
+    }
+    return null;
+  }
+  function translate(str, lang) {
+    lang = lang || (typeof currentLang !== 'undefined' ? currentLang : 'ru');
+    if (lang === 'ru' || typeof str !== 'string' || !CY.test(str)) return str;
+    const lead = str.match(/^\s*/)[0], trail = str.match(/\s*$/)[0];
+    const core = str.trim().replace(/\s+/g, ' ');
+    const idx = lang === 'de' ? 1 : 0;
+    let r = one(core, idx, lang);
+    if (r === null) {
+      const m = core.match(PREFIX);
+      if (m) { const rr = one(m[2], idx, lang); if (rr !== null) r = m[1] + rr; }
+    }
+    return r === null ? str : lead + r + trail;
+  }
+  const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
+  const SKIP = /^(SCRIPT|STYLE|TEXTAREA)$/;
+  function trText(n, lang) {
+    const st = n.__tr, v = n.nodeValue;
+    if (st && v === st.out) {
+      if (st.lang === lang) return;
+      const want = lang === 'ru' ? st.src : translate(st.src, lang);
+      st.lang = lang; st.out = want;
+      if (want !== v) n.nodeValue = want;
+      return;
+    }
+    if (!CY.test(v)) { n.__tr = null; return; }
+    if (lang === 'ru') { n.__tr = null; return; }
+    const out = translate(v, lang);
+    n.__tr = {src: v, out, lang};
+    if (out !== v) n.nodeValue = out;
+  }
+  function trAttrs(el, lang) {
+    for (const a of ATTRS) {
+      const v = el.getAttribute(a);
+      if (v == null) continue;
+      const store = el.__trA || (el.__trA = {});
+      const st = store[a];
+      if (st && v === st.out) {
+        if (st.lang === lang) continue;
+        const want = lang === 'ru' ? st.src : translate(st.src, lang);
+        st.lang = lang; st.out = want;
+        if (want !== v) el.setAttribute(a, want);
+        continue;
+      }
+      if (!CY.test(v) || lang === 'ru') { delete store[a]; continue; }
+      const out = translate(v, lang);
+      store[a] = {src: v, out, lang};
+      if (out !== v) el.setAttribute(a, out);
+    }
+  }
+  function walk(root, lang) {
+    if (!root) return;
+    if (root.nodeType === 3) { if (root.parentNode && !SKIP.test(root.parentNode.nodeName)) trText(root, lang); return; }
+    if (root.nodeType !== 1 || SKIP.test(root.nodeName)) return;
+    trAttrs(root, lang);
+    const w = document.createTreeWalker(root, 1 | 4);
+    let n;
+    while ((n = w.nextNode())) {
+      if (n.nodeType === 3) { if (n.parentNode && !SKIP.test(n.parentNode.nodeName)) trText(n, lang); }
+      else if (!SKIP.test(n.nodeName)) trAttrs(n, lang);
+    }
+  }
+  let obs = null;
+  function startObserver() {
+    if (obs || !document.body || typeof MutationObserver === 'undefined') return;
+    obs = new MutationObserver(muts => {
+      const lang = currentLang;
+      if (lang === 'ru') return;
+      for (const m of muts) {
+        if (m.type === 'childList') m.addedNodes.forEach(node => walk(node, lang));
+        else if (m.type === 'characterData') { if (m.target.parentNode && !SKIP.test(m.target.parentNode.nodeName)) trText(m.target, lang); }
+        else if (m.type === 'attributes') trAttrs(m.target, lang);
+      }
+    });
+    obs.observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  function applyAll() {
+    if (!document.body) return;
+    startObserver();
+    walk(document.body, currentLang);
+  }
+  return {translate, applyAll};
+})();
+window.trRu = (s, l) => RuTr.translate(s, l);
+['alert', 'confirm', 'prompt'].forEach(fn => {
+  const orig = window[fn];
+  if (typeof orig !== 'function') return;
+  window[fn] = function (message, ...rest) {
+    return orig.call(window, message == null ? message : RuTr.translate(String(message)), ...rest);
+  };
+});
+document.addEventListener('DOMContentLoaded', () => { try { RuTr.applyAll(); } catch (e) {} });
+
 let currentLang = localStorage.getItem('bi_lang') || 'ru';
 const t = k => LANGS[currentLang]?.[k] ?? LANGS.ru[k] ?? k;
 
@@ -5486,6 +6291,7 @@ function applyTranslations() {
     const sp = document.getElementById('sp-'+l);
     if (sp) sp.classList.toggle('active-lang', l === currentLang);
   });
+  try { RuTr.applyAll(); } catch (e) {}
 }
 
 function setLangFromMenu(l) {
@@ -10333,6 +11139,73 @@ window.addEventListener('DOMContentLoaded', () => {
   const settings = getPythonApiSettings();
   if (settings.autoStart) getPythonConfig();
 });
+
+/* ══ Настройки: группы-строки (аккордеон). Переносим готовые блоки как есть — id и обработчики сохраняются. ══ */
+(function initSettingsGroups() {
+  const GROUPS = [
+    {icon: '🎨', title: 'Оформление', sub: 'Язык, тема, фон', parts: [0]},
+    {icon: '📷', title: 'Сканирование', sub: 'Камера, внешний сканер, сканер через Wi‑Fi', parts: [3, 6, 7, 2]},
+    {icon: '🔊', title: 'Звук и голос', sub: 'Сигналы, вибрация, озвучка чисел', parts: [4, 5]},
+    {icon: '🤖', title: 'Искусственный интеллект', sub: 'Gemini: ключи, модель, расход', parts: [10]},
+    {icon: '🔌', title: 'Серверы и Google Диск', sub: 'Python-сервер, Google Диск', parts: [8, 1]},
+    {icon: '🗄️', title: 'Данные и склад', sub: 'Хранилище, инвентаризация, каталог', parts: [11, 9, 12]}
+  ];
+  const KEY = 'warehouse_settings_open_group';
+  function build() {
+    const scroll = document.querySelector('#settingsModal .settings-scroll');
+    if (!scroll || scroll.dataset.grouped === '1') return;
+    const segments = [];
+    Array.from(scroll.children).forEach(el => {
+      if (el.classList.contains('settings-section-label') || !segments.length) segments.push([]);
+      segments[segments.length - 1].push(el);
+    });
+    if (segments.length !== 13) return; // структура изменилась — оставляем настройки как есть
+    scroll.dataset.grouped = '1';
+    let saved = '';
+    try { saved = localStorage.getItem(KEY) || ''; } catch (e) {}
+    const groups = [];
+    GROUPS.forEach((g, gi) => {
+      const box = document.createElement('div');
+      box.className = 'sg-group';
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sg-row';
+      row.setAttribute('aria-expanded', 'false');
+      row.innerHTML = '<span class="sg-icon"></span><span class="sg-text"><div class="sg-title"></div><div class="sg-sub"></div></span><span class="sg-chevron">›</span>';
+      row.querySelector('.sg-icon').textContent = g.icon;
+      row.querySelector('.sg-title').textContent = g.title;
+      row.querySelector('.sg-sub').textContent = g.sub;
+      const body = document.createElement('div');
+      body.className = 'sg-body';
+      g.parts.forEach(i => segments[i].forEach(el => body.appendChild(el)));
+      box.appendChild(row);
+      box.appendChild(body);
+      groups.push(box);
+      row.addEventListener('click', () => {
+        const willOpen = !box.classList.contains('open');
+        groups.forEach(other => {
+          other.classList.remove('open');
+          other.firstChild.setAttribute('aria-expanded', 'false');
+        });
+        if (willOpen) {
+          box.classList.add('open');
+          row.setAttribute('aria-expanded', 'true');
+          setTimeout(() => { try { row.scrollIntoView({block: 'start', behavior: 'smooth'}); } catch (e) {} }, 30);
+        }
+        try { localStorage.setItem(KEY, willOpen ? String(gi) : ''); } catch (e) {}
+        // Окно «Голос»: заполнить список голосов, когда группа открыта.
+        if (willOpen && typeof warehouseVoiceFillVoices === 'function') { try { warehouseVoiceFillVoices(); } catch (e) {} }
+      });
+    });
+    groups.forEach(box => scroll.appendChild(box));
+    if (saved !== '' && groups[Number(saved)]) {
+      groups[Number(saved)].classList.add('open');
+      groups[Number(saved)].firstChild.setAttribute('aria-expanded', 'true');
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
+  else build();
+})();
 
 function openSettings() {
   applyTranslations();
@@ -22988,9 +23861,22 @@ function warehouseVoiceGetSettings() {
     autoSec: num(saved.autoSec, 0, 30, 5)
   };
 }
-function warehouseVoiceSpeak(text) {
+/* В APK WebView не отдаёт голоса speechSynthesis: говорим через нативный Android TextToSpeech (window.Android.speak). */
+function warehouseNativeTts() {
+  const b = window.Android;
+  return b && typeof b.speak === 'function' ? b : null;
+}
+function warehouseVoiceSpeak(text, force) {
   const s = warehouseVoiceGetSettings();
-  if (!s.enabled || !text || !('speechSynthesis' in window)) return;
+  if ((!s.enabled && !force) || !text) return;
+  const native = warehouseNativeTts();
+  if (native) {
+    try {
+      native.speak(String(text), s.voiceURI, warehouseVoiceLangCode(), String(s.rate), String(s.pitch), String(s.volume));
+      return;
+    } catch (e) {}
+  }
+  if (!('speechSynthesis' in window)) return;
   try {
     const synth = window.speechSynthesis;
     synth.cancel();
@@ -23010,12 +23896,21 @@ function warehouseVoiceAnnounce(count, source) {
   if (source === 'tap' && !s.speakTaps) return;
   warehouseVoiceSpeak((s.phrase ? s.phrase + ' ' : '') + count);
 }
-function warehouseVoiceFillVoices() {
+function warehouseVoiceFillVoices(attempt) {
   const select = document.getElementById('voiceSelect');
   if (!select) return;
   const s = warehouseVoiceGetSettings();
   let voices = [];
-  try { voices = window.speechSynthesis ? Array.from(window.speechSynthesis.getVoices()) : []; } catch (e) {}
+  const native = warehouseNativeTts();
+  if (native && typeof native.getVoices === 'function') {
+    try {
+      voices = (JSON.parse(native.getVoices() || '[]') || []).map(v => ({voiceURI: v.name, name: v.name, lang: v.lang || ''}));
+    } catch (e) {}
+    // Движок TextToSpeech запускается не мгновенно: если список пуст, пробуем ещё несколько раз.
+    if (!voices.length && (Number(attempt) || 0) < 8) setTimeout(() => warehouseVoiceFillVoices((Number(attempt) || 0) + 1), 600);
+  } else {
+    try { voices = window.speechSynthesis ? Array.from(window.speechSynthesis.getVoices()) : []; } catch (e) {}
+  }
   const lang = warehouseVoiceLangCode().slice(0, 2);
   voices.sort((a, b) => (b.lang.slice(0, 2) === lang) - (a.lang.slice(0, 2) === lang) || a.name.localeCompare(b.name));
   select.innerHTML = '';
@@ -23031,6 +23926,16 @@ function warehouseVoiceFillVoices() {
   });
   select.value = s.voiceURI;
   if (select.value !== s.voiceURI) select.value = '';
+  const status = document.getElementById('voiceStatus');
+  if (status) {
+    if (native) {
+      status.textContent = voices.length
+        ? 'Озвучка: Android TTS, голосов: ' + voices.length
+        : 'Озвучка: Android TTS подключён, но движок не отдал голоса. Проверьте блок <queries> в AndroidManifest.xml и что в системе выбран модуль синтеза речи.';
+    } else {
+      status.textContent = 'Озвучка: браузерная' + (voices.length ? ', голосов: ' + voices.length : ' — голосов нет. В APK не подключён Android.speak: обновите MainActivity.kt и пересоберите.');
+    }
+  }
 }
 function warehouseVoiceUpdateLabels() {
   const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
@@ -23055,7 +23960,7 @@ function warehouseVoiceLoadUi() {
   warehouseVoiceUpdateLabels();
   if (window.speechSynthesis && !window.__warehouseVoicesBound) {
     window.__warehouseVoicesBound = true;
-    try { window.speechSynthesis.addEventListener('voiceschanged', warehouseVoiceFillVoices); } catch (e) {}
+    try { window.speechSynthesis.addEventListener('voiceschanged', () => warehouseVoiceFillVoices()); } catch (e) {}
   }
 }
 window.warehouseVoiceSaveUi = function () {
@@ -23079,25 +23984,8 @@ window.warehouseVoiceSaveUi = function () {
 window.warehouseVoiceTest = function () {
   window.warehouseVoiceSaveUi();
   const s = warehouseVoiceGetSettings();
-  const saved = s.enabled;
-  const text = (s.phrase ? s.phrase + ' ' : '') + '15';
-  if (!saved) { warehouseVoiceSpeakForce(text); return; }
-  warehouseVoiceSpeak(text);
+  warehouseVoiceSpeak((s.phrase ? s.phrase + ' ' : '') + '15', true);
 };
-function warehouseVoiceSpeakForce(text) {
-  try {
-    const s = warehouseVoiceGetSettings();
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voice = s.voiceURI ? synth.getVoices().find(v => v.voiceURI === s.voiceURI) : null;
-    utterance.lang = voice ? voice.lang : warehouseVoiceLangCode();
-    if (voice) utterance.voice = voice;
-    utterance.rate = s.rate; utterance.pitch = s.pitch; utterance.volume = s.volume;
-    synth.speak(utterance);
-  } catch (e) {}
-}
 
 function warehouseVibrate(pattern) {
   const level = warehouseGetFeedbackSettings().vibrationLevel;
@@ -24714,6 +25602,24 @@ body[data-theme] .home-screen-page .quick-action-label{white-space:normal;overfl
   opacity:0;transform:translate(-50%,-50%) scale(.72);transition-property:opacity,transform;
   transition-timing-function:ease-out;transition-duration:.15s;will-change:opacity,transform;}
 .nr-tapfx-num.show{opacity:.88;transform:translate(-50%,-50%) scale(1);}
+/* Настройки: группы-строки (аккордеон) */
+.sg-group{margin:10px 0;border-radius:14px;overflow:hidden;background:var(--md-card,var(--settings-card,#fff));
+  border:1px solid var(--md-outline-variant,rgba(0,0,0,.08));}
+.sg-row{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;border:0;background:transparent;
+  color:var(--text,inherit);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.sg-row:active{background:rgba(127,127,127,.12);}
+.sg-icon{font-size:22px;width:30px;text-align:center;flex-shrink:0;}
+.sg-text{flex:1;min-width:0;}
+.sg-title{font-size:16px;font-weight:800;line-height:1.2;}
+.sg-sub{font-size:12px;color:var(--muted,#6c757d);margin-top:2px;line-height:1.3;}
+.sg-chevron{font-size:22px;color:var(--muted,#6c757d);transition:transform .2s;flex-shrink:0;}
+.sg-group.open>.sg-row .sg-chevron{transform:rotate(90deg);}
+.sg-group.open>.sg-row{border-bottom:1px solid var(--md-outline-variant,rgba(0,0,0,.08));}
+.sg-body{display:none;padding:0 0 8px;}
+.sg-group.open>.sg-body{display:block;}
+.sg-body>.settings-section-label:first-child{display:none;}
+.sg-body .settings-group{margin:8px 10px;}
+.sg-body>.google-drive-settings-card,.sg-body>.feedback-settings-card{margin-left:10px;margin-right:10px;}
 .home-screen-pages.home-screen-pages{overflow-x:hidden;scroll-snap-type:none;touch-action:pan-y;}
 .home-screen-pages .home-screen-page{scroll-snap-align:none;scroll-snap-stop:normal;overscroll-behavior-y:contain;}
 /* Мини-окно выбора количества (Приём по наименованию): в 2 раза больше */
