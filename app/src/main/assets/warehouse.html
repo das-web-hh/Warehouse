@@ -24,6 +24,7 @@
 <script async src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 /* Keep the diagnostic hook independent from the application scripts. */
 (function () {
@@ -3044,6 +3045,29 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   </div>
   <div class="rh-list docs-list" id="documentsList"></div>
 </div>
+<div class="rh-modal docs-modal" id="documentDetailModal" role="dialog" aria-label="Документ">
+  <div class="modal-topbar">
+    <h2 id="docDetailTitle">Документ</h2>
+    <button class="btn-modal-close" type="button" onclick="closeDocumentDetail()" aria-label="Закрыть">✕</button>
+  </div>
+  <div class="docs-detail" id="docDetailBody"></div>
+</div>
+<style id="docsDetailStyle">
+.docs-detail{flex:1;min-height:0;overflow:auto;padding:12px 14px calc(18px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;}
+.dd-sub{font-size:13px;opacity:.7;margin-bottom:10px;overflow-wrap:anywhere;}
+.dd-actions{display:flex;gap:8px;margin-bottom:10px;}
+.dd-btn{flex:1;border:0;border-radius:10px;padding:12px 8px;background:#1c7ed6;color:#fff;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer;}
+.dd-btn.alt{background:#495057;}.dd-btn.warn{background:#e8590c;}.dd-btn:disabled{opacity:.6;}
+.dd-err{margin:0 0 10px;padding:9px 11px;border-radius:9px;background:rgba(224,49,49,.15);color:#e03131;font-size:12px;overflow-wrap:anywhere;}
+.dd-frame{width:100%;height:55vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff;margin-bottom:12px;}
+.dd-h{font-size:13px;font-weight:800;letter-spacing:.3px;margin:6px 0 8px;opacity:.8;}
+.dd-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid rgba(128,128,128,.25);font-size:14px;}
+.dd-kv span{opacity:.65;flex:0 0 auto;}.dd-kv b{text-align:right;overflow-wrap:anywhere;}
+.dd-scroll{overflow-x:auto;margin-top:10px;}
+.dd-table{width:100%;border-collapse:collapse;font-size:13px;}
+.dd-table th,.dd-table td{border:1px solid rgba(128,128,128,.35);padding:6px 7px;text-align:left;vertical-align:top;}
+.dd-table th{background:rgba(128,128,128,.15);}
+</style>
 
 <!-- ═══ HOME AREA ═══ -->
 <div class="home-area" id="homeArea">
@@ -6797,7 +6821,7 @@ function initClock() {
    BACK-BUTTON
 ══════════════════════════════════════════════ */
 const MODAL_CLOSE_ORDER = [
-  'documentsModal','confirmOverlay','barcodeOrderOverlay','scannerOverlay','invoiceModal','infoModal','successModal','qtyOverlay',
+  'documentDetailModal','documentsModal','confirmOverlay','barcodeOrderOverlay','scannerOverlay','invoiceModal','infoModal','successModal','qtyOverlay',
   'receiveSaveModal','attachModal','editModal','exportExcelModal','inventoryExportModal','exportModal','importExportSheet',
   'geminiChatModal','barcodeResultModal','barcodeSessionModal','barcodePlanModal','inventoryModal','autoReceiveModal','bwareHistoryModal','bwareReceiveModal','receiveModal','historyModal','dbImportModal','importModal','baseModal','settingsModal','appInfoModal','menuPanel','productInfoModal','cardFilterModal','statsModal'
 ];
@@ -6836,6 +6860,7 @@ function _closeModalById(id) {
     case 'inventoryModal':      closeInventory(); break;
     case 'autoReceiveModal':  _doCloseAutoReceive(); break;
     case 'bwareReceiveModal': closeBwareReceive(); break;
+    case 'documentDetailModal': closeDocumentDetail(); break;
     case 'documentsModal':    closeDocuments(); break;
   }
 }
@@ -18195,7 +18220,7 @@ function printReceivedBatch(batchId) {
     alert('Разрешите открытие окна печати в браузере.');
     return;
   }
-  printWindow.document.write(`<!doctype html>
+  const _histHtml = `<!doctype html>
     <html lang="ru"><head><meta charset="utf-8"><title>${escape(title)}</title>
     <style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:28px}
@@ -18216,11 +18241,13 @@ function printReceivedBatch(batchId) {
       <table><thead><tr><th>№</th><th>Товар</th><th>EAN</th><th>Количество</th></tr></thead>
       <tbody>${bodyRows}</tbody>
       <tfoot><tr><td colspan="3">Итого</td><td class="qty">${totalQty}</td></tr></tfoot></table>
-    </body></html>`);
-  printWindow.document.close();
-  setTimeout(() => {
-    try { printWindow.focus(); printWindow.print(); } catch (error) {}
-  }, 120);
+    </body></html>`;
+  window.warehousePublishAndPrint(printWindow, _histHtml, {
+    type: 'report', title,
+    subtitle: [first.senderName, first.orderNumber].filter(Boolean).join(' · '),
+    data: {sender: first.senderName || '', order: first.orderNumber || '', date,
+      items: rows.map(r => ({name: r.name, ean: r.ean || '', qty: parseInt(r.menge, 10) || 0}))}
+  });
 }
 
 // История приёмок: одна визуальная группа = одна принятая партия.
@@ -22958,17 +22985,14 @@ document.addEventListener('DOMContentLoaded', function () {
       <style>body{font:20px Arial;color:#111;padding:24px}h2{font-size:28px}table{width:100%;border-collapse:collapse}
       th,td{border:1px solid #111;padding:10px;text-align:left}th{background:#eee}.meta{margin:6px 0}</style>
       </head><body>${body}</body></html>`;
-    printWindow.document.write(fullHtml);
-    printWindow.document.close(); printWindow.focus(); printWindow.print();
-    try {
-      const sender = String($('nrSender')?.textContent || '').trim();
-      const order = String($('nrOrder')?.textContent || '').trim();
-      window.warehouseDocsAdd && window.warehouseDocsAdd({
-        type: docType || 'report', title,
-        subtitle: [sender, order].filter(v => v && v !== '-').join(' · '),
-        html: fullHtml
-      });
-    } catch (e) {}
+    const sender = String($('nrSender')?.textContent || '').trim();
+    const order = String($('nrOrder')?.textContent || '').trim();
+    window.warehousePublishAndPrint(printWindow, fullHtml, {
+      type: docType || 'report', title,
+      subtitle: [sender, order].filter(v => v && v !== '-').join(' · '),
+      data: {sender, order: order === '-' ? '' : order, products: (state.products || []).map(p => ({
+        name: p.name, plan: p.qtyPlan, fact: p.qtyActual, damage: p.qtyDamage}))}
+    });
   }
   window.nrPrintFull = function () {
     const rows = state.products.map((item, index) =>
@@ -24657,7 +24681,10 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
   function setScanButtons(disabled) {
     ['bwareCameraBtn', 'bwarePdfBtn'].forEach(id => { const el = $(id); if (el) el.disabled = disabled; });
   }
-  window.bwareOpenCamera = function () { if (!state.scanning) $('bwareCameraInput')?.click(); };
+  window.bwareOpenCamera = function () {
+    if (state.scanning) return;
+    if (window.bwareOpenScanCamera) window.bwareOpenScanCamera(); else $('bwareCameraInput')?.click();
+  };
   window.bwarePickPdf = function () { if (!state.scanning) $('bwarePdfInput')?.click(); };
   function splitDataUrl(value) {
     const match = /^data:([^;,]+);base64,(.+)$/s.exec(String(value || '').trim());
@@ -24948,23 +24975,22 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
       <div class="foot">Dokument-Nr. ${esc(docNo)} · erstellt am ${esc(created.date)} um ${esc(created.time)} Uhr · Abteilung Wareneingang</div>
       </body></html>`;
   }
-  function printDocument(printWindow, record, options = {}) {
+  async function printDocument(printWindow, record, options = {}) {
     const html = buildDocumentHtml(record);
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 250);
-    if (options.save !== false && typeof window.warehouseDocsAdd === 'function') {
-      try {
-        window.warehouseDocsAdd({
-          type: 'bware',
-          title: 'B-Ware',
-          subtitle: [record.sender, record.order || record.ls].filter(Boolean).join(' · '),
-          html
-        });
-      } catch (error) {}
+    if (options.save === false) { // повторная печать из истории: без новой загрузки
+      printWindow.document.open(); printWindow.document.write(html); printWindow.document.close();
+      printWindow.focus(); setTimeout(() => printWindow.print(), 250);
+      return {html};
     }
+    const ps = window.bwarePhotoState, photos = ps ? ps.photos.slice() : [];
+    status('Загружаю документ на Google Диск…', 'loading');
+    const pub = await window.warehousePublishAndPrint(printWindow, html, {
+      type: 'bware', title: 'B-Ware', subtitle: [record.sender, record.order || record.ls].filter(Boolean).join(' · '),
+      docNo: record.docNo, date: record.date, photos,
+      data: {sender: record.sender, order: record.order, ls: record.ls, date: record.date, docNo: record.docNo, items: record.items}
+    });
+    if (ps) ps.reset();
+    return pub;
   }
   window.bwareNext = function () {
     if (state.processing) return;
@@ -24989,10 +25015,15 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
     const createdAt = Date.now();
     const record = {sender, order, ls, date, items, driverSign: driverSignEnabled(),
       createdAt, docNo: `BW-${stamp(createdAt).id}`};
-    printDocument(printWindow, record, {save: true});
+    const ps = window.bwarePhotoState;
+    if (ps && ps.photos.length && ps.batch) record.docNo = ps.batch;
     state.history.unshift(record);
     saveBwareHistory();
-    status('Документ подготовлен. В окне печати выберите принтер или «Сохранить как PDF».', 'ok');
+    state.processing = true;
+    printDocument(printWindow, record, {save: true}).then(pub => {
+      status(pub && pub.error ? `Напечатано, но не загружено на Google Диск: ${pub.error}` : 'PDF с QR загружен на Google Диск. В окне печати выберите принтер.',
+        pub && pub.error ? 'error' : 'ok');
+    }).catch(e => status(e?.message || 'Ошибка печати.', 'error')).finally(() => { state.processing = false; });
   };
 }());
 </script>
@@ -26351,11 +26382,12 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
 })();
 </script>
 <script id="documents-runtime">
-/* «Документы»: все напечатанные документы хранятся в IndexedDB и показываются по датам. */
+/* «Документы»: все напечатанные документы хранятся в IndexedDB, каждый загружается на Google Диск как PDF со своим QR-кодом. */
 (function () {
   'use strict';
   const KEY = 'warehouse_documents_v1', MAX = 500;
-  let docs = null, confirmId = '', confirmTimer = null;
+  let docs = null, confirmId = '', confirmTimer = null, curId = '';
+  const $ = id => document.getElementById(id);
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pad = n => String(n).padStart(2, '0');
   const fmtDate = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
@@ -26365,6 +26397,7 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     full: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="m10 14 2 2 4-4"/>',
     report: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>'
   };
+  const PREFIX = {bware: 'BW', full: 'AKT', discrepancy: 'ABW', report: 'LST'};
   async function ensure() {
     if (docs) return docs;
     let saved = null;
@@ -26373,7 +26406,7 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     return docs;
   }
   async function persist() { try { await idbSave(KEY, docs); } catch (e) { console.warn('Документы: не удалось сохранить', e); } }
-  function isOpen() { return document.getElementById('documentsModal')?.classList.contains('open'); }
+  function isOpen() { return $('documentsModal')?.classList.contains('open'); }
   function dayLabel(date) {
     const now = new Date();
     if (date === fmtDate(now)) return date + ' · Сегодня';
@@ -26381,7 +26414,7 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     return date === fmtDate(y) ? date + ' · Вчера' : date;
   }
   function render() {
-    const box = document.getElementById('documentsList');
+    const box = $('documentsList');
     if (!box) return;
     if (!docs || !docs.length) {
       box.innerHTML = '<div class="docs-empty">Здесь появятся напечатанные документы.</div>';
@@ -26391,9 +26424,9 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     docs.forEach(doc => {
       if (doc.date !== lastDate) { lastDate = doc.date; html += `<div class="docs-date">${esc(dayLabel(doc.date))}</div>`; }
       const icon = ICONS[doc.type] || ICONS.report;
-      const sub = [doc.subtitle, doc.time].filter(Boolean).join(' · ');
+      const sub = [doc.subtitle, doc.time, doc.driveId ? '☁ PDF + QR' : '⚠ не на Диске'].filter(Boolean).join(' · ');
       html += `<div class="docs-item">
-        <button type="button" class="rh-row" onclick="printStoredDocument('${esc(doc.id)}')">
+        <button type="button" class="rh-row" onclick="openStoredDocument('${esc(doc.id)}')">
           <span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span>
           <span class="rh-label"><span class="docs-title">${esc(doc.title)}</span><span class="docs-sub">${esc(sub)}</span></span>
         </button>
@@ -26406,24 +26439,174 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
   window.warehouseDocsAdd = async function (rec) {
     const list = await ensure();
     const now = new Date();
-    list.unshift({
+    const doc = {
       id: 'd' + now.getTime().toString(36) + Math.random().toString(36).slice(2, 6),
       type: rec.type || 'report', title: rec.title || 'Документ', subtitle: rec.subtitle || '',
       date: fmtDate(now), time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
-      ts: now.getTime(), html: String(rec.html || '')
-    });
+      ts: now.getTime(), html: String(rec.html || ''), docNo: rec.docNo || '', data: rec.data || null,
+      driveId: rec.driveId || '', driveUrl: rec.driveUrl || '', previewUrl: rec.previewUrl || '', driveError: rec.driveError || ''
+    };
+    list.unshift(doc);
     if (list.length > MAX) list.length = MAX;
     await persist();
+    if (isOpen()) render();
+    return doc;
+  };
+
+  /* ── HTML → PDF-страницы (JPEG) ── */
+  const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+  const readUrl = blob => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+  async function htmlToPages(html) {
+    if (typeof html2canvas === 'undefined') throw new Error('Библиотека html2canvas недоступна (нужен интернет для загрузки).');
+    const fr = document.createElement('iframe');
+    fr.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1123px;border:0;opacity:0;pointer-events:none;z-index:-1';
+    document.body.appendChild(fr);
+    try {
+      const clean = String(html).replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<button[^>]*print-actions[\s\S]*?<\/button>/gi, '')
+        .replace(/<\/head>/i, '<style>html,body{margin:0!important;width:794px!important}body{padding:14mm!important;box-sizing:border-box}</style></head>');
+      const d = fr.contentDocument; d.open(); d.write(clean); d.close();
+      await Promise.all([...d.images].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
+      await new Promise(r => setTimeout(r, 250));
+      const canvas = await html2canvas(d.body, {scale: 1.5, backgroundColor: '#ffffff', useCORS: true, logging: false, width: 794, windowWidth: 794});
+      const W = canvas.width, PH = Math.floor(W * 841.89 / 595.28), ctx = canvas.getContext('2d'), pages = [];
+      let y = 0;
+      while (y < canvas.height) {
+        let h = Math.min(PH, canvas.height - y);
+        if (y + h < canvas.height) { // режем по пустой строке, чтобы не рвать строки таблицы
+          const lim = Math.floor(PH * 0.15);
+          for (let yy = y + h; yy > y + h - lim; yy--) {
+            const row = ctx.getImageData(0, yy - 1, W, 1).data; let blank = true;
+            for (let i = 0; i < row.length; i += 16) { if (row[i] < 245 || row[i + 1] < 245 || row[i + 2] < 245) { blank = false; break; } }
+            if (blank) { h = yy - y; break; }
+          }
+        }
+        const pc = document.createElement('canvas'); pc.width = W; pc.height = PH;
+        const px = pc.getContext('2d'); px.fillStyle = '#fff'; px.fillRect(0, 0, W, PH); px.drawImage(canvas, 0, y, W, h, 0, 0, W, h);
+        const blob = await new Promise(r => pc.toBlob(r, 'image/jpeg', 0.88));
+        pages.push({imgs: [{bytes: new Uint8Array(await blob.arrayBuffer()), w: W, h: PH, x: 0, y: 0, cw: 595.28, ch: 841.89}], texts: []});
+        y += h;
+      }
+      return pages;
+    } finally { fr.remove(); }
+  }
+  const qrBlock = (qr, docNo, date) => `<div style="display:flex;align-items:center;gap:4mm;margin-top:8mm;page-break-inside:avoid;break-inside:avoid;font:11pt Arial,sans-serif;color:#000"><img src="${qr}" style="width:34mm;height:34mm"><div>Scan QR to download this PDF<br><span style="font-size:9pt">${esc(docNo)} · ${esc(date)}</span></div></div>`;
+  const photoSheet = (urls, qr) => `<div style="page-break-before:always;break-before:page"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3mm">${urls.map(u => `<div style="height:62mm;display:flex;align-items:center;justify-content:center"><img src="${u}" style="max-width:100%;max-height:100%"></div>`).join('')}</div>${qr}</div>`;
+  const addBlock = (html, block) => /<\/body>/i.test(html) ? html.replace(/<\/body>/i, block + '</body>') : html + block;
+  async function dpost(settings, payload) {
+    const f = new FormData(); f.append('action', payload.action);
+    f.append('payload', JSON.stringify({folderId: settings.folderId, ...payload}));
+    return _googleDriveFetch(settings.url, {method: 'POST', body: f});
+  }
+
+  /* Публикация: резерв файла на Диске → QR → PDF (страницы документа + лист с фото и QR) → загрузка. */
+  window.warehouseDocsPublish = async function (opt) {
+    const now = new Date(), date = opt.date || fmtDate(now);
+    const photos = Array.isArray(opt.photos) ? opt.photos : [];
+    const docNo = opt.docNo || `${PREFIX[opt.type] || 'DOC'}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const urls = await Promise.all(photos.map(p => readUrl(p.blob)));
+    try {
+      if (navigator.onLine === false) throw new Error('Нет сети.');
+      const settings = _googleDriveRequireSettings();
+      const fileName = `${docNo}.pdf`;
+      const res = await dpost(settings, {action: 'pdfReserve', fileName});
+      const id = res.id || res.file?.id;
+      if (!id) throw new Error('Google Apps Script не вернул ID файла (обновите скрипт и версию развёртывания).');
+      const url = `https://drive.google.com/uc?export=download&id=${id}`;
+      const qrBytes = await window.warehouseQrJpeg(url);
+      const qrData = 'data:image/jpeg;base64,' + b64(qrBytes);
+      const block = qrBlock(qrData, docNo, date);
+      const storeHtml = addBlock(opt.html, block);
+      const printHtml = photos.length ? addBlock(opt.html, photoSheet(urls, block)) : storeHtml;
+      const pages = await htmlToPages(photos.length ? opt.html : storeHtml);
+      if (photos.length) {
+        for (const p of photos) p.bytes = new Uint8Array(await p.blob.arrayBuffer());
+        window.warehouseBwareLayout(photos, qrBytes, {id: docNo, date}).forEach(p => pages.push(p));
+      }
+      const pdf = window.warehouseBuildPdf(pages);
+      await dpost(settings, {action: 'pdfFinalize', id, fileName, mimeType: 'application/pdf',
+        contentBase64: await _googleDriveFileToBase64(new File([pdf], fileName, {type: 'application/pdf'}))});
+      try { _gdFlushOutbox().catch(() => {}); } catch (e) {}
+      return {html: printHtml, storeHtml, docNo, driveId: id, driveUrl: `https://drive.google.com/file/d/${id}/view`,
+        previewUrl: `https://drive.google.com/file/d/${id}/preview`, error: ''};
+    } catch (e) {
+      return {html: photos.length ? addBlock(opt.html, photoSheet(urls, '')) : opt.html, storeHtml: opt.html, docNo,
+        driveId: '', driveUrl: '', previewUrl: '', error: e?.message || String(e)};
+    }
+  };
+  /* Универсальная печать: загрузить на Диск → напечатать (с QR) → записать в «Документы». */
+  window.warehousePublishAndPrint = async function (win, html, rec) {
+    const pub = await window.warehouseDocsPublish({html, docNo: rec.docNo, date: rec.date, type: rec.type, photos: rec.photos});
+    try {
+      win.document.open(); win.document.write(pub.html); win.document.close(); win.focus();
+      setTimeout(() => { try { win.print(); } catch (e) {} }, (rec.photos && rec.photos.length) ? 800 : 300);
+    } catch (e) {}
+    try {
+      await window.warehouseDocsAdd({type: rec.type, title: rec.title, subtitle: rec.subtitle, html: pub.storeHtml, docNo: pub.docNo,
+        data: rec.data, driveId: pub.driveId, driveUrl: pub.driveUrl, previewUrl: pub.previewUrl, driveError: pub.error});
+    } catch (e) {}
+    return pub;
+  };
+
+  /* ── Карточка документа: PDF + данные ── */
+  const COLS = {name: 'Товар', ean: 'EAN', qty: 'Кол-во', plan: 'План', fact: 'Факт', damage: 'Брак'};
+  function dataHtml(d) {
+    if (!d || typeof d !== 'object') return '<div class="docs-empty">Данных по документу нет.</div>';
+    const meta = [['Отправитель', d.sender], ['Заказ', d.order], ['Накладная', d.ls], ['Дата', d.date], ['№ документа', d.docNo]].filter(r => r[1]);
+    const rows = Array.isArray(d.items) ? d.items : Array.isArray(d.products) ? d.products : [];
+    let h = meta.map(r => `<div class="dd-kv"><span>${r[0]}</span><b>${esc(r[1])}</b></div>`).join('');
+    if (rows.length) {
+      const cols = Object.keys(COLS).filter(c => rows.some(r => r[c] !== undefined && r[c] !== ''));
+      h += `<div class="dd-scroll"><table class="dd-table"><thead><tr><th>№</th>${cols.map(c => `<th>${COLS[c]}</th>`).join('')}</tr></thead><tbody>${
+        rows.map((r, i) => `<tr><td>${i + 1}</td>${cols.map(c => `<td>${esc(r[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+    return h || '<div class="docs-empty">Данных по документу нет.</div>';
+  }
+  function renderDetail(doc) {
+    const t = $('docDetailTitle'), body = $('docDetailBody');
+    if (!t || !body) return;
+    t.textContent = doc.title;
+    let h = `<div class="dd-sub">${esc([doc.subtitle, doc.date, doc.time].filter(Boolean).join(' · '))}</div><div class="dd-actions">`;
+    h += doc.driveId
+      ? `<button type="button" class="dd-btn" onclick="openDocumentPdf('${esc(doc.id)}')">📄 Открыть PDF</button>`
+      : `<button type="button" class="dd-btn warn" onclick="retryDocumentUpload('${esc(doc.id)}')">☁ Загрузить на Google Диск</button>`;
+    h += `<button type="button" class="dd-btn alt" onclick="printStoredDocument('${esc(doc.id)}')">🖨 Печать</button></div>`;
+    if (doc.driveError && !doc.driveId) h += `<div class="dd-err">${esc(doc.driveError)}</div>`;
+    if (doc.driveId) h += `<iframe class="dd-frame" src="${esc(doc.previewUrl)}" loading="lazy"></iframe>`;
+    h += `<div class="dd-h">Данные документа</div>${dataHtml(doc.data)}`;
+    body.innerHTML = h;
+  }
+  window.openStoredDocument = async function (id) {
+    const doc = (await ensure()).find(item => item.id === id);
+    if (!doc) return;
+    curId = id; renderDetail(doc);
+    $('documentDetailModal')?.classList.add('open');
+  };
+  window.closeDocumentDetail = function () { curId = ''; $('documentDetailModal')?.classList.remove('open'); };
+  window.openDocumentPdf = function (id) {
+    const doc = (docs || []).find(item => item.id === id);
+    if (doc && doc.driveUrl) window.open(doc.driveUrl, '_blank');
+  };
+  window.retryDocumentUpload = async function (id) {
+    const doc = (await ensure()).find(item => item.id === id);
+    if (!doc) return;
+    const btn = document.querySelector('#docDetailBody .dd-btn.warn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Загружаю…'; }
+    const pub = await window.warehouseDocsPublish({html: doc.html, docNo: doc.docNo, date: doc.date, type: doc.type});
+    if (pub.error) doc.driveError = pub.error;
+    else Object.assign(doc, {html: pub.storeHtml, docNo: pub.docNo, driveId: pub.driveId, driveUrl: pub.driveUrl, previewUrl: pub.previewUrl, driveError: ''});
+    await persist();
+    if (curId === id) renderDetail(doc);
     if (isOpen()) render();
   };
   window.openDocuments = async function () {
     await ensure();
     render();
-    document.getElementById('documentsModal')?.classList.add('open');
+    $('documentsModal')?.classList.add('open');
   };
   window.closeDocuments = function () {
     confirmId = '';
-    document.getElementById('documentsModal')?.classList.remove('open');
+    window.closeDocumentDetail();
+    $('documentsModal')?.classList.remove('open');
   };
   window.printStoredDocument = function (id) {
     const doc = (docs || []).find(item => item.id === id);
@@ -26919,7 +27102,7 @@ window.closeReceiveHub = function () {
     <button type="button" onclick="bwareClosePhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#495057;color:#fff;font-weight:800">Закрыть</button>
     <span id="bwarePhotoCount" style="font-weight:800">0/20</span>
     <button type="button" id="bwareShootBtn" onclick="bwareShoot()" style="flex:1;border:0;border-radius:30px;height:56px;background:#fff;color:#000;font-size:22px">⚪</button>
-    <button type="button" id="bwareDonePhotoBtn" onclick="bwareFinishPhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#2b8a3e;color:#fff;font-weight:800">Готово ⎙</button>
+    <button type="button" id="bwareDonePhotoBtn" onclick="bwareFinishPhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#2b8a3e;color:#fff;font-weight:800">Готово ✓</button>
   </div>
 </div>
 <script>
@@ -26927,7 +27110,7 @@ window.closeReceiveHub = function () {
 (function () {
   'use strict';
   const MAX = 20, $ = id => document.getElementById(id);
-  const st = {photos: [], stream: null, batch: '', busy: false};
+  const st = {photos: [], stream: null, batch: '', busy: false, mode: 'photos'};
   const say = (m, t) => { const el = $('bwarePhotoMsg'); if (el) { el.textContent = m || ''; el.style.color = t === 'error' ? '#ff8787' : '#a5d8ff'; } };
   const pad = n => String(n).padStart(2, '0');
   function counter() {
@@ -26949,25 +27132,50 @@ window.closeReceiveHub = function () {
   }
   async function startStream() {
     stopStream();
+    const camId = (function () { try { return localStorage.getItem('bi_cam_id') || ''; } catch (e) { return ''; } })();
+    const opts = {width: {ideal: 1920}};
+    const gum = c => navigator.mediaDevices.getUserMedia({video: c, audio: false});
     try {
-      st.stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}}, audio: false});
+      try {
+        // камера, выбранная в настройках; если её нет — основная
+        st.stream = await gum(camId ? {deviceId: {exact: camId}, ...opts} : {facingMode: {ideal: 'environment'}, ...opts});
+      } catch (e1) {
+        if (!camId) throw e1;
+        say('Выбранная камера недоступна, использую основную.', 'error');
+        st.stream = await gum({facingMode: {ideal: 'environment'}, ...opts});
+      }
       const v = $('bwarePhotoVideo'); v.srcObject = st.stream; await v.play();
-    } catch (e) { say('Нет доступа к камере: ' + (e?.message || e), 'error'); }
+    } catch (e) {
+      if (st.mode === 'scan') { $('bwarePhotoModal').style.display = 'none'; $('bwareCameraInput')?.click(); return; }
+      say('Нет доступа к камере: ' + (e?.message || e), 'error');
+    }
   }
+  function setMode(m) {
+    st.mode = m;
+    const scan = m === 'scan';
+    ['bwarePhotoThumbs', 'bwarePhotoCount', 'bwareDonePhotoBtn'].forEach(id => { const el = $(id); if (el) el.style.display = scan ? 'none' : ''; });
+  }
+  window.bwareOpenScanCamera = function () { setMode('scan'); $('bwarePhotoModal').style.display = 'flex'; say(''); startStream(); };
   function stopStream() { try { st.stream?.getTracks().forEach(t => t.stop()); } catch (e) {} st.stream = null; }
   window.bwareOpenPhotos = function () {
     if (!st.batch) { const d = new Date(); st.batch = `BW-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
-    $('bwarePhotoModal').style.display = 'flex'; say(''); thumbs(); counter(); startStream();
+    setMode('photos'); $('bwarePhotoModal').style.display = 'flex'; say(''); thumbs(); counter(); startStream();
   };
   window.bwareClosePhotos = function () { if (st.busy) return; stopStream(); $('bwarePhotoModal').style.display = 'none'; };
   window.bwareShoot = async function () {
     const v = $('bwarePhotoVideo');
     if (st.busy || st.photos.length >= MAX || !v.videoWidth) return;
-    const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
+    const k = Math.min(1, (st.mode === 'scan' ? 2000 : 1280) / Math.max(v.videoWidth, v.videoHeight));
     const c = document.createElement('canvas'); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
     c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', st.mode === 'scan' ? 0.9 : 0.82));
     if (!blob) return say('Не удалось сделать снимок.', 'error');
+    if (st.mode === 'scan') { // снимок накладной для распознавания — не в список фото товара
+      const f = new File([blob], `bware_scan_${Date.now()}.jpg`, {type: 'image/jpeg'});
+      stopStream(); $('bwarePhotoModal').style.display = 'none';
+      if (window.bwareHandleFile) window.bwareHandleFile({files: [f], value: ''});
+      return;
+    }
     const n = st.photos.length + 1, name = `${st.batch}_photo_${pad(n)}.jpg`;
     const file = new File([blob], name, {type: 'image/jpeg'});
     st.photos.push({file, blob, w: c.width, h: c.height, url: URL.createObjectURL(blob)});
@@ -27004,6 +27212,7 @@ window.closeReceiveHub = function () {
     const out = new Uint8Array(len); let o = 0; chunks.forEach(c => { out.set(c, o); o += c.length; });
     return out;
   }
+  window.warehouseBuildPdf = buildPdf;
   const MM = 72 / 25.4;
   function layout(photos, qrBytes, meta) { // 3 в ряд × 4 в колонку, поля 10 мм
     const gap = 3 * MM, m = 10 * MM, W = 595.28, H = 841.89;
@@ -27063,33 +27272,13 @@ window.closeReceiveHub = function () {
       return h + '</body></html>';
     });
   }
-  window.bwareFinishPhotos = async function () {
-    if (st.busy || !st.photos.length) return;
-    st.busy = true; counter();
-    try {
-      say('Подготовка Google Диска…', 'ok');
-      const settings = _googleDriveRequireSettings();
-      const d = new Date(), meta = {id: st.batch, date: `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`};
-      const fileName = `${st.batch}.pdf`;
-      const res = await drivePost(settings, {action: 'pdfReserve', fileName});
-      const id = res.id || res.file?.id; if (!id) throw new Error('Google Apps Script не вернул ID файла (обновите скрипт, см. apps_script_bware.gs).');
-      const url = `https://drive.google.com/uc?export=download&id=${id}`;
-      say('Формирую PDF с QR-кодом…', 'ok');
-      const qrBytes = await qrJpeg(url);
-      for (const p of st.photos) p.bytes = await jpegInfo(p.blob);
-      const pdf = buildPdf(layout(st.photos, qrBytes, meta));
-      say('Загружаю PDF на Google Диск…', 'ok');
-      const file = new File([pdf], fileName, {type: 'application/pdf'});
-      await drivePost(settings, {action: 'pdfFinalize', id, fileName, mimeType: 'application/pdf', contentBase64: await _googleDriveFileToBase64(file)});
-      try { _gdFlushOutbox().catch(() => {}); } catch (e) {}
-      const qrData = await new Promise(r => { const bl = new Blob([qrBytes], {type: 'image/jpeg'}), fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(bl); });
-      const html = await printHtml(url, {qr: `<img src="${qrData}">`});
-      say('PDF на Google Диске. Открываю печать…', 'ok');
-      if (window.Android && window.Android.printHtml) window.Android.printHtml(html);
-      else { const w = window.open('', '_blank'); if (w) { w.document.write(html + '<script>window.onload=()=>setTimeout(()=>print(),300)<\/script>'); w.document.close(); } }
-      st.photos.forEach(p => URL.revokeObjectURL(p.url)); st.photos = []; st.batch = ''; thumbs();
-    } catch (e) { say(e?.message || 'Не удалось завершить.', 'error'); }
-    finally { st.busy = false; counter(); }
+  /* «Готово» только закрывает камеру: фото попадут в итоговый PDF при нажатии «Далее» (документ + лист с фото и QR). */
+  window.bwareFinishPhotos = function () { if (st.busy) return; stopStream(); $('bwarePhotoModal').style.display = 'none'; };
+  window.warehouseBwareLayout = layout;
+  window.warehouseQrJpeg = qrJpeg;
+  window.bwarePhotoState = {
+    get photos() { return st.photos; }, get batch() { return st.batch; },
+    reset() { st.photos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch (e) {} }); st.photos = []; st.batch = ''; thumbs(); counter(); }
   };
 }());
 
