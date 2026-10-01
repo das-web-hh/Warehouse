@@ -3341,6 +3341,7 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
     <div class="bware-tools">
       <button type="button" class="bware-tool-btn" id="bwareCameraBtn" onclick="bwareOpenCamera()">📷 Снимок</button>
       <button type="button" class="bware-tool-btn" id="bwarePdfBtn" onclick="bwarePickPdf()">📄 PDF из памяти</button>
+      <button type="button" class="bware-tool-btn" id="bwarePhotosBtn" style="grid-column:1/-1" onclick="bwareOpenPhotos()">📸 Фото товара</button>
     </div>
     <input id="bwareCameraInput" class="nr-file-input" type="file" accept="image/*" capture="environment" onchange="bwareHandleFile(this)">
     <input id="bwarePdfInput" class="nr-file-input" type="file" accept="application/pdf,.pdf" onchange="bwareHandleFile(this)">
@@ -26909,6 +26910,189 @@ window.closeReceiveHub = function () {
     if (changed) { api().patch(api().list()[0].id, () => {}); api().render(); }
   }());
 }());
+</script>
+<div id="bwarePhotoModal" style="display:none;position:fixed;inset:0;z-index:100000;background:#000;color:#fff;flex-direction:column">
+  <video id="bwarePhotoVideo" playsinline muted style="flex:1;min-height:0;width:100%;object-fit:contain;background:#000"></video>
+  <div id="bwarePhotoMsg" style="padding:6px 12px;font-size:12px;min-height:18px"></div>
+  <div id="bwarePhotoThumbs" style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto"></div>
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))">
+    <button type="button" onclick="bwareClosePhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#495057;color:#fff;font-weight:800">Закрыть</button>
+    <span id="bwarePhotoCount" style="font-weight:800">0/20</span>
+    <button type="button" id="bwareShootBtn" onclick="bwareShoot()" style="flex:1;border:0;border-radius:30px;height:56px;background:#fff;color:#000;font-size:22px">⚪</button>
+    <button type="button" id="bwareDonePhotoBtn" onclick="bwareFinishPhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#2b8a3e;color:#fff;font-weight:800">Готово ⎙</button>
+  </div>
+</div>
+<script>
+/* B-Ware: фото товара (до 20) → Google Диск → печать A4 3×4 → PDF с QR */
+(function () {
+  'use strict';
+  const MAX = 20, $ = id => document.getElementById(id);
+  const st = {photos: [], stream: null, batch: '', busy: false};
+  const say = (m, t) => { const el = $('bwarePhotoMsg'); if (el) { el.textContent = m || ''; el.style.color = t === 'error' ? '#ff8787' : '#a5d8ff'; } };
+  const pad = n => String(n).padStart(2, '0');
+  function counter() {
+    const b = $('bwarePhotosBtn'); if (b) b.textContent = '📸 Фото товара' + (st.photos.length ? ` (${st.photos.length}/${MAX})` : '');
+    const c = $('bwarePhotoCount'); if (c) c.textContent = `${st.photos.length}/${MAX}`;
+    const s = $('bwareShootBtn'); if (s) s.disabled = st.busy || st.photos.length >= MAX;
+    const d = $('bwareDonePhotoBtn'); if (d) d.disabled = st.busy || !st.photos.length;
+  }
+  function thumbs() {
+    const box = $('bwarePhotoThumbs'); if (!box) return;
+    box.innerHTML = '';
+    st.photos.forEach((p, i) => {
+      const w = document.createElement('div'); w.style.cssText = 'position:relative;flex:0 0 64px;height:64px';
+      w.innerHTML = `<img src="${p.url}" style="width:64px;height:64px;object-fit:cover;border-radius:8px"><button type="button" style="position:absolute;top:-4px;right:-4px;width:22px;height:22px;border:0;border-radius:11px;background:#c92a2a;color:#fff;font-size:12px">✕</button>`;
+      w.querySelector('button').onclick = () => { if (st.busy) return; URL.revokeObjectURL(p.url); st.photos.splice(i, 1); thumbs(); counter(); };
+      box.appendChild(w);
+    });
+    box.scrollLeft = box.scrollWidth;
+  }
+  async function startStream() {
+    stopStream();
+    try {
+      st.stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}}, audio: false});
+      const v = $('bwarePhotoVideo'); v.srcObject = st.stream; await v.play();
+    } catch (e) { say('Нет доступа к камере: ' + (e?.message || e), 'error'); }
+  }
+  function stopStream() { try { st.stream?.getTracks().forEach(t => t.stop()); } catch (e) {} st.stream = null; }
+  window.bwareOpenPhotos = function () {
+    if (!st.batch) { const d = new Date(); st.batch = `BW-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+    $('bwarePhotoModal').style.display = 'flex'; say(''); thumbs(); counter(); startStream();
+  };
+  window.bwareClosePhotos = function () { if (st.busy) return; stopStream(); $('bwarePhotoModal').style.display = 'none'; };
+  window.bwareShoot = async function () {
+    const v = $('bwarePhotoVideo');
+    if (st.busy || st.photos.length >= MAX || !v.videoWidth) return;
+    const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    if (!blob) return say('Не удалось сделать снимок.', 'error');
+    const n = st.photos.length + 1, name = `${st.batch}_photo_${pad(n)}.jpg`;
+    const file = new File([blob], name, {type: 'image/jpeg'});
+    st.photos.push({file, blob, w: c.width, h: c.height, url: URL.createObjectURL(blob)});
+    thumbs(); counter();
+    try { if (navigator.vibrate) navigator.vibrate(25); } catch (e) {}
+    // каждое фото сразу в очередь Google Диска (уйдёт сразу или при появлении связи)
+    try {
+      await _gdEnqueue([{file, kind: 'photo', batchId: st.batch, key: st.batch, code: '', fileName: name}]);
+      _gdFlushOutbox().catch(() => {});
+    } catch (e) { console.warn('Drive queue', e); }
+  };
+  /* ── минимальный PDF: A4, JPEG (DCT), Helvetica ── */
+  const enc = new TextEncoder();
+  function buildPdf(pages) { // pages: [{imgs:[{bytes,w,h,x,y,cw,ch}], texts:[{s,x,y,size}]}], pt, origin bottom-left
+    const chunks = [], offs = []; let len = 0;
+    const push = d => { const u = typeof d === 'string' ? enc.encode(d) : d; chunks.push(u); len += u.length; };
+    const obj = (n, body) => { offs[n] = len; push(`${n} 0 obj\n`); body(); push('\nendobj\n'); };
+    let n = 3; const imgIds = [], pageIds = [], contIds = [];
+    pages.forEach(p => { p.ids = p.imgs.map(() => n++); pageIds.push(n++); contIds.push(n++); });
+    push('%PDF-1.4\n');
+    obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
+    obj(2, () => push(`<< /Type /Pages /Count ${pages.length} /Kids [${pageIds.map(i => i + ' 0 R').join(' ')}] >>`));
+    pages.forEach((p, pi) => {
+      p.imgs.forEach((im, ii) => obj(p.ids[ii], () => { push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`); push(im.bytes); push('\nendstream'); }));
+      const xo = p.imgs.map((_, i) => `/Im${i} ${p.ids[i]} 0 R`).join(' ');
+      obj(pageIds[pi], () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << ${xo} >> /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents ${contIds[pi]} 0 R >>`));
+      let s = ''; p.imgs.forEach((im, i) => { s += `q ${im.cw.toFixed(2)} 0 0 ${im.ch.toFixed(2)} ${im.x.toFixed(2)} ${im.y.toFixed(2)} cm /Im${i} Do Q\n`; });
+      p.texts.forEach(t => { s += `BT /F1 ${t.size} Tf ${t.x.toFixed(2)} ${t.y.toFixed(2)} Td (${t.s.replace(/[()\\]/g, '')}) Tj ET\n`; });
+      obj(contIds[pi], () => { push(`<< /Length ${enc.encode(s).length} >>\nstream\n${s}endstream`); });
+    });
+    const xr = len; push(`xref\n0 ${n}\n0000000000 65535 f \n`);
+    for (let i = 1; i < n; i++) push(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
+    push(`trailer\n<< /Size ${n} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+    const out = new Uint8Array(len); let o = 0; chunks.forEach(c => { out.set(c, o); o += c.length; });
+    return out;
+  }
+  const MM = 72 / 25.4;
+  function layout(photos, qrBytes, meta) { // 3 в ряд × 4 в колонку, поля 10 мм
+    const gap = 3 * MM, m = 10 * MM, W = 595.28, H = 841.89;
+    const cw = (W - 2 * m - 2 * gap) / 3, ch = (H - 2 * m - 3 * gap) / 4;
+    const pages = []; const per = 12;
+    for (let i = 0; i < photos.length || !pages.length; i += per) {
+      const pg = {imgs: [], texts: [{s: `${meta.id}  ${meta.date}`, x: m, y: 6 * MM, size: 8}]};
+      photos.slice(i, i + per).forEach((p, j) => {
+        const col = j % 3, row = Math.floor(j / 3), k = Math.min(cw / p.w, ch / p.h), iw = p.w * k, ih = p.h * k;
+        pg.imgs.push({bytes: p.bytes, w: p.w, h: p.h, cw: iw, ch: ih, x: m + col * (cw + gap) + (cw - iw) / 2, y: H - m - row * (ch + gap) - ch + (ch - ih) / 2});
+      });
+      pages.push(pg);
+    }
+    let last = pages[pages.length - 1];
+    if (last.imgs.length > 9) { last = {imgs: [], texts: [{s: `${meta.id}  ${meta.date}`, x: m, y: 6 * MM, size: 8}]}; pages.push(last); }
+    const q = 38 * MM, rows = Math.ceil(last.imgs.length / 3);
+    const qy = last.imgs.length > 9 || rows === 0 ? H - m - q : H - m - 3 * (ch + gap) - ch + (ch - q) / 2;
+    last.imgs.push({bytes: qrBytes, w: 512, h: 512, cw: q, ch: q, x: m, y: Math.min(qy, H - m - q)});
+    last.texts.push({s: 'Scan QR to download this PDF', x: m + q + 4 * MM, y: Math.min(qy, H - m - q) + q / 2, size: 11});
+    return pages;
+  }
+  async function jpegInfo(blob) { return new Uint8Array(await blob.arrayBuffer()); }
+  function qrJpeg(text) {
+    return new Promise((res, rej) => {
+      if (typeof QRCode === 'undefined') return rej(new Error('Библиотека QR недоступна (нужен интернет для загрузки).'));
+      const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(d);
+      new QRCode(d, {text, width: 512, height: 512, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M});
+      setTimeout(() => {
+        try {
+          const cv = d.querySelector('canvas'), img = d.querySelector('img');
+          const src = cv ? cv : img; const c = document.createElement('canvas'); c.width = c.height = 512;
+          const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 512, 512); x.drawImage(src, 0, 0, 512, 512);
+          const b = atob(c.toDataURL('image/jpeg', 1).split(',')[1]); const u = new Uint8Array(b.length);
+          for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+          document.body.removeChild(d); res(u);
+        } catch (e) { rej(e); }
+      }, 150);
+    });
+  }
+  async function drivePost(settings, payload) {
+    const f = new FormData(); f.append('action', payload.action); f.append('payload', JSON.stringify({folderId: settings.folderId, ...payload}));
+    return _googleDriveFetch(settings.url, {method: 'POST', body: f});
+  }
+  function printHtml(qrUrl, meta) {
+    const imgs = st.photos.map(p => p.url);
+    const reader = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+    return Promise.all(st.photos.map(p => reader(p.blob))).then(urls => {
+      let h = '<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:10mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.s{display:grid;grid-template-columns:repeat(3,61.3mm);grid-template-rows:repeat(4,67mm);gap:3mm;height:277mm;break-after:page;page-break-after:always}.s:last-child{break-after:auto;page-break-after:auto}.c{display:flex;align-items:center;justify-content:center;overflow:hidden}.c img{max-width:100%;max-height:100%}.q{display:flex;align-items:center;gap:4mm;font-size:11pt}.q img{width:38mm;height:38mm}</style></head><body>';
+      for (let i = 0; i < urls.length || i === 0; i += 12) {
+        const part = urls.slice(i, i + 12), last = i + 12 >= urls.length;
+        h += '<div class="s">' + part.map(u => `<div class="c"><img src="${u}"></div>`).join('');
+        if (last && part.length <= 9) h += `<div class="q" style="grid-column:1/4;grid-row:4">${meta.qr}<span>Scan QR to download this PDF</span></div>`;
+        h += '</div>';
+      }
+      if (urls.length % 12 > 9 || (urls.length && urls.length % 12 === 0)) h += `<div class="s"><div class="q" style="grid-column:1/4;grid-row:1">${meta.qr}<span>Scan QR to download this PDF</span></div></div>`;
+      return h + '</body></html>';
+    });
+  }
+  window.bwareFinishPhotos = async function () {
+    if (st.busy || !st.photos.length) return;
+    st.busy = true; counter();
+    try {
+      say('Подготовка Google Диска…', 'ok');
+      const settings = _googleDriveRequireSettings();
+      const d = new Date(), meta = {id: st.batch, date: `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`};
+      const fileName = `${st.batch}.pdf`;
+      const res = await drivePost(settings, {action: 'pdfReserve', fileName});
+      const id = res.id || res.file?.id; if (!id) throw new Error('Google Apps Script не вернул ID файла (обновите скрипт, см. apps_script_bware.gs).');
+      const url = `https://drive.google.com/uc?export=download&id=${id}`;
+      say('Формирую PDF с QR-кодом…', 'ok');
+      const qrBytes = await qrJpeg(url);
+      for (const p of st.photos) p.bytes = await jpegInfo(p.blob);
+      const pdf = buildPdf(layout(st.photos, qrBytes, meta));
+      say('Загружаю PDF на Google Диск…', 'ok');
+      const file = new File([pdf], fileName, {type: 'application/pdf'});
+      await drivePost(settings, {action: 'pdfFinalize', id, fileName, mimeType: 'application/pdf', contentBase64: await _googleDriveFileToBase64(file)});
+      try { _gdFlushOutbox().catch(() => {}); } catch (e) {}
+      const qrData = await new Promise(r => { const bl = new Blob([qrBytes], {type: 'image/jpeg'}), fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(bl); });
+      const html = await printHtml(url, {qr: `<img src="${qrData}">`});
+      say('PDF на Google Диске. Открываю печать…', 'ok');
+      if (window.Android && window.Android.printHtml) window.Android.printHtml(html);
+      else { const w = window.open('', '_blank'); if (w) { w.document.write(html + '<script>window.onload=()=>setTimeout(()=>print(),300)<\/script>'); w.document.close(); } }
+      st.photos.forEach(p => URL.revokeObjectURL(p.url)); st.photos = []; st.batch = ''; thumbs();
+    } catch (e) { say(e?.message || 'Не удалось завершить.', 'error'); }
+    finally { st.busy = false; counter(); }
+  };
+}());
+
 </script>
 </body>
 </html>
