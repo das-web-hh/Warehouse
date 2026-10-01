@@ -2158,6 +2158,7 @@ body[data-theme="dark"] .python-settings-paths{border-color:rgba(255,255,255,.08
 .quick-action.yellow .quick-action-icon{color:#ffe066;}
 .quick-action.red .quick-action-icon{color:#ff8787;}
 .quick-action.gray .quick-action-icon{color:#ced4da;}
+.quick-action.pink .quick-action-icon{color:#f783ac;}
 .quick-action-label{font-size:12px;font-weight:700;line-height:1.15;text-align:center;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .home-area.searching .home-quick-actions{display:none;}
@@ -2582,6 +2583,24 @@ body[data-theme="dark"] .share-route-subtitle{color:rgba(255,255,255,.65);}
   .bware-meta{grid-template-columns:1fr 1fr;padding:9px 10px;}
   .bware-meta label:last-child{grid-column:1 / -1;}
 }
+.bware-meta{grid-template-columns:1fr 1fr;}
+.bware-meta .bware-wide,.bware-meta label:last-child{grid-column:1 / -1;}
+.bware-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 10px;flex-shrink:0;}
+.bware-tool-btn{border:0;border-radius:10px;padding:12px 8px;background:#1c7ed6;color:#fff;font:800 14px/1.2 inherit;font-family:inherit;cursor:pointer;}
+.bware-tool-btn:active{background:#1864ab;transform:scale(.98);}
+.bware-tool-btn:disabled{opacity:.5;}
+.bware-toggle-row{display:flex;align-items:center;gap:10px;margin:0 12px 10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.07);flex-shrink:0;cursor:pointer;}
+.bware-toggle-row .t{font-size:13px;font-weight:800;color:#fff;}
+.bware-toggle-row .s{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;}
+.bware-switch{position:relative;flex:0 0 44px;width:44px;height:26px;border:0;border-radius:14px;background:rgba(255,255,255,.25);padding:0;transition:background .2s;cursor:pointer;}
+.bware-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;}
+.bware-switch.on{background:#2b8a3e;}
+.bware-switch.on::after{transform:translateX(18px);}
+body:not([data-theme="dark"]) .bware-toggle-row{background:#eef2f7;}
+body:not([data-theme="dark"]) .bware-toggle-row .t{color:#172b4d;}
+body:not([data-theme="dark"]) .bware-toggle-row .s{color:#5f6b7a;}
+body:not([data-theme="dark"]) .bware-switch{background:#b8c2cf;}
+body:not([data-theme="dark"]) .bware-switch.on{background:#2b8a3e;}
 .nr-receive-progress{display:none;flex-shrink:0;background:#0d1a2d;border-bottom:1px solid rgba(255,255,255,.1);}
 .nr-receive-progress.visible{display:block;}
 .nr-receive-progress-track{height:5px;background:rgba(255,255,255,.12);overflow:hidden;}
@@ -3017,6 +3036,15 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   </div>
 </div>
 
+<!-- ═══ ДОКУМЕНТЫ ═══ -->
+<div class="rh-modal docs-modal" id="documentsModal" role="dialog" aria-label="Документы">
+  <div class="modal-topbar">
+    <h2>Документы</h2>
+    <button class="btn-modal-close" type="button" onclick="closeDocuments()" aria-label="Закрыть">✕</button>
+  </div>
+  <div class="rh-list docs-list" id="documentsList"></div>
+</div>
+
 <!-- ═══ HOME AREA ═══ -->
 <div class="home-area" id="homeArea">
   <div class="home-screen-pages" id="homeScreenPages" onscroll="updateHomeMenuPager(this)">
@@ -3151,6 +3179,10 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
       <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.01"/></svg></span>
       <span class="quick-action-label">Инфо</span>
     </button>
+    <button class="quick-action pink" onclick="openDocuments()">
+      <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l4 4v11H9z"/><path d="M15 3v4h4"/><path d="M5 7v14h11"/><path d="M12 12h4M12 15h4"/></svg></span>
+      <span class="quick-action-label">Документы</span>
+    </button>
       </div>
   </section>
   </div>
@@ -3161,10 +3193,10 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 </div>
 
 <!-- ═══ NAME RECEIVING (Web7 integrated window) ═══ -->
-<div class="fullscreen-modal name-receive-modal" id="nameReceiveModal" aria-label="Приём по имени">
+<div class="fullscreen-modal name-receive-modal" id="nameReceiveModal" aria-label="Приём товаров по наименованиям">
   <div class="nr-header">
     <button type="button" id="nrBackButton" onclick="nrBack()" aria-label="Назад">‹</button>
-    <h2 id="nrTitle">Приём по имени</h2>
+    <h2 id="nrTitle">Приём товаров по наименованиям</h2>
     <div class="nr-header-meta" id="nrHeaderMeta" aria-live="polite">
       <span class="nr-hm" id="nrHmOrder"></span><span class="nr-hm" id="nrHmDate"></span>
       <span class="nr-hm" id="nrHmCount"></span><span class="nr-hm" id="nrHmPct"></span>
@@ -3180,7 +3212,7 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   </div>
   <div class="nr-body">
     <section class="nr-screen nr-start active" id="nrScreenStart">
-      <div class="nr-start-title">Приём по имени</div>
+      <div class="nr-start-title">Приём товаров по наименованиям</div>
        <div class="nr-start-subtitle">Загрузите PDF-накладную, Excel или снимите несколько страниц камерой для распознавания.</div>
       <input class="nr-file-input" id="nrExcelInput" type="file" accept=".xlsx,.xls,.csv" onchange="nrHandleFile(this)">
       <input class="nr-file-input" id="nrPdfInput" type="file" accept="application/pdf,.pdf" multiple onchange="nrHandlePdfFile(this)">
@@ -3292,16 +3324,33 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   </div>
   <div class="nr-body bware-body">
     <div class="bware-meta" aria-label="Данные документа">
-      <label>Absender / Отправитель
+      <label class="bware-wide">Absender / Отправитель
         <input id="bwareSender" type="text" autocomplete="organization"
           placeholder="Поставщик">
       </label>
-      <label>Bestell-Nr. / Lieferschein-Nr.
+      <label>Bestell-Nr. / Номер заказа
         <input id="bwareOrder" type="text" autocomplete="off" placeholder="Номер заказа">
       </label>
-      <label>Datum
-        <input id="bwareDate" type="text" readonly aria-readonly="true">
+      <label>Lieferschein-Nr. / Накладная
+        <input id="bwareLs" type="text" autocomplete="off" placeholder="LS-Nr.">
       </label>
+      <label>Datum
+        <input id="bwareDate" type="text" inputmode="numeric" autocomplete="off" placeholder="ДД.ММ.ГГГГ">
+      </label>
+    </div>
+    <div class="bware-tools">
+      <button type="button" class="bware-tool-btn" id="bwareCameraBtn" onclick="bwareOpenCamera()">📷 Снимок</button>
+      <button type="button" class="bware-tool-btn" id="bwarePdfBtn" onclick="bwarePickPdf()">📄 PDF из памяти</button>
+    </div>
+    <input id="bwareCameraInput" class="nr-file-input" type="file" accept="image/*" capture="environment" onchange="bwareHandleFile(this)">
+    <input id="bwarePdfInput" class="nr-file-input" type="file" accept="application/pdf,.pdf" onchange="bwareHandleFile(this)">
+    <div class="bware-toggle-row" onclick="bwareToggleDriver()">
+      <div style="flex:1;min-width:0">
+        <div class="t">Подпись водителя и № LKW</div>
+        <div class="s" id="bwareDriverSub">Включено · в документе есть поля</div>
+      </div>
+      <button class="bware-switch" id="bwareDriverToggle" type="button" role="switch" aria-checked="true"
+        aria-label="Подпись водителя и номер LKW" onclick="event.stopPropagation();bwareToggleDriver()"></button>
     </div>
     <div class="nr-search bware-search">
       <input id="bwareProductInput" type="text" autocomplete="off" autocapitalize="sentences"
@@ -4983,6 +5032,12 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
         <button class="settings-toggle" id="settingsGeminiSnapshot2PromptToggle" type="button"
           role="switch" aria-checked="false" onclick="event.stopPropagation();toggleGeminiSnapshot2Prompt()"></button>
       </div>
+      <label class="gemini-settings-label" for="bwarePromptInput">Промт для «Приём B-Ware» (накладная → данные)</label>
+      <textarea class="gemini-settings-field gemini-settings-textarea" id="bwarePromptInput" rows="12"
+        spellcheck="true"></textarea>
+      <div class="gemini-settings-actions">
+        <button class="gemini-settings-test" type="button" onclick="bwareResetPromptUi()">Промт B-Ware: по умолчанию</button>
+      </div>
       <div class="gemini-settings-actions">
         <button class="gemini-settings-save" type="button" onclick="saveGeminiSettings()" data-i18n="settingsGeminiSave">Сохранить</button>
         <button class="gemini-settings-test" type="button" onclick="testGeminiConnection()" data-i18n="settingsGeminiTest">Проверить</button>
@@ -5538,6 +5593,11 @@ const RU_TR_RAW = String.raw`Принять товары ¦ Receive goods ¦ War
 Приём товаров по называниями ¦ Receiving goods by name ¦ Wareneingang nach Namen
 Автоприём ¦ Auto receiving ¦ Auto-Annahme
 Приём B-Ware ¦ B-Ware receiving ¦ B-Ware-Annahme
+Документы ¦ Documents ¦ Dokumente
+📷 Снимок ¦ 📷 Photo ¦ 📷 Foto
+📄 PDF из памяти ¦ 📄 PDF from phone ¦ 📄 PDF vom Gerät
+Подпись водителя и № LKW ¦ Driver signature and truck No. ¦ Fahrerunterschrift und LKW-Nr.
+Здесь появятся напечатанные документы. ¦ Printed documents will appear here. ¦ Gedruckte Dokumente erscheinen hier.
 Приём по заданию ¦ Receiving by task ¦ Annahme nach Auftrag
 Инвентар. ¦ Invent. ¦ Inventur
 История ¦ History ¦ Verlauf
@@ -5548,6 +5608,8 @@ const RU_TR_RAW = String.raw`Принять товары ¦ Receive goods ¦ War
 Задачи ¦ Tasks ¦ Aufgaben
 Профиль ¦ Profile ¦ Profil
 Приём по имени ¦ Receiving by name ¦ Annahme nach Name
+Приём товаров по наименованиям ¦ Receiving goods by name ¦ Wareneingang nach Bezeichnung
+Расхождений нет — печатать нечего. ¦ No discrepancies — nothing to print. ¦ Keine Abweichungen – nichts zu drucken.
 Готово: 0% ¦ Done: 0% ¦ Fertig: 0 %
 0/0 позиций ¦ 0/0 items ¦ 0/0 Positionen
 Загрузите PDF-накладную, Excel или снимите несколько страниц камерой для распознавания. ¦ Upload a PDF delivery note or Excel file, or photograph several pages with the camera for recognition. ¦ Laden Sie einen PDF-Lieferschein oder eine Excel-Datei hoch oder fotografieren Sie mehrere Seiten zur Erkennung.
@@ -6734,7 +6796,7 @@ function initClock() {
    BACK-BUTTON
 ══════════════════════════════════════════════ */
 const MODAL_CLOSE_ORDER = [
-  'confirmOverlay','barcodeOrderOverlay','scannerOverlay','invoiceModal','infoModal','successModal','qtyOverlay',
+  'documentsModal','confirmOverlay','barcodeOrderOverlay','scannerOverlay','invoiceModal','infoModal','successModal','qtyOverlay',
   'receiveSaveModal','attachModal','editModal','exportExcelModal','inventoryExportModal','exportModal','importExportSheet',
   'geminiChatModal','barcodeResultModal','barcodeSessionModal','barcodePlanModal','inventoryModal','autoReceiveModal','bwareHistoryModal','bwareReceiveModal','receiveModal','historyModal','dbImportModal','importModal','baseModal','settingsModal','appInfoModal','menuPanel','productInfoModal','cardFilterModal','statsModal'
 ];
@@ -6773,6 +6835,7 @@ function _closeModalById(id) {
     case 'inventoryModal':      closeInventory(); break;
     case 'autoReceiveModal':  _doCloseAutoReceive(); break;
     case 'bwareReceiveModal': closeBwareReceive(); break;
+    case 'documentsModal':    closeDocuments(); break;
   }
 }
 function tryCloseTopModal() {
@@ -13390,6 +13453,7 @@ function loadGeminiSettings() {
   if (instructionInput) instructionInput.value = settings.instruction;
   if (snapshot2PromptInput) snapshot2PromptInput.value = settings.snapshot2Instruction;
   if (vibrationInput) vibrationInput.value = settings.snapshot2Vibration;
+  try { window.bwareFillPromptUi && window.bwareFillPromptUi(); } catch (e) {}
   _renderGeminiKeyList();
   updateGeminiInstructionAttachmentSetting();
   updateGeminiSnapshot2Settings();
@@ -13402,6 +13466,7 @@ function saveGeminiSettings(showMessage = true) {
   const snapshot2PromptInput = document.getElementById('geminiSnapshot2Instruction');
   const vibrationInput = document.getElementById('geminiSnapshot2Vibration');
   if (!modelInput || !instructionInput) return false;
+  try { window.bwareSavePromptFromSettings && window.bwareSavePromptFromSettings(); } catch (e) {}
   const instruction = instructionInput.value.trim();
   try {
     const settingsRecord = {
@@ -21866,7 +21931,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const active = Boolean($('nrScreenList')?.classList.contains('active')
       || $('nrScreenReport')?.classList.contains('active'));
     const sender = String($('nrSender')?.textContent || '').trim();
-    title.textContent = active && sender && sender !== '-' ? sender : 'Приём по имени';
+    title.textContent = active && sender && sender !== '-' ? sender : 'Приём товаров по наименованиям';
     meta.classList.toggle('on', active);
     if (!active) { nrHeaderReset(); return; }
     const n = state.products.length;
@@ -22883,16 +22948,26 @@ document.addEventListener('DOMContentLoaded', function () {
     $('nrPrintOverlay').classList.remove('hidden');
   };
   window.nrClosePrint = function () { $('nrPrintOverlay')?.classList.add('hidden'); };
-  function nrPrintWindow(title, body) {
+  function nrPrintWindow(title, body, docType) {
     nrClosePrint();
     try { window.nrHistory2 && window.nrHistory2.onFile('print', new File([`<!doctype html><meta charset="utf-8"><title>${title}</title><body>${body}</body>`], (title || 'print') + '.html', {type: 'text/html'}), 'Печать: ' + title); } catch (e) {}
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
-      <style>body{font:10px Arial;color:#111;padding:24px}h2{font-size:14px}table{width:100%;border-collapse:collapse}
-      th,td{border:1px solid #111;padding:5px;text-align:left}th{background:#eee}.meta{margin:3px 0}</style>
-      </head><body>${body}</body></html>`);
+    const fullHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+      <style>body{font:20px Arial;color:#111;padding:24px}h2{font-size:28px}table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #111;padding:10px;text-align:left}th{background:#eee}.meta{margin:6px 0}</style>
+      </head><body>${body}</body></html>`;
+    printWindow.document.write(fullHtml);
     printWindow.document.close(); printWindow.focus(); printWindow.print();
+    try {
+      const sender = String($('nrSender')?.textContent || '').trim();
+      const order = String($('nrOrder')?.textContent || '').trim();
+      window.warehouseDocsAdd && window.warehouseDocsAdd({
+        type: docType || 'report', title,
+        subtitle: [sender, order].filter(v => v && v !== '-').join(' · '),
+        html: fullHtml
+      });
+    } catch (e) {}
   }
   window.nrPrintFull = function () {
     const rows = state.products.map((item, index) =>
@@ -22901,22 +22976,41 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="meta"><b>Исполнитель склада:</b> Abteilung Wareneingang</div>
       <div class="meta"><b>Заказчик:</b> STRÖH E-Commerce GmbH</div>
       <div class="meta"><b>№ заказа:</b> ${esc($('nrOrder').textContent || '-')}</div>
-      <table><thead><tr><th>№</th><th>Наименование</th><th>План</th><th>Факт</th><th>Брак</th></tr></thead><tbody>${rows}</tbody></table>`);
+      <table><thead><tr><th>№</th><th>Наименование</th><th>План</th><th>Факт</th><th>Брак</th></tr></thead><tbody>${rows}</tbody></table>`, 'full');
   };
   window.nrPrintDiscrepancy = function () {
-    const damaged = state.products.filter(item => item.qtyDamage > 0);
-    const missing = state.products.filter(item => item.qtyPlan > 0 && item.qtyPlan - item.qtyActual > 0);
-    const extra = state.products.filter(item => item.qtyPlan === 0 && item.qtyActual > 0);
-    const table = (title, rows, qtyTitle, status) => `<h2>${title}</h2><table><thead><tr><th>№</th><th>Artikelbezeichnung</th><th>${qtyTitle}</th><th>Status</th></tr></thead><tbody>${
-      rows.length ? rows.map((item, index) => `<tr><td>${index + 1}</td><td>${esc(item.name)}</td><td>${item.qtyDamage || (item.qtyPlan - item.qtyActual) || item.qtyActual} Stk.</td><td>${status}</td></tr>`).join('') :
-      '<tr><td colspan="4">Keine Einträge festgestellt.</td></tr>'}</tbody></table>`;
-    nrPrintWindow('Расхождения при приемке', `<h2>MITTEILUNG ÜBER DEN EMPFANG VON B-WARE UND FEHLMENGEN</h2>
+    const plan = item => qty(item.qtyPlan), fact = item => qty(item.qtyActual), dmg = item => qty(item.qtyDamage);
+    const sections = [
+      {title: 'Angenommene B-Ware (Beschädigte Artikel)', qtyTitle: 'Menge',
+        rows: state.products.filter(item => dmg(item) > 0),
+        amount: item => dmg(item), status: () => 'B-Ware (Beschädigt)'},
+      {title: 'Nicht gelieferte Ware (Fehlmengen)', qtyTitle: 'Fehlmenge',
+        rows: state.products.filter(item => plan(item) > 0 && fact(item) < plan(item)),
+        amount: item => plan(item) - fact(item),
+        status: item => `Nicht geliefert (Lieferschein: ${plan(item)}, gezählt: ${fact(item)})`},
+      {title: 'Falsche Ware geliefert (nicht laut Lieferschein)', qtyTitle: 'Menge',
+        rows: state.products.filter(item => plan(item) === 0 && fact(item) > 0),
+        amount: item => fact(item), status: () => 'Nicht im Lieferschein'},
+      {title: 'Zuviel gelieferte Ware (Mehrmengen)', qtyTitle: 'Mehrmenge',
+        rows: state.products.filter(item => plan(item) > 0 && fact(item) > plan(item)),
+        amount: item => fact(item) - plan(item),
+        status: item => `Zuviel geliefert (Lieferschein: ${plan(item)}, gezählt: ${fact(item)})`}
+    ].filter(section => section.rows.length);
+    if (!sections.length) {
+      nrClosePrint();
+      $('nrInfoText').textContent = 'Расхождений нет — печатать нечего.';
+      $('nrInfoOverlay').classList.remove('hidden');
+      return;
+    }
+    const tables = sections.map((section, sectionIndex) =>
+      `<h2>${sectionIndex + 1}. ${section.title}</h2><table><thead><tr><th>№</th><th>Artikelbezeichnung</th><th>${section.qtyTitle}</th><th>Status</th></tr></thead><tbody>${
+        section.rows.map((item, index) => `<tr><td>${index + 1}</td><td>${esc(item.name)}</td><td>${section.amount(item)} Stk.</td><td>${section.status(item)}</td></tr>`).join('')
+      }</tbody></table>`).join('');
+    nrPrintWindow('Расхождения при приемке', `<h2>MITTEILUNG ÜBER ABWEICHUNGEN BEIM WARENEINGANG</h2>
       <div class="meta"><b>Abteilung:</b> Abteilung Wareneingang</div>
       <div class="meta"><b>Bestell-Nr.:</b> ${esc($('nrOrder').textContent || '-')}</div>
       <div class="meta"><b>Lieferant:</b> ${esc($('nrSender').textContent || '-')}</div>
-      ${table('1. Angenommene B-Ware (Beschädigte Artikel)', damaged, 'Menge', 'B-Ware (Beschädigt)')}
-      ${table('2. Nicht gelieferte Ware (Fehlmengen)', missing, 'Fehlmenge', 'Nicht geliefert')}
-      ${table('3. Zuviel gelieferte Ware', extra, 'Menge', 'Zusätzlich geliefert')}`);
+      ${tables}`, 'discrepancy');
   };
   window.nrHandleFile = function (input) {
     const file = input?.files?.[0];
@@ -24193,7 +24287,7 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
   const state = {
     items: [], qtyId: null, selectedValue: 0, wheelRotation: 0,
     wheelLastIndex: -1, wheelStartY: 0, processing: false,
-    history: []
+    history: [], scanning: false
   };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -24233,6 +24327,7 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
         <h3>${esc(record.sender || 'Без отправителя')}</h3>
         <div class="bware-history-meta">
           <span>Заказ: ${esc(record.order || '—')}</span>
+          ${record.ls ? `<span>Накладная: ${esc(record.ls)}</span>` : ''}
           <span>Дата: ${esc(record.date || '—')}</span>
         </div>
         <div class="bware-history-items">${itemText}</div>
@@ -24274,13 +24369,7 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
       window.alert('Разрешите открытие окна печати в браузере.');
       return;
     }
-    printDocument(
-      printWindow,
-      String(record.sender || ''),
-      String(record.order || ''),
-      String(record.date || today()),
-      items
-    );
+    printDocument(printWindow, {...record, items}, {save: false});
   };
   loadBwareHistory();
 
@@ -24487,6 +24576,7 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
     if (!modal) return;
     const date = $('bwareDate');
     if (date) date.value = today();
+    syncDriverUi();
     modal.classList.add('open');
     renderList();
     status('');
@@ -24497,189 +24587,360 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
     clearSuggestions();
     $('bwareReceiveModal')?.classList.remove('open');
   };
-  function buildPrompt(sender, order, date) {
-    const lines = state.items.filter(item => item.qty > 0).map((item, index) =>
-      `${index + 1}. ${item.name} | ${item.qty} | B-Ware`).join('\n');
-    return `Du bist ein Generator für die HTML-Struktur eines PDF-Dokuments.
-
-Erstelle den fertigen HTML-Code für ein druckbares A4-Dokument zur Annahme von B-Ware.
-
-Verwende ausschließlich Arial, Helvetica oder sans-serif.
-Verwende für den gesamten Fließtext und die Tabelle 12pt, für h1 und h2 16pt und font-weight:700.
-
-WICHTIG:
-1. Gib die Überschrift und den Rahmen mit Absender, Bestell-Nr. / Lieferschein-Nr. und Datum NUR EINMAL ganz oben aus.
-2. Unterhalb der ersten Metadatenbox darf keine zweite Überschrift, keine zweite Metadatenbox und keine Wiederholung der Adressdaten erscheinen.
-3. Die Warenpositionen müssen ausschließlich in einer echten HTML-Tabelle stehen:
-   <table><thead><tr><th>Pos.</th><th>Artikelbezeichnung</th><th>Menge</th><th>Status</th></tr></thead><tbody>...</tbody></table>
-4. Für jede Warenposition muss genau ein <tr> mit genau vier <td>-Zellen erzeugt werden:
-   - Pos.: fortlaufende Nummer
-   - Artikelbezeichnung: vollständiger Produktname, gut lesbar
-   - Menge: Anzahl
-   - Status: B-Ware
-5. Verwende für die Tabelle border-collapse:collapse, width:100%, border:1px solid #000 und padding:8px.
-6. Die Spaltenbreiten sind: Pos. 10%, Artikelbezeichnung 55%, Menge 15%, Status 20%.
-7. Setze am Ende genau einmal drei Signaturfelder mit Linien:
-   Unterschrift Wareneingang, Unterschrift Fahrer, Number LKW.
-
-Antworte ausschließlich mit HTML-Code für das Dokument, ohne Erklärungen, Markdown-Code fences oder zusätzlichen Text.
-
-Eingabedaten:
---------------------------------------------------
-Absender: ${sender}
-Bestell-Nr. / Lieferschein-Nr.: ${order}
-Datum: ${date}
-Warenpositionen:
-${lines}
---------------------------------------------------`;
+  const BWARE_PROMPT_KEY = 'bware_gemini_prompt_v1';
+  const BWARE_DRIVER_KEY = 'bware_driver_sign_v1';
+  const BWARE_DEFAULT_PROMPT = [
+    'Ты — умный помощник складской программы. Проанализируй прикреплённое фото накладной (Lieferschein / Auftragsbestätigung).',
+    'Извлеки только данные шапки документа. Список товаров и их данные НЕ извлекай.',
+    '',
+    'Верни СТРОГО один JSON-объект без markdown и без пояснений, с такими ключами:',
+    '1. "lieferant": название компании-поставщика (Absender, отправитель на документе).',
+    '2. "bestell_nr": номер заказа (ищи "Bestell-Nr.", "Ihre Bestell-Nr." или номер с префиксом EB). Если его нет, верни пустую строку "".',
+    '3. "lieferschein_nr": номер накладной (ищи "LS-Nr.", "Lieferschein-Nr.", "Beleg-Nr."). Если нет, верни "".',
+    '4. "datum": дата доставки в формате ДД.ММ.ГГГГ. Если дата не найдена, подставь текущую дату системы: {{DATE}}.',
+    '5. "pruefung": пустая строка "". Если текст нечёткий или какое-то поле нельзя прочитать надёжно, верни "Требуется ручная проверка (нечеткий текст)".',
+    '',
+    'ВАЖНО:',
+    '- Ничего не придумывай. Если на накладной нет номера заказа (Bestell-Nr.), верни "" — не угадывай его.',
+    '- Если поле прочитано не полностью, верни то, что удалось прочитать, и заполни "pruefung".',
+    '- STRÖH / Ströh — это получатель (наша компания), а не поставщик. Поставщик — тот, кто отправил товар.',
+    '- Верни только JSON, без текста до и после.'
+  ].join('\n');
+  function bwareGetPrompt() {
+    try {
+      const saved = localStorage.getItem(BWARE_PROMPT_KEY);
+      if (saved && saved.trim()) return saved;
+    } catch (error) {}
+    return BWARE_DEFAULT_PROMPT;
   }
-  function cleanGeneratedDocument(text) {
-    return String(text || '')
-      .split(/\r?\n/)
-      .filter(line => !/(Unterschrift\s+Wareneingang|Unterschrift\s+Fahrer|Number\s+LKW|Nr\.?\s*LKW)/i.test(line))
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+  window.bwareGetPrompt = bwareGetPrompt;
+  window.bwareFillPromptUi = function () {
+    const field = $('bwarePromptInput');
+    if (field) field.value = bwareGetPrompt();
+  };
+  window.bwareSavePromptFromSettings = function () {
+    const field = $('bwarePromptInput');
+    if (!field) return;
+    const value = String(field.value || '').trim();
+    try {
+      if (!value || value === BWARE_DEFAULT_PROMPT) localStorage.removeItem(BWARE_PROMPT_KEY);
+      else localStorage.setItem(BWARE_PROMPT_KEY, value);
+    } catch (error) {}
+  };
+  window.bwareResetPromptUi = function () {
+    try { localStorage.removeItem(BWARE_PROMPT_KEY); } catch (error) {}
+    window.bwareFillPromptUi();
+  };
+
+  function driverSignEnabled() {
+    try { return localStorage.getItem(BWARE_DRIVER_KEY) !== '0'; } catch (error) { return true; }
   }
-  function buildBwareTable(items) {
-    const rows = (Array.isArray(items) ? items : [])
-      .filter(item => Number(item?.qty) > 0)
-      .map((item, index) => `
-        <tr>
-          <td class="col-pos">${index + 1}</td>
-          <td class="col-name">${esc(item.name)}</td>
-          <td class="col-qty">${Number(item.qty) || 0}</td>
-          <td class="col-status">B-Ware</td>
-        </tr>`).join('');
-    return `<table class="products-table">
-      <colgroup>
-        <col class="col-pos-width">
-        <col class="col-name-width">
-        <col class="col-qty-width">
-        <col class="col-status-width">
-      </colgroup>
-      <thead>
-        <tr>
-          <th class="col-pos">Pos.</th>
-          <th class="col-name">Artikelbezeichnung</th>
-          <th class="col-qty">Menge</th>
-          <th class="col-status">Status</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  function syncDriverUi() {
+    const on = driverSignEnabled();
+    const toggle = $('bwareDriverToggle');
+    if (toggle) {
+      toggle.classList.toggle('on', on);
+      toggle.setAttribute('aria-checked', String(on));
+    }
+    const sub = $('bwareDriverSub');
+    if (sub) sub.textContent = on
+      ? 'Включено · в документе есть подпись водителя и № LKW'
+      : 'Выключено · документ без подписи водителя и № LKW';
   }
-  function printDocument(printWindow, sender, order, date, items) {
-    const table = buildBwareTable(items);
-    printWindow.document.open();
-    printWindow.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8">
-      <title>Mitteilung über den Empfang von B-Ware</title>
+  window.bwareToggleDriver = function () {
+    try { localStorage.setItem(BWARE_DRIVER_KEY, driverSignEnabled() ? '0' : '1'); } catch (error) {}
+    syncDriverUi();
+  };
+
+  /* ── Снимок / PDF → Python → Gemini ── */
+  function setScanButtons(disabled) {
+    ['bwareCameraBtn', 'bwarePdfBtn'].forEach(id => { const el = $(id); if (el) el.disabled = disabled; });
+  }
+  window.bwareOpenCamera = function () { if (!state.scanning) $('bwareCameraInput')?.click(); };
+  window.bwarePickPdf = function () { if (!state.scanning) $('bwarePdfInput')?.click(); };
+  function splitDataUrl(value) {
+    const match = /^data:([^;,]+);base64,(.+)$/s.exec(String(value || '').trim());
+    if (!match) throw new Error('Python вернул изображение в неизвестном формате.');
+    return {mime: match[1].toLowerCase(), base64: match[2].replace(/\s+/g, '')};
+  }
+  async function prepareOnPython(file, isPdf) {
+    const base = typeof _warehousePythonBaseUrl === 'function' ? _warehousePythonBaseUrl() : '';
+    if (!base) throw new Error('Не указан адрес Python-сервера в настройках.');
+    const form = new FormData();
+    form.append('file', file, file.name || (isPdf ? 'document.pdf' : 'snapshot.jpg'));
+    if (isPdf) form.append('first_page_only', '1');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+    let response;
+    try {
+      response = await fetch(base + (isPdf ? '/prepare-pdf' : '/prepare-image'),
+        {method: 'POST', body: form, signal: controller.signal});
+    } catch (error) {
+      throw new Error(error?.name === 'AbortError'
+        ? 'Python-сервер слишком долго обрабатывает файл.'
+        : 'Не удалось подключиться к Python-серверу.');
+    } finally {
+      clearTimeout(timer);
+    }
+    let payload = {};
+    try { payload = await response.json(); } catch (ignore) {}
+    if (!response.ok || payload.status !== 'success') {
+      throw new Error(payload.message || payload.error || `Python-сервер вернул HTTP ${response.status}.`);
+    }
+    if (isPdf) {
+      // Из PDF берём ТОЛЬКО первый лист.
+      const pages = (Array.isArray(payload.batches) ? payload.batches : []).flat()
+        .filter(page => page && page.imageData)
+        .sort((x, y) => (Number(x.pageIndex) || 0) - (Number(y.pageIndex) || 0));
+      if (!pages.length) throw new Error('Python-сервер не вернул первую страницу PDF.');
+      return splitDataUrl(pages[0].imageData);
+    }
+    if (!payload.image_base64) throw new Error('Python-сервер вернул пустое изображение.');
+    const raw = String(payload.image_base64).trim();
+    const comma = raw.indexOf(',');
+    return {
+      mime: String(payload.mime_type || 'image/jpeg').toLowerCase(),
+      base64: (comma >= 0 ? raw.slice(comma + 1) : raw).replace(/\s+/g, '')
+    };
+  }
+  function parseJsonText(text) {
+    const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    try { return JSON.parse(raw); } catch (error) {
+      const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+      if (start >= 0 && end > start) return JSON.parse(raw.slice(start, end + 1));
+      throw new Error('Gemini вернул ответ не в формате JSON.');
+    }
+  }
+  async function recognizeHeader(image, settings) {
+    const prompt = bwareGetPrompt().replace(/\{\{\s*DATE\s*\}\}/g, today());
+    const rawResponse = await _enqueueGeminiRequest(
+      () => _withGeminiRetry(
+        () => _fetchGeminiJson(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(_normalizeGeminiModel(settings.model))}:generateContent`,
+          {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'x-goog-api-key': settings.apiKey},
+            body: JSON.stringify({
+              contents: [{parts: [{text: prompt}, {inline_data: {mime_type: image.mime, data: image.base64}}]}],
+              generationConfig: {temperature: 0, responseMimeType: 'application/json'}
+            })
+          },
+          _geminiResponseTimeoutMs()
+        ),
+        _handleGeminiRetry
+      ),
+      waitMs => status(`Ожидание очереди Gemini: ещё ${_formatGeminiWait(waitMs)}.`, 'loading')
+    );
+    let payload;
+    try { payload = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse; }
+    catch (error) { throw new Error('Gemini вернул ответ в неизвестном формате.'); }
+    try { _updateGeminiTokenUsage(payload?.usageMetadata, settings.keyId); } catch (ignore) {}
+    const parts = Array.isArray(payload?.candidates?.[0]?.content?.parts) ? payload.candidates[0].content.parts : [];
+    const text = parts.map(part => String(part?.text || '')).filter(Boolean).join('\n').trim();
+    if (!text) {
+      const reason = payload?.promptFeedback?.blockReason;
+      throw new Error(reason ? `Gemini заблокировал запрос: ${reason}.` : 'Gemini не вернул данные накладной.');
+    }
+    return parseJsonText(text);
+  }
+  function cleanValue(value) {
+    const text = String(value ?? '').trim();
+    return /^(не указан|не указано|nicht angegeben|n\/a|null|-|—)$/i.test(text) ? '' : text;
+  }
+  function normalizeDate(value) {
+    const match = /^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})$/.exec(String(value || '').trim());
+    return match ? `${match[1].padStart(2, '0')}.${match[2].padStart(2, '0')}.${match[3]}` : '';
+  }
+  function applyRecognized(data) {
+    const info = data && typeof data === 'object' ? data : {};
+    const sender = cleanValue(info.lieferant ?? info.supplier);
+    const order = cleanValue(info.bestell_nr ?? info.order_number);
+    const ls = cleanValue(info.lieferschein_nr ?? info.delivery_note_number);
+    const date = normalizeDate(info.datum ?? info.date) || today();
+    const check = cleanValue(info.pruefung);
+    $('bwareSender').value = sender;
+    $('bwareOrder').value = order;
+    if ($('bwareLs')) $('bwareLs').value = ls;
+    $('bwareDate').value = date;
+    const notes = [];
+    if (!sender) notes.push('поставщик не найден');
+    if (!order && !ls) notes.push('номер заказа и накладной не найдены — введите вручную');
+    else if (!order) notes.push('номер заказа не указан на накладной');
+    if (check) notes.push(check);
+    status(notes.length ? `Данные распознаны. Проверьте: ${notes.join('; ')}.` : 'Данные накладной распознаны. Проверьте поля.',
+      notes.length ? 'error' : 'ok');
+  }
+  window.bwareHandleFile = async function (input) {
+    const file = input?.files?.[0];
+    if (input) input.value = '';
+    if (!file || state.scanning) return;
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+    const isImage = /^image\//i.test(file.type || '') || /\.(jpe?g|png|webp|heic)$/i.test(file.name || '');
+    if (!isPdf && !isImage) { status('Выберите PDF или фото накладной.', 'error'); return; }
+    const selectedKey = typeof _selectGeminiKey === 'function' ? _selectGeminiKey() : null;
+    if (!selectedKey) { status('Укажите доступный API-ключ Gemini в настройках.', 'error'); return; }
+    const baseSettings = typeof getGeminiSettings === 'function' ? getGeminiSettings() : {};
+    const settings = {...baseSettings, apiKey: selectedKey.apiKey, keyId: selectedKey.id};
+    state.scanning = true;
+    setScanButtons(true);
+    try {
+      status(isPdf ? 'Python готовит первую страницу PDF…' : 'Python обрабатывает снимок…', 'loading');
+      const prepared = await prepareOnPython(file, isPdf);
+      status('Gemini распознаёт данные накладной…', 'loading');
+      applyRecognized(await recognizeHeader(prepared, settings));
+    } catch (error) {
+      status(error?.message || 'Не удалось распознать накладную.', 'error');
+    } finally {
+      state.scanning = false;
+      setScanButtons(false);
+    }
+  };
+
+  /* ── Юридически оформленный документ ── */
+  const pad2 = n => String(n).padStart(2, '0');
+  function stamp(ts) {
+    const d = new Date(ts || Date.now());
+    return {
+      date: `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`,
+      time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+      id: `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`
+    };
+  }
+  function buildDocumentHtml(record) {
+    const items = (Array.isArray(record.items) ? record.items : []).filter(item => Number(item?.qty) > 0);
+    const total = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    const created = stamp(record.createdAt);
+    const docNo = record.docNo || `BW-${created.id}`;
+    const driver = record.driverSign !== false;
+    const kv = (label, value) => `<tr><th>${label}</th><td>${esc(value || '—')}</td></tr>`;
+    const rows = items.map((item, index) => `<tr>
+        <td class="c">${index + 1}</td><td class="n">${esc(item.name)}</td>
+        <td class="c">${Number(item.qty) || 0}</td><td class="c">B-Ware</td></tr>`).join('');
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8">
+      <title>Mitteilung über den Empfang von B-Ware ${esc(docNo)}</title>
       <style>
-        @page{size:A4;margin:20mm}
+        @page{size:A4;margin:18mm}
         *{box-sizing:border-box}
         html,body{margin:0;padding:0}
-        body{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:12pt;line-height:1.35}
-        h1,h2{font-size:16pt;font-weight:700}
-        h1{text-align:center;margin:0 0 4mm}
-        .address{text-align:center;margin:0 0 8mm}
-        .meta{border:1px solid #000;padding:8px;margin:0 0 8mm;font-size:12pt}
-        .meta div{margin:2px 0}
-        .document-title{margin:0 0 6mm}
-        .products-table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12pt;margin:0}
-        .products-table col.col-pos-width{width:10%}
-        .products-table col.col-name-width{width:55%}
-        .products-table col.col-qty-width{width:15%}
-        .products-table col.col-status-width{width:20%}
-        .products-table th,.products-table td{border:1px solid #000;padding:8px;vertical-align:middle}
-        .products-table th{font-weight:700;text-align:center}
-        .products-table .col-pos{width:10%;text-align:center}
-        .products-table .col-name{width:55%;text-align:left;font-weight:700;overflow-wrap:anywhere}
-        .products-table .col-qty{width:15%;text-align:center}
-        .products-table .col-status{width:20%;text-align:center}
-        .signatures{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12mm;margin-top:28mm;font-size:12pt}
-        .signature{border-top:1px solid #000;padding-top:3mm}
+        body{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:11pt;line-height:1.4}
+        .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:3mm;margin-bottom:6mm}
+        .org{font-size:14pt;font-weight:700}.addr{font-size:10pt}
+        .docno{text-align:right;font-size:10pt}
+        h1{font-size:18pt;text-align:center;margin:0 0 1mm}
+        .subtitle{text-align:center;font-size:11pt;margin:0 0 6mm}
+        h2{font-size:12.5pt;margin:7mm 0 2.5mm;padding-bottom:1mm;border-bottom:1px solid #000}
+        p{margin:0 0 2mm;text-align:justify}
+        table{border-collapse:collapse;width:100%}
+        .kv th,.kv td{border:1px solid #000;padding:6px 8px;text-align:left;vertical-align:top}
+        .kv th{width:36%;background:#eee;font-weight:700}
+        .items th,.items td{border:1px solid #000;padding:7px 8px}
+        .items th{background:#eee;text-align:center}
+        .items .c{text-align:center}.items .n{font-weight:700;overflow-wrap:anywhere}
+        .items col.p{width:9%}.items col.q{width:14%}.items col.s{width:18%}
+        tr{page-break-inside:avoid}
+        .total{margin-top:2mm;text-align:right;font-weight:700}
+        ol{margin:0;padding-left:6mm}ol li{margin:0 0 2mm;text-align:justify}
+        .sign-block{page-break-inside:avoid;margin-top:5mm}
+        .sign td{width:50%;padding:0 6mm 0 0;vertical-align:bottom}
+        .sign td:last-child{padding-right:0}
+        .sign-title{font-weight:700;margin-bottom:16mm}
+        .sign-line{border-top:1px solid #000}
+        .sign-cap{font-size:9pt;margin-top:1mm}
+        .lkw{margin-top:8mm}.lkw-line{display:inline-block;width:70mm;border-bottom:1px solid #000;height:1em;vertical-align:bottom}
+        .foot{margin-top:8mm;padding-top:2mm;border-top:1px solid #000;font-size:9pt;text-align:center}
         .print-actions{position:fixed;right:18px;top:18px;padding:9px 13px;border:0;border-radius:7px;
           background:#1c7ed6;color:#fff;font-weight:700;cursor:pointer}
         @media print{.print-actions{display:none}}
       </style></head><body>
       <button class="print-actions" onclick="window.print()">Als PDF speichern / Drucken</button>
-      <h1>Abteilung Wareneingang</h1>
-      <div class="address">STRÖH Duvenstedt triftweg 74</div>
-      <div class="meta">
-        <div><b>Absender:</b> ${esc(sender)}</div>
-        <div><b>Bestell-Nr. / Lieferschein-Nr.:</b> ${esc(order)}</div>
-        <div><b>Datum:</b> ${esc(date)}</div>
+      <div class="head">
+        <div><div class="org">Abteilung Wareneingang</div><div class="addr">STRÖH Duvenstedt triftweg 74</div></div>
+        <div class="docno"><b>Dokument-Nr.</b><br>${esc(docNo)}</div>
       </div>
-      <h2 class="document-title">Mitteilung über den Empfang von B-Ware</h2>
-      ${table}
-      <div class="signatures">
-        <div class="signature">Unterschrift Wareneingang</div>
-        <div class="signature">Unterschrift Fahrer</div>
-        <div class="signature">Number LKW</div>
+      <h1>Mitteilung über den Empfang von B-Ware</h1>
+      <div class="subtitle">Annahmeprotokoll für beschädigte bzw. mangelhafte Ware</div>
+      <table class="kv">
+        ${kv('Datum der Annahme', record.date || created.date)}
+        ${kv('Lieferant (Absender)', record.sender)}
+        ${kv('Bestell-Nr.', record.order)}
+        ${kv('Lieferschein-Nr.', record.ls)}
+        ${kv('Empfänger', 'STRÖH, Abteilung Wareneingang')}
+      </table>
+      <h2>1. Sachverhalt</h2>
+      <p>Bei der Warenannahme wurde festgestellt, dass die unter Ziffer 2 aufgeführten Artikel beschädigt bzw. mangelhaft geliefert wurden. Die Ware wurde ausschließlich als B-Ware und unter Vorbehalt angenommen.</p>
+      <h2>2. Beanstandete Ware</h2>
+      <table class="items">
+        <colgroup><col class="p"><col><col class="q"><col class="s"></colgroup>
+        <thead><tr><th>Pos.</th><th>Artikelbezeichnung</th><th>Menge</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="total">Gesamt: ${items.length} Position(en), ${total} Stk.</div>
+      <h2>3. Vorbehalt und Rechtswirkung</h2>
+      <ol>
+        <li>Die Annahme erfolgt unter ausdrücklichem Vorbehalt aller Rechte und Ansprüche des Empfängers wegen der festgestellten Mängel.</li>
+        <li>Die Mängelrüge gilt als unverzüglich erhoben. Weitere, bei der Annahme nicht erkennbare (verdeckte) Mängel bleiben ausdrücklich vorbehalten (§ 377 HGB).</li>
+        <li>Die Quittierung dieses Dokuments bestätigt ausschließlich den Empfang der Ware, nicht deren Mängelfreiheit.</li>
+        <li>Die Entscheidung über Rücksendung, Gutschrift oder Ersatzlieferung der beanstandeten Ware bleibt vorbehalten.</li>
+      </ol>
+      <div class="sign-block">
+        <h2>4. Bestätigung</h2>
+        ${driver ? '<p>Der Fahrer bestätigt mit seiner Unterschrift die Kenntnisnahme der festgestellten Beanstandungen.</p>' : ''}
+        <table class="sign"><tr>
+          <td><div class="sign-title">Für die Abteilung Wareneingang</div><div class="sign-line"></div>
+            <div class="sign-cap">Name in Druckbuchstaben, Datum, Unterschrift</div></td>
+          ${driver ? `<td><div class="sign-title">Fahrer / Spediteur</div><div class="sign-line"></div>
+            <div class="sign-cap">Name in Druckbuchstaben, Unterschrift</div></td>` : ''}
+        </tr></table>
+        ${driver ? '<div class="lkw"><b>Amtliches Kennzeichen LKW:</b> <span class="lkw-line"></span></div>' : ''}
       </div>
-      </body></html>`);
+      <div class="foot">Dokument-Nr. ${esc(docNo)} · erstellt am ${esc(created.date)} um ${esc(created.time)} Uhr · Abteilung Wareneingang</div>
+      </body></html>`;
+  }
+  function printDocument(printWindow, record, options = {}) {
+    const html = buildDocumentHtml(record);
+    printWindow.document.open();
+    printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 250);
+    if (options.save !== false && typeof window.warehouseDocsAdd === 'function') {
+      try {
+        window.warehouseDocsAdd({
+          type: 'bware',
+          title: 'B-Ware',
+          subtitle: [record.sender, record.order || record.ls].filter(Boolean).join(' · '),
+          html
+        });
+      } catch (error) {}
+    }
   }
-  window.bwareNext = async function () {
+  window.bwareNext = function () {
     if (state.processing) return;
     const sender = String($('bwareSender')?.value || '').trim();
     const order = String($('bwareOrder')?.value || '').trim();
-    const date = String($('bwareDate')?.value || today()).trim();
-    if (!sender || !order) {
-      status('Заполните отправителя и номер заказа.', 'error');
+    const ls = String($('bwareLs')?.value || '').trim();
+    const date = normalizeDate($('bwareDate')?.value) || today();
+    if (!sender || (!order && !ls)) {
+      status('Заполните отправителя и номер заказа или накладной.', 'error');
       return;
     }
-    if (!state.items.length || !state.items.some(item => item.qty > 0)) {
+    const items = state.items.filter(item => item.qty > 0).map(item => ({name: item.name, qty: item.qty}));
+    if (!items.length) {
       status('Добавьте товар и укажите количество.', 'error');
       return;
     }
-    const selectedKey = typeof _selectGeminiKey === 'function' ? _selectGeminiKey() : null;
-    if (!selectedKey || typeof _requestGeminiChat !== 'function') {
-      status('Укажите доступный API-ключ Gemini в настройках.', 'error');
-      return;
-    }
-    const baseSettings = typeof getGeminiSettings === 'function' ? getGeminiSettings() : {};
-    const settings = {...baseSettings, apiKey: selectedKey.apiKey, keyId: selectedKey.id};
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      status('Разрешите открытие нового окна для подготовки PDF.', 'error');
+      status('Разрешите открытие нового окна для печати.', 'error');
       return;
     }
-    printWindow.document.write('<!doctype html><title>Подготовка PDF…</title><p style="font:16px Arial;padding:24px">Gemini готовит документ…</p>');
-    state.processing = true;
-    const nextButton = $('bwareNextButton');
-    if (nextButton) nextButton.disabled = true;
-    status('Gemini формирует документ…', 'loading');
-    try {
-      const responseText = await _requestGeminiChat(
-        buildPrompt(sender, order, date), [], settings,
-        typeof _geminiResponseTimeoutMs() === 'number' ? _geminiResponseTimeoutMs() : 120000,
-        {includeHistory: false}
-      );
-      // Gemini получает строгий HTML-промпт, но печатный шаблон собирается
-      // здесь из исходных данных. Поэтому ответ модели не может повторить
-      // шапку, сломать колонки или уменьшить размер шрифта.
-      const cleanText = cleanGeneratedDocument(responseText);
-      printDocument(printWindow, sender, order, date, state.items);
-      state.history.unshift({
-        sender,
-        order,
-        date,
-        items: state.items.filter(item => item.qty > 0).map(item => ({name: item.name, qty: item.qty})),
-        document: cleanText,
-        createdAt: Date.now()
-      });
-      saveBwareHistory();
-      status('PDF подготовлен. В окне печати выберите «Сохранить как PDF».', 'ok');
-    } catch (error) {
-      try { printWindow.close(); } catch (ignore) {}
-      status(`Не удалось сформировать документ: ${error?.message || 'ошибка Gemini'}`, 'error');
-    } finally {
-      state.processing = false;
-      if (nextButton) nextButton.disabled = false;
-    }
+    const createdAt = Date.now();
+    const record = {sender, order, ls, date, items, driverSign: driverSignEnabled(),
+      createdAt, docNo: `BW-${stamp(createdAt).id}`};
+    printDocument(printWindow, record, {save: true});
+    state.history.unshift(record);
+    saveBwareHistory();
+    status('Документ подготовлен. В окне печати выберите принтер или «Сохранить как PDF».', 'ok');
   };
 }());
 </script>
@@ -25770,6 +26031,22 @@ html[data-theme="dark"] .rh-row{color:#fff;}
 html[data-theme="dark"] .rh-row:active{background:rgba(255,255,255,.14);}
 html[data-theme="dark"] .rh-ico{color:#fff;}
 html[data-theme="dark"] .rh-label{border-bottom-color:rgba(255,255,255,.2);}
+/* ── Окно «Документы» ── */
+.docs-date{position:sticky;top:0;z-index:1;padding:8px 16px;font-size:13px;font-weight:800;letter-spacing:.3px;
+  background:var(--md-surface-container,rgba(127,127,127,.16));color:var(--md-on-surface-variant,#5f6b7a);}
+.docs-item{display:flex;align-items:stretch;border-bottom:1px solid var(--md-outline-variant);}
+.docs-item .rh-row{flex:1;min-width:0;}
+.docs-item .rh-label{flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;border-bottom:0;
+  padding:10px 8px 10px 0;min-height:68px;}
+.docs-title{font-size:16px;font-weight:600;}
+.docs-sub{font-size:12px;opacity:.7;overflow-wrap:anywhere;}
+.docs-del{flex:0 0 60px;border:0;background:transparent;color:var(--md-on-surface);font-size:18px;cursor:pointer;font-family:inherit;}
+.docs-del.confirm{flex-basis:84px;font-size:12px;font-weight:800;color:#e03131;}
+.docs-empty{padding:56px 22px;text-align:center;opacity:.6;font-size:14px;line-height:1.4;}
+html[data-theme="dark"] .docs-date{background:#111;color:#bbb;}
+html[data-theme="dark"] .docs-del{color:#fff;}
+html[data-theme="dark"] .docs-del.confirm{color:#ff6b6b;}
+html[data-theme="dark"] .docs-item{border-bottom-color:rgba(255,255,255,.2);}
 
 /* ── Иконка-кнопка (40dp, зона касания 48dp) ── */
 .md3-icon-btn{position:relative;width:44px;height:44px;padding:0;border:1px solid var(--md-outline-variant);border-radius:var(--md-r-full);
@@ -26019,6 +26296,104 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
   apply(saved());
   function init() { build(); apply(saved()); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script id="documents-runtime">
+/* «Документы»: все напечатанные документы хранятся в IndexedDB и показываются по датам. */
+(function () {
+  'use strict';
+  const KEY = 'warehouse_documents_v1', MAX = 500;
+  let docs = null, confirmId = '', confirmTimer = null;
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pad = n => String(n).padStart(2, '0');
+  const fmtDate = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  const ICONS = {
+    bware: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/>',
+    discrepancy: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M12 11v4M12 18v.01"/>',
+    full: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="m10 14 2 2 4-4"/>',
+    report: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>'
+  };
+  async function ensure() {
+    if (docs) return docs;
+    let saved = null;
+    try { saved = await idbLoad(KEY); } catch (e) {}
+    docs = Array.isArray(saved) ? saved : [];
+    return docs;
+  }
+  async function persist() { try { await idbSave(KEY, docs); } catch (e) { console.warn('Документы: не удалось сохранить', e); } }
+  function isOpen() { return document.getElementById('documentsModal')?.classList.contains('open'); }
+  function dayLabel(date) {
+    const now = new Date();
+    if (date === fmtDate(now)) return date + ' · Сегодня';
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    return date === fmtDate(y) ? date + ' · Вчера' : date;
+  }
+  function render() {
+    const box = document.getElementById('documentsList');
+    if (!box) return;
+    if (!docs || !docs.length) {
+      box.innerHTML = '<div class="docs-empty">Здесь появятся напечатанные документы.</div>';
+      return;
+    }
+    let html = '', lastDate = '';
+    docs.forEach(doc => {
+      if (doc.date !== lastDate) { lastDate = doc.date; html += `<div class="docs-date">${esc(dayLabel(doc.date))}</div>`; }
+      const icon = ICONS[doc.type] || ICONS.report;
+      const sub = [doc.subtitle, doc.time].filter(Boolean).join(' · ');
+      html += `<div class="docs-item">
+        <button type="button" class="rh-row" onclick="printStoredDocument('${esc(doc.id)}')">
+          <span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span>
+          <span class="rh-label"><span class="docs-title">${esc(doc.title)}</span><span class="docs-sub">${esc(sub)}</span></span>
+        </button>
+        <button type="button" class="docs-del${confirmId === doc.id ? ' confirm' : ''}" aria-label="Удалить"
+          onclick="deleteStoredDocument('${esc(doc.id)}')">${confirmId === doc.id ? 'Удалить?' : '🗑'}</button>
+      </div>`;
+    });
+    box.innerHTML = html;
+  }
+  window.warehouseDocsAdd = async function (rec) {
+    const list = await ensure();
+    const now = new Date();
+    list.unshift({
+      id: 'd' + now.getTime().toString(36) + Math.random().toString(36).slice(2, 6),
+      type: rec.type || 'report', title: rec.title || 'Документ', subtitle: rec.subtitle || '',
+      date: fmtDate(now), time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+      ts: now.getTime(), html: String(rec.html || '')
+    });
+    if (list.length > MAX) list.length = MAX;
+    await persist();
+    if (isOpen()) render();
+  };
+  window.openDocuments = async function () {
+    await ensure();
+    render();
+    document.getElementById('documentsModal')?.classList.add('open');
+  };
+  window.closeDocuments = function () {
+    confirmId = '';
+    document.getElementById('documentsModal')?.classList.remove('open');
+  };
+  window.printStoredDocument = function (id) {
+    const doc = (docs || []).find(item => item.id === id);
+    if (!doc) return;
+    const win = window.open('', '_blank');
+    if (!win) { window.alert('Разрешите открытие окна печати.'); return; }
+    win.document.open(); win.document.write(doc.html); win.document.close();
+    win.focus(); setTimeout(() => win.print(), 300);
+  };
+  window.deleteStoredDocument = async function (id) {
+    clearTimeout(confirmTimer);
+    if (confirmId !== id) {
+      confirmId = id; render();
+      confirmTimer = setTimeout(() => { confirmId = ''; if (isOpen()) render(); }, 3000);
+      return;
+    }
+    confirmId = '';
+    const list = await ensure();
+    const index = list.findIndex(item => item.id === id);
+    if (index >= 0) { list.splice(index, 1); await persist(); }
+    render();
+  };
 })();
 </script>
 <script id="receive-hub-runtime">
