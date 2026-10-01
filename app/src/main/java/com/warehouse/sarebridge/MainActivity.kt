@@ -796,6 +796,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Позволяет странице (например, «Приём B-Ware») перезапустить Python,
+        // если он не ответил: тот же start-server.sh, что и при старте APK.
+        @JavascriptInterface
+        fun ensurePythonServer() {
+            runOnUiThread { this@MainActivity.startPythonServer() }
+        }
+
         @JavascriptInterface
         fun saveFile(base64: String, fileName: String, mimeType: String) {
             try {
