@@ -2924,6 +2924,59 @@ body{overscroll-behavior:none;}
   };
 }());
 </script>
+<style id="nrPatchStyle">
+.share-route-spinner{width:44px;height:44px;margin:6px auto 14px;border:4px solid rgba(116,192,252,.25);border-top-color:#1c7ed6;border-radius:50%;animation:nrOcrSpin .8s linear infinite;}
+.share-route-busy{display:none;text-align:center;padding:6px 0;}
+.share-route-box.is-busy>:not(.share-route-busy),.share-route-box.is-error>:not(.share-route-busy),
+.share-route-card.is-busy>:not(.share-route-busy),.share-route-card.is-error>:not(.share-route-busy){display:none!important;}
+.is-busy>.share-route-busy,.is-error>.share-route-busy{display:block;}
+.share-route-busy-text{font-size:15px;font-weight:700;line-height:1.4;}
+.is-error .share-route-spinner{display:none;}
+.is-error .share-route-busy-text{color:#e03131;}
+.share-route-busy-actions{display:none;gap:10px;margin-top:16px;}
+.is-error .share-route-busy-actions{display:flex;}
+.share-route-busy-actions button{flex:1;border:0;border-radius:12px;padding:12px;font-weight:800;color:#fff;background:#1563b8;cursor:pointer;}
+.share-route-busy-actions button+button{background:#868e96;}
+.nr-busy-overlay{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);}
+.nr-busy-overlay.open{display:flex;}
+.nr-busy-box{background:#fff;color:#172b4d;border-radius:16px;padding:22px 28px;text-align:center;font-weight:700;box-shadow:0 12px 40px rgba(0,0,0,.4);}
+body[data-theme="dark"] .nr-busy-box{background:var(--md-surface-low);color:#fff;}
+#nrSnapshot2Progress.nr-busy .nr-snapshot2-progress-label::before{content:'';display:inline-block;width:12px;height:12px;margin-right:8px;vertical-align:-2px;border:2px solid rgba(255,255,255,.3);border-top-color:#74c0fc;border-radius:50%;animation:nrOcrSpin .8s linear infinite;}
+.nr-history-btn{background:linear-gradient(135deg,#3b5b82,#24405f);}
+.nrh2-modal{background:#0b1622;color:#f3f6f8;}
+.nrh2-modal .modal-topbar{background:linear-gradient(135deg,#0f1f38,#1a2f4a);}
+.nrh2-sync{border:0;border-radius:8px;padding:6px 10px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:12px;}
+.nrh2-empty{padding:42px 18px;text-align:center;color:rgba(255,255,255,.55);font-size:13px;}
+.nrh2-card{background:#132035;border:1px solid rgba(255,255,255,.11);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+.nrh2-card summary{list-style:none;cursor:pointer;}
+.nrh2-card summary::-webkit-details-marker{display:none;}
+.nrh2-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:14px;}
+.nrh2-chip{font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;background:#495057;white-space:nowrap;}
+.nrh2-chip.saved{background:#2b8a3e;}.nrh2-chip.error{background:#c92a2a;}.nrh2-chip.recognized{background:#1c7ed6;}
+.nrh2-meta{font-size:11px;color:rgba(255,255,255,.62);margin-top:3px;overflow-wrap:anywhere;}
+.nrh2-ok{color:#69db7c;}.nrh2-wait{color:#ffa94d;}
+.nrh2-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px;}
+.nrh2-table th,.nrh2-table td{border-bottom:1px solid rgba(255,255,255,.1);padding:4px;text-align:left;}
+.nrh2-table td+td,.nrh2-table th+th{text-align:right;width:44px;}
+.nrh2-sub{margin-top:10px;font-size:11px;font-weight:800;color:#74c0fc;text-transform:uppercase;}
+.nrh2-ev{font-size:11px;color:rgba(255,255,255,.8);margin-top:3px;}
+.nrh2-file{display:flex;gap:8px;align-items:center;font-size:11px;margin-top:4px;}
+.nrh2-file span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nrh2-file a,.nrh2-file button{color:#74c0fc;background:none;border:0;font-size:11px;font-weight:700;text-decoration:none;}
+.nrh2-file em{color:rgba(255,255,255,.5);font-style:normal;}
+body:not([data-theme="dark"]) .nrh2-modal{background:#eef2f7;color:#172b4d;}
+body:not([data-theme="dark"]) .nrh2-card{background:#fff;border-color:#dbe4f0;}
+body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,body:not([data-theme="dark"]) .nrh2-file em{color:#5b6b82;}
+</style>
+<style id="nrTasksStyle">
+.nr-task-extra{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;}
+.nr-task-extra .nr-task-spin{width:18px;height:18px;margin:0;border-width:3px;flex:0 0 auto;}
+.nr-task-extra.queued .nr-task-spin{animation-duration:2s;opacity:.6;}
+.nr-task-progress{min-width:0;overflow-wrap:anywhere;opacity:.85;}
+.nr-task-err{flex:1;color:#ff8787;font-weight:700;overflow-wrap:anywhere;}
+.nr-task-retry{border:0;border-radius:8px;padding:7px 12px;background:#1c7ed6;color:#fff;font-weight:800;flex:0 0 auto;}
+.nr-registry-card.nr-task-processing,.nr-registry-card.nr-task-queued{cursor:default;}
+</style>
 </head>
 <body>
 
@@ -3094,6 +3147,10 @@ body{overscroll-behavior:none;}
       <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>
       <span class="quick-action-label">Профиль</span>
     </button>
+    <button class="quick-action orange" onclick="openInfoStats()">
+      <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.01"/></svg></span>
+      <span class="quick-action-label">Инфо</span>
+    </button>
       </div>
   </section>
   </div>
@@ -3126,10 +3183,11 @@ body{overscroll-behavior:none;}
       <div class="nr-start-title">Приём по имени</div>
        <div class="nr-start-subtitle">Загрузите PDF-накладную, Excel или снимите несколько страниц камерой для распознавания.</div>
       <input class="nr-file-input" id="nrExcelInput" type="file" accept=".xlsx,.xls,.csv" onchange="nrHandleFile(this)">
-      <input class="nr-file-input" id="nrPdfInput" type="file" accept="application/pdf,.pdf" onchange="nrHandlePdfFile(this)">
+      <input class="nr-file-input" id="nrPdfInput" type="file" accept="application/pdf,.pdf" multiple onchange="nrHandlePdfFile(this)">
       <button class="nr-main-btn" type="button" onclick="document.getElementById('nrExcelInput').click()">📂 Выбрать Excel файл</button>
       <button class="nr-main-btn" type="button" onclick="document.getElementById('nrPdfInput').click()">📄 Выбрать PDF-накладную</button>
       <button class="nr-camera-btn" type="button" onclick="openNrCamera()">📷 Снимок</button>
+      <button class="nr-camera-btn nr-history-btn" type="button" onclick="openNrHistory2()">🕘 История</button>
       <div class="nr-status" id="nrStartStatus" role="status" aria-live="polite"></div>
       <div class="nr-registry" id="nrRegistry">
         <div class="nr-registry-title">
@@ -21459,6 +21517,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  window.__warehouseSetDoc = async function (collectionName, id, data) {
+    const user = auth.currentUser;
+    if (!warehouseAuthReady || !user) throw new Error('not-authenticated');
+    return setDoc(doc(firestore, collectionName, String(id)), {...data, userId: user.uid, userEmail: user.email || ''}, {merge: true});
+  };
+  window.__warehouseGetRecent = async function (collectionName, count) {
+    const snap = await getDocs(query(collection(firestore, collectionName), orderBy('createdAt', 'desc'), limit(count || 50)));
+    return snap.docs.map(d => ({id: d.id, ...d.data()}));
+  };
+
   window.__warehouseLogout = function () {
     _wh_stopTasksListener();
     try { sessionStorage.setItem('wh_skip_biometric_once', '1'); } catch (e) {}
@@ -21908,6 +21976,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Expose the existing screen switcher so that workflow can reach it.
   window.switchScreen = switchScreen;
   window.nrGetProducts = () => state.products;
+  window.nrGetState = () => state;
   window.nrSetActiveRegistryId = id => { state.activeRegistryId = String(id || ''); };
   window.nrPersistActive = persistActiveRegistryBatch;
   window.openNameReceive = function () {
@@ -22018,6 +22087,14 @@ document.addEventListener('DOMContentLoaded', function () {
     carousel.els.forEach(el => el.remove());
     carousel.els.clear();
   }
+  function nrIsCyclic(n) { return n + 1 >= Math.ceil(2 * carousel.T) + 2; }
+  function nrClampCarousel(n, cyc) {
+    if (cyc || !n) return;
+    const max = n - 1;
+    if (carousel.pos < 0) { carousel.pos = 0; carousel.vel = 0; }
+    else if (carousel.pos > max) { carousel.pos = max; carousel.vel = 0; }
+    if (carousel.target !== null) carousel.target = Math.max(0, Math.min(max, carousel.target));
+  }
   function nrCarouselLayout(force) {
     const host = $('nrProductList');
     if (!host) return;
@@ -22031,13 +22108,15 @@ document.addEventListener('DOMContentLoaded', function () {
       nrBuildTable(H);
       nrBuildFrames(host, H);
     }
+    const cyc = nrIsCyclic(n); nrClampCarousel(n, cyc);
     const L = n + 1, T = carousel.T, cy = H / 2;
     const first = Math.floor(carousel.pos - T - 1);
     const last = Math.ceil(carousel.pos + T + 1);
     const seen = new Set();
     for (let k = first; k <= last; k++) {
-      const idx = ((k % L) + L) % L;
-      if (idx === n) continue; // пустая строка между последним и первым товаром
+      let idx = ((k % L) + L) % L;
+      if (!cyc) { if (k < 0 || k >= n) continue; idx = k; }
+      if (cyc && idx === n) continue; // пустая строка между последним и первым товаром
       // Привязка к рамке: товар всегда целиком в одной строке, а не между двумя.
       const u = Math.round(k - carousel.pos);
       const top = cy + nrY(u - 0.5);
@@ -22095,7 +22174,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (idx < 0) return;
     const L = n + 1;
     carousel.vel = 0;
-    carousel.target = Math.round((carousel.pos - idx) / L) * L + idx;
+    carousel.target = nrIsCyclic(n) ? Math.round((carousel.pos - idx) / L) * L + idx : idx;
     nrCarouselStart();
   }
   window.nrCenterOn = nrCenterOn;
@@ -22589,6 +22668,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(data), 'Приемка');
     XLSX.writeFile(workbook, state.originalFileName + '_processed.xlsx');
+    try { const out = XLSX.write(workbook, {bookType: 'xlsx', type: 'array'}); window.nrHistory2 && window.nrHistory2.onFile('export', new File([out], state.originalFileName + '_processed.xlsx', {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Экспорт Excel'); } catch (e) {}
   };
 
   async function nrSaveProcessedFiles(batchId, batchDate, orderNumber, files, invoiceFiles) {
@@ -22741,6 +22821,7 @@ document.addEventListener('DOMContentLoaded', function () {
     state.saving = true;
     const button = $('nrSaveBatchButton');
     if (button) { button.disabled = true; button.textContent = 'Сохранение…'; }
+    window.nrBusyShow && window.nrBusyShow('Сохранение партии…');
     try {
       const senderName = String($('nrSender').textContent || '').trim();
       const orderNumber = String($('nrOrder').textContent || '').trim();
@@ -22780,12 +22861,14 @@ document.addEventListener('DOMContentLoaded', function () {
          state.sourceFiles
        );
       state.savedBatchId = committed.batchId;
+      try { window.nrHistory2 && window.nrHistory2.onSaved({driveUrls: mediaResult.driveUrls}); } catch (e) {}
+      try { window.nrTasks && window.nrTasks.onSaved(state.activeRegistryId); } catch (e) {}
       if (typeof renderHistoryList === 'function') renderHistoryList();
       if (button) button.textContent = '✓ Сохранено';
        const driveNote = mediaResult.driveError
-         ? ` Локальные PNG сохранены, но Drive сообщил: ${mediaResult.driveError}.`
+         ? ` Файлы сохранены на устройстве и уйдут на Google Диск позже (${mediaResult.driveError}).`
          : (mediaResult.driveUrls.length ? ` PNG загружено в Google Drive: ${mediaResult.driveUrls.length}.` : '');
-       $('nrInfoText').textContent = `Партия сохранена: ${committed.positions} позиций, ${committed.totalQty} шт.${driveNote} Она отображается первой в истории приёмок.`;
+       $('nrInfoText').textContent = `Партия сохранена: ${committed.positions} позиций, ${committed.totalQty} шт.${driveNote}  Партия убрана из реестра и находится в Истории 2.${navigator.onLine === false ? ' Нет связи: данные и файлы отправятся автоматически, когда появится сеть.' : ''}`;
       $('nrInfoOverlay').classList.remove('hidden');
     } catch (error) {
       if (button) { button.disabled = false; button.textContent = '💾 Сохранить'; }
@@ -22793,6 +22876,7 @@ document.addEventListener('DOMContentLoaded', function () {
       $('nrInfoOverlay').classList.remove('hidden');
     } finally {
       state.saving = false;
+      window.nrBusyHide && window.nrBusyHide();
     }
   };
   window.nrPrintReport = function () {
@@ -22801,6 +22885,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.nrClosePrint = function () { $('nrPrintOverlay')?.classList.add('hidden'); };
   function nrPrintWindow(title, body) {
     nrClosePrint();
+    try { window.nrHistory2 && window.nrHistory2.onFile('print', new File([`<!doctype html><meta charset="utf-8"><title>${title}</title><body>${body}</body>`], (title || 'print') + '.html', {type: 'text/html'}), 'Печать: ' + title); } catch (e) {}
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
@@ -22837,6 +22922,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const file = input?.files?.[0];
     if (!file) return;
     if (!window.XLSX) return showStatus('Библиотека Excel ещё загружается. Повторите через секунду.', 'error');
+    if (window.nrTasks && !window.nrTasks.canAdd()) return showStatus('В реестре уже 10 задач. Завершите или удалите одну.', 'error');
+    if (window.nrTasks) window.nrTasks.leaveActive();
     state.originalFileName = file.name.replace(/\.[^/.]+$/, '') || 'приемка';
     const reader = new FileReader();
     reader.onload = event => {
@@ -22865,6 +22952,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!state.products.length) throw new Error('В файле не найдены товары начиная с 4-й строки');
         $('nrSearchInput').value = '';
         renderList(); switchScreen('List');
+        if (window.nrTasks) window.nrTasks.registerCurrent();
       } catch (error) { showStatus(error.message || 'Не удалось прочитать Excel-файл', 'error'); }
     };
     reader.onerror = () => showStatus('Не удалось прочитать Excel-файл', 'error');
@@ -22966,6 +23054,10 @@ document.addEventListener('DOMContentLoaded', function () {
     ) ? 'complete' : 'in_progress';
   }
   function registryStatusLabel(record) {
+    const ts = record?.task?.state;
+    if (ts === 'processing') return 'Распознаётся';
+    if (ts === 'queued') return 'В очереди';
+    if (ts === 'error') return 'Ошибка';
     return registryStatus(record) === 'complete' ? 'Принято' : 'В работе';
   }
   function registryItemCount(record) {
@@ -23066,7 +23158,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const empty = $('nrRegistryEmpty');
     const count = $('nrRegistryCount');
     if (!list) return;
-    if (count) count.textContent = String(registry.length);
+    if (count) count.textContent = registry.length + '/10';
     if (empty) empty.style.display = registry.length ? 'none' : 'block';
     list.querySelectorAll('.nr-registry-swipe').forEach(item => item.remove());
     registry.forEach(record => {
@@ -23098,6 +23190,16 @@ document.addEventListener('DOMContentLoaded', function () {
       meta.className = 'nr-registry-meta';
       meta.innerHTML = `<span>📄 ${Number(record.pages || 0)} стр.</span><span>📦 ${registryItemCount(record)} поз.</span>`;
       card.append(head, order, meta);
+      const task = record.task;
+      if (task && task.state !== 'ready') {
+        card.classList.add('nr-task-' + task.state);
+        const extra = document.createElement('div');
+        extra.className = 'nr-task-extra ' + task.state;
+        extra.innerHTML = task.state === 'error'
+          ? `<div class="nr-task-err">${deliveryEscape(task.error || 'Ошибка')}</div><button type="button" class="nr-task-retry" onclick="event.stopPropagation();nrTaskRetry('${record.id}')">↻ Повторить</button>`
+          : `<div class="share-route-spinner nr-task-spin"></div><span class="nr-task-progress">${deliveryEscape(task.progress || (task.state === 'queued' ? 'В очереди…' : 'Распознавание…'))}</span>`;
+        card.append(extra);
+      }
       wrap.append(deleteButton, card);
       list.appendChild(wrap);
     });
@@ -23115,7 +23217,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     const record = registry.find(item => item.id === id);
-    if (record && typeof window.nrLoadRegistryBatch === 'function') window.nrLoadRegistryBatch(record);
+    if (record && (!record.task || record.task.state === 'ready') && typeof window.nrLoadRegistryBatch === 'function') window.nrLoadRegistryBatch(record);
   };
   window.nrRegistryTouchStart = function (event, card) {
     document.querySelectorAll('.nr-registry-card.swiped').forEach(openCard => {
@@ -23169,6 +23271,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   window.nrConfirmRegistryDelete = function () {
     if (!registryDeleteId) return;
+    try { window.nrTasks && window.nrTasks.onDeleted(registryDeleteId); } catch (e) {}
     registry = registry.filter(item => item.id !== registryDeleteId);
     saveRegistry();
     renderRegistry();
@@ -23185,6 +23288,15 @@ document.addEventListener('DOMContentLoaded', function () {
     renderRegistry();
   };
   renderRegistry();
+  window.nrRegistryApi = {
+    list: () => registry,
+    get: id => registry.find(item => item.id === id),
+    add: rec => { registry.unshift(rec); saveRegistry(); renderRegistry(); return rec; },
+    patch: (id, fn) => { const r = registry.find(item => item.id === id); if (r) { fn(r); r.updatedAt = Date.now(); saveRegistry(); } return r; },
+    remove: id => { registry = registry.filter(item => item.id !== id); saveRegistry(); renderRegistry(); },
+    render: renderRegistry,
+    normalizeProduct: normalizeRegistryProduct
+  };
 
   function setStatus(message, type = '') {
     const el = $('nrStartStatus');
@@ -23616,6 +23728,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!queue.files.length) setStatus('Сначала выберите хотя бы один кадр.', 'error');
       return;
     }
+    if (registry.length >= 10) { setStatus('Лимит: максимум 10 задач в реестре. Завершите или удалите одну.', 'error'); return; }
     window.closeNrCamera();
     setProcessingUi(true);
     const files = queue.files.slice();
@@ -24780,9 +24893,36 @@ window.receiveNativeSharedFiles = function (files) {
 
   function setNameReceiveShareStatus(message, type = '') {
     const status = document.getElementById('nrStartStatus');
-    if (!status) return;
-    status.textContent = message || '';
-    status.className = 'nr-status' + (message ? ' show' : '') + (type ? ` ${type}` : '');
+    if (status) {
+      status.textContent = message || '';
+      status.className = 'nr-status' + (message ? ' show' : '') + (type ? ` ${type}` : '');
+    }
+    document.getElementById('nrSnapshot2Progress')?.classList.toggle('nr-busy', type === 'loading');
+    const box = document.querySelector('#shareRouteOverlay .share-route-box, #shareRouteOverlay .share-route-card');
+    const busyText = document.getElementById('shareRouteBusyText');
+    if (box && box.classList.contains('is-busy') && busyText && type === 'loading') busyText.textContent = message;
+    if (type === 'error' && message && !(box && (box.classList.contains('is-busy') || box.classList.contains('is-error')))) {
+      const info = document.getElementById('nrInfoText');
+      if (info) { info.textContent = message; document.getElementById('nrInfoOverlay')?.classList.remove('hidden'); }
+    }
+  }
+
+  function shareRouteBusy(kind, text, retry) {
+    const overlay = ensureShareRouteOverlay();
+    const box = overlay.querySelector('.share-route-box, .share-route-card');
+    let busy = document.getElementById('shareRouteBusy');
+    if (!busy) {
+      busy = document.createElement('div');
+      busy.id = 'shareRouteBusy'; busy.className = 'share-route-busy';
+      busy.innerHTML = '<div class="share-route-spinner"></div><div class="share-route-busy-text" id="shareRouteBusyText" role="status" aria-live="polite"></div>'
+        + '<div class="share-route-busy-actions"><button type="button" id="shareRouteRetry">Повторить</button><button type="button" onclick="closeWarehouseShareRoute()">Закрыть</button></div>';
+      box.appendChild(busy);
+    }
+    box.classList.toggle('is-busy', kind === 'busy');
+    box.classList.toggle('is-error', kind === 'error');
+    document.getElementById('shareRouteBusyText').textContent = text || '';
+    document.getElementById('shareRouteRetry').onclick = retry || null;
+    overlay.classList.add('open');
   }
 
   function ensureShareRouteOverlay() {
@@ -24812,6 +24952,7 @@ window.receiveNativeSharedFiles = function (files) {
     if (!pendingFiles.length) return;
     const count = pendingFiles.length;
     const overlay = ensureShareRouteOverlay();
+    window.closeWarehouseShareRoute();
     const subtitle = document.getElementById('shareRouteSubtitle');
     if (subtitle) {
       subtitle.textContent = `Получено файлов: ${count}. Выберите режим обработки документов.`;
@@ -24820,50 +24961,24 @@ window.receiveNativeSharedFiles = function (files) {
   }
 
   window.nrHandlePdfFile = async function (input) {
-    const file = input?.files?.[0];
-    if (!file) return;
+    const list = Array.from(input?.files || []);
+    if (!list.length) return;
     try {
-      const selectedKey = _selectGeminiKey();
-      const baseSettings = getGeminiSettings();
-      if (!selectedKey && !baseSettings.apiKey) {
-        throw new Error('Сначала укажите API-ключ Gemini в настройках.');
-      }
-      const settings = {
-        ...baseSettings,
-        apiKey: selectedKey?.apiKey || baseSettings.apiKey,
-        keyId: selectedKey?.id || baseSettings.keyId || '',
-        attachInstructionPerFile: false,
-        instruction: ''
-      };
-      openNameReceive();
-      nrBeginGeminiReceive();
-      window.nrSetReceiveSourceFiles([], file.name || 'приёмка');
-      switchScreen('List');
-      nrSetSnapshot2Progress(0, 1, 'Идёт оптимизация и анализ страниц...');
-      setNameReceiveShareStatus('Идёт оптимизация и анализ страниц...', 'loading');
-      const invoice = await _processInvoiceViaPreparedPages(
-        file,
-        settings,
-        message => setNameReceiveShareStatus(message, 'loading')
-      );
-      window.nrSetReceiveSourceInvoices([file]);
-      window.nrSetReceiveSourceFiles(
-        Array.isArray(invoice.processedFiles) ? invoice.processedFiles : [],
-        file.name || 'приёмка'
-      );
-      nrApplyGeminiResult(invoice);
-      nrSetSnapshot2Progress(1, 1, 'Накладная обработана и товары объединены.');
-      setNameReceiveShareStatus('Обработка завершена. Проверьте список и сохраните партию.', 'ok');
+      const result = await window.nrTasks.add(list);
+      setNameReceiveShareStatus(result.message, 'ok');
     } catch (error) {
-      console.error('PDF processing failed:', error);
-      setNameReceiveShareStatus(error?.message || 'Не удалось обработать PDF.', 'error');
+      console.error('PDF task failed:', error);
+      setNameReceiveShareStatus(error?.message || 'Не удалось добавить PDF.', 'error');
     } finally {
       if (input) input.value = '';
     }
   };
 
   window.closeWarehouseShareRoute = function () {
-    document.getElementById('shareRouteOverlay')?.classList.remove('open');
+    const overlay = document.getElementById('shareRouteOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    overlay.querySelector('.share-route-box, .share-route-card')?.classList.remove('is-busy', 'is-error');
   };
 
   async function takeSharedFiles() {
@@ -24911,72 +25026,42 @@ window.receiveNativeSharedFiles = function (files) {
   window.warehouseProcessSharedFilesByName = async function (files) {
     const accepted = normalizeSharedFiles(files);
     if (!accepted.length) throw new Error('Нет PDF или изображений для приёма по имени.');
-    if (typeof getGeminiSettings !== 'function' || typeof _requestGeminiChat !== 'function') {
-      throw new Error('Модуль Gemini ещё не загрузился.');
-    }
-
-    const selectedKey = typeof _selectGeminiKey === 'function' ? _selectGeminiKey() : null;
-    const baseSettings = getGeminiSettings();
-    if (!selectedKey && !baseSettings.apiKey) {
-      throw new Error('Сначала укажите API-ключ Gemini в настройках.');
-    }
-    const settings = {
-      ...baseSettings,
-      apiKey: selectedKey?.apiKey || baseSettings.apiKey,
-      keyId: selectedKey?.id || baseSettings.keyId || '',
-      attachInstructionPerFile: false,
-      instruction: ''
-    };
-
+    if (!window.nrTasks) throw new Error('Модуль задач ещё не загрузился.');
+    const result = await window.nrTasks.add(accepted);
     openNameReceive();
-    nrBeginGeminiReceive();
-    window.nrSetReceiveSourceFiles([], accepted[0]?.name || 'приёмка');
-    switchScreen('List');
-    const total = accepted.length;
-    for (let index = 0; index < total; index++) {
-      const file = accepted[index];
-      nrSetSnapshot2Progress(index, total, 'Идёт оптимизация и анализ страниц...');
-      setNameReceiveShareStatus(
-        `Идёт оптимизация и анализ страниц: ${file.name || 'файл'}…`,
-        'loading'
-      );
-      const invoice = await _processInvoiceViaPreparedPages(
-        file,
-        settings,
-        message => setNameReceiveShareStatus(
-          `${message} Файл ${index + 1} из ${total}.`,
-          'loading'
-        )
-      );
-      window.nrSetReceiveSourceInvoices([file], true);
-      window.nrSetReceiveSourceFiles(
-        Array.isArray(invoice.processedFiles) ? invoice.processedFiles : [],
-        file.name || accepted[0]?.name || 'приёмка',
-        true
-      );
-      nrApplyGeminiResult(invoice);
-      nrSetSnapshot2Progress(index + 1, total, `Обработано файлов: ${index + 1} из ${total}.`);
-    }
-    setNameReceiveShareStatus('Распознавание завершено. Проверьте список и сохраните партию.', 'ok');
+    switchScreen('Start');
+    setNameReceiveShareStatus(result.message + ' Распознавание идёт в реестре.', 'ok');
+    return result;
   };
 
-  window.routeWarehouseSharedFiles = async function (mode) {
-    const overlay = document.getElementById('shareRouteOverlay');
-    if (overlay) overlay.classList.remove('open');
-    const files = await takeSharedFiles();
+  let lastNameFiles = [];
+  window.routeWarehouseSharedFiles = async function (mode, retryFiles) {
+    if (mode === 'name') shareRouteBusy('busy', 'Идёт распознавание накладной…');
+    else window.closeWarehouseShareRoute();
+    const files = retryFiles || await takeSharedFiles();
     pendingFiles = [];
-    if (!files.length) return;
-
+    if (!files.length) {
+      if (mode === 'name') shareRouteBusy('error', 'Файл не получен. Отправьте его ещё раз через «Поделиться».');
+      return;
+    }
     try {
       if (mode === 'auto') {
         await window.warehouseAddSharedFilesToAutoReceive(files);
       } else if (mode === 'name') {
+        lastNameFiles = files;
         await window.warehouseProcessSharedFilesByName(files);
+        lastNameFiles = [];
+        window.closeWarehouseShareRoute();
       }
     } catch (error) {
       console.error('Share Target processing failed:', error);
-      setNameReceiveShareStatus(error?.message || 'Не удалось обработать общие файлы.', 'error');
-      if (mode === 'auto') _setAutoReceiveGlobalNotice(error?.message || 'Ошибка Share Target.', true);
+      const message = error?.message || 'Не удалось обработать общие файлы.';
+      if (mode === 'name') {
+        shareRouteBusy('error', 'Ошибка распознавания: ' + message, () => window.routeWarehouseSharedFiles('name', lastNameFiles));
+        try { window.nrHistory2 && window.nrHistory2.onError(message, files[0]?.name); } catch (e) {}
+      } else {
+        _setAutoReceiveGlobalNotice(message, true);
+      }
     }
   };
 
@@ -25974,6 +26059,430 @@ window.closeReceiveHub = function () {
     if (event.key === 'Escape') window.closeLangPopup();
   });
 })();
+</script>
+<script>
+/* ── Патч: анимация ожидания, История2 (Firebase + Google Диск), досылка при появлении связи ── */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const KEY = 'nr_history2_v1', COLL = 'nr_history2';
+  let list = null, cur = null, flushing = false;
+
+  window.nrBusyShow = function (text) {
+    let el = $('nrBusyOverlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'nrBusyOverlay'; el.className = 'nr-busy-overlay';
+      el.innerHTML = '<div class="nr-busy-box"><div class="share-route-spinner"></div><div id="nrBusyText" role="status"></div></div>';
+      document.body.appendChild(el);
+    }
+    $('nrBusyText').textContent = text || '';
+    el.classList.add('open');
+  };
+  window.nrBusyHide = function () { $('nrBusyOverlay')?.classList.remove('open'); };
+
+  async function load() {
+    if (list) return list;
+    try { const v = await idbLoad(KEY); list = Array.isArray(v) ? v : []; } catch (e) { list = []; }
+    return list;
+  }
+  async function persist() { try { await idbSave(KEY, list); } catch (e) { console.warn('История2: не сохранилось локально', e); } }
+  const userName = () => { const u = window.__warehouseUser || {}; return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || ''; };
+  const clean = t => { t = String(t || '').trim(); return t === '-' ? '' : t; };
+  const fmt = ts => new Date(ts).toLocaleString('ru-RU');
+
+  async function addFiles(rec, files, kind) {
+    for (const file of files || []) {
+      if (!file || rec.files.some(f => f.kind === kind && f.name === file.name && f.size === file.size)) continue;
+      let blobKey = '';
+      try { blobKey = await idbSaveBlob('nrh2', rec.id, file); } catch (e) { console.warn(e); }
+      rec.files.push({kind, name: file.name || kind, type: file.type || '', size: file.size || 0, blobKey, drive: blobKey ? 'pending' : 'skip', driveUrl: ''});
+    }
+  }
+
+  function fromState() {
+    const st = window.nrGetState && window.nrGetState();
+    if (!st) return null;
+    return {
+      id: st.activeRegistryId || '', sender: clean($('nrSender')?.textContent), order: clean($('nrOrder')?.textContent),
+      date: clean($('nrDate')?.textContent), fileName: st.originalFileName || '', batchId: st.savedBatchId || '',
+      products: st.products.map(p => ({name: p.name, code: p.code || '', qtyPlan: +p.qtyPlan || 0, qtyActual: +p.qtyActual || 0, qtyDamage: +p.qtyDamage || 0})),
+      invoiceFiles: (st.sourceInvoiceFiles || []).slice(), sourceFiles: (st.sourceFiles || []).slice()
+    };
+  }
+
+  async function log(type, src, extra = {}) {
+    if (!src) return;
+    await load();
+    const id = src.id || cur;
+    let rec = id && list.find(r => r.id === id);
+    if (!rec) {
+      rec = {id: src.id || ('nrh_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), createdAt: Date.now(), events: [], files: [], fb: 'pending'};
+      list.unshift(rec);
+      if (!src.id) cur = rec.id;
+    }
+    rec.updatedAt = Date.now();
+    rec.user = userName();
+    rec.sender = src.sender || rec.sender || '';
+    rec.order = src.order || rec.order || '';
+    rec.date = src.date || rec.date || '';
+    rec.sourceFileName = src.fileName || rec.sourceFileName || '';
+    rec.products = (src.products && src.products.length) ? src.products : (rec.products || []);
+    if (src.batchId) rec.batchId = src.batchId;
+    if (type === 'saved') rec.status = 'saved';
+    else if (type === 'deleted') rec.status = rec.status === 'saved' ? 'saved' : 'deleted';
+    else if (type === 'error') rec.status = rec.status === 'saved' ? 'saved' : 'error';
+    else if (rec.status !== 'saved' && rec.status !== 'deleted') rec.status = 'recognized';
+    const text = extra.text || (type === 'recognized' ? `В списке позиций: ${rec.products.length}` : type === 'saved' ? `Партия сохранена: ${rec.products.length} поз.` : type === 'deleted' ? 'Удалено из реестра сканирований' : '');
+    const last = rec.events[rec.events.length - 1];
+    if (!(last && last.type === type && last.text === text)) rec.events.push({t: Date.now(), type, text});
+    await addFiles(rec, src.invoiceFiles, 'source');
+    await addFiles(rec, src.sourceFiles, 'processed');
+    if (extra.file) await addFiles(rec, [extra.file], extra.kind);
+    const processed = rec.files.filter(f => f.kind === 'processed');
+    if (extra.driveUrls && extra.driveUrls.length && extra.driveUrls.length === processed.length) {
+      processed.forEach((f, i) => { f.drive = 'ok'; f.driveUrl = extra.driveUrls[i]; });
+    }
+    rec.fb = 'pending';
+    await persist(); render(); flush();
+  }
+  const track = (type, extra) => log(type, fromState(), extra);
+
+  async function syncFirebase(rec) {
+    if (typeof window.__warehouseSetDoc !== 'function') throw new Error('Firebase ещё не готов');
+    const data = JSON.parse(JSON.stringify({
+      id: rec.id, createdAt: rec.createdAt, updatedAt: rec.updatedAt, user: rec.user, sender: rec.sender, order: rec.order,
+      date: rec.date, sourceFileName: rec.sourceFileName, batchId: rec.batchId || '', status: rec.status,
+      products: rec.products, events: rec.events,
+      files: rec.files.map(f => ({kind: f.kind, name: f.name, type: f.type, size: f.size, drive: f.drive, driveUrl: f.driveUrl || ''}))
+    }));
+    await Promise.race([window.__warehouseSetDoc(COLL, rec.id, data), new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), 12000))]);
+  }
+
+  async function flushDrive(rec) {
+    const s = typeof _getGoogleDriveSettings === 'function' ? _getGoogleDriveSettings() : {};
+    if (!s.url || !s.folderId) return;
+    const key = _googleDriveKeyForContext({batchId: rec.batchId || rec.id, codeField: 'batchId'}) || ('WH_' + rec.id);
+    for (const f of rec.files) {
+      if (f.drive !== 'pending') continue;
+      const blob = await _gdBlobGet(f.blobKey);
+      if (!blob) { f.drive = 'skip'; continue; }
+      try {
+        const up = await _uploadOneFileToGoogleDrive(blob, {key, code: rec.batchId || rec.id,
+          fileName: `${key}_${f.kind}_${_googleDriveSafePart(f.name)}`}, s);
+        f.driveUrl = _googleDriveFileUrl(up, /pdf/i.test(f.type || f.name));
+        f.drive = 'ok'; delete f.driveError; rec.fb = 'pending';
+        try { await idbDelete(f.blobKey, 'blobs'); f.blobKey = ''; } catch (e) {}
+      } catch (e) { f.driveError = e?.message || 'ошибка'; break; }
+    }
+  }
+
+  async function flush() {
+    if (flushing) return;
+    flushing = true;
+    try {
+      await load();
+      if (navigator.onLine === false) return;
+      for (const rec of list) {
+        if (rec.remote) continue;
+        if (rec.files.some(f => f.drive === 'pending')) await flushDrive(rec);
+        if (rec.fb !== 'ok') {
+          try { await syncFirebase(rec); rec.fb = 'ok'; rec.fbError = ''; }
+          catch (e) { rec.fbError = e.message === 'timeout' ? 'нет связи' : (e.code || e.message || 'ошибка'); }
+        }
+      }
+      await persist(); render();
+    } finally { flushing = false; }
+  }
+
+  const EV = {recognized: 'Распознавание', saved: 'Сохранение партии', print: 'Печать', export: 'Экспорт', error: 'Ошибка', deleted: 'Удаление'};
+  const ST = {recognized: 'В работе', saved: 'Готово', error: 'Ошибка', deleted: 'Удалено'};
+  function ensureModal() {
+    let m = $('nrHistory2Modal');
+    if (m) return m;
+    m = document.createElement('div');
+    m.className = 'fullscreen-modal nrh2-modal'; m.id = 'nrHistory2Modal';
+    m.innerHTML = '<div class="modal-topbar"><h2>История 2</h2><button class="nrh2-sync" type="button" onclick="nrHistory2Sync()">⟳ Синхр.</button><button class="btn-modal-close" type="button" onclick="closeNrHistory2()">✕</button></div><div class="modal-scroll-body" id="nrh2List"></div>';
+    document.body.appendChild(m);
+    return m;
+  }
+  function render() {
+    const box = $('nrh2List');
+    if (!box || !list) return;
+    if (!list.length) { box.innerHTML = '<div class="nrh2-empty">Операций пока нет. Они появятся после распознавания накладной.</div>'; return; }
+    box.innerHTML = list.map(r => {
+      const pend = r.files.filter(f => f.drive === 'pending').length;
+      const tot = r.products.reduce((a, p) => [a[0] + p.qtyPlan, a[1] + p.qtyActual, a[2] + p.qtyDamage], [0, 0, 0]);
+      const fb = r.fb === 'ok' ? '<span class="nrh2-ok">☁️ Firebase ✓</span>' : `<span class="nrh2-wait">⏳ Firebase${r.fbError ? ' · ' + esc(r.fbError) : ''}</span>`;
+      const dr = !r.files.length ? '' : pend ? `<span class="nrh2-wait">⏳ Диск: ${pend} файл(ов)</span>` : '<span class="nrh2-ok">📁 Диск ✓</span>';
+      return `<details class="nrh2-card"><summary><div class="nrh2-head"><b>${esc(r.sender || 'Поставщик не указан')}</b><span class="nrh2-chip ${esc(r.status)}">${ST[r.status] || ''}</span></div>
+        <div class="nrh2-meta">${fmt(r.createdAt)} · ${esc(r.order || 'без номера')} · ${esc(r.user || '')}</div>
+        <div class="nrh2-meta">📄 ${esc(r.sourceFileName || '')} · 📦 ${r.products.length} поз. · план ${tot[0]} / факт ${tot[1]} / брак ${tot[2]}</div>
+        <div class="nrh2-meta">${fb} ${dr}</div></summary>
+        <table class="nrh2-table"><tr><th>Товар</th><th>Пл</th><th>Факт</th><th>Брак</th></tr>${r.products.map(p => `<tr><td>${esc(p.name)}</td><td>${p.qtyPlan}</td><td>${p.qtyActual}</td><td>${p.qtyDamage}</td></tr>`).join('')}</table>
+        <div class="nrh2-sub">Операции</div>${r.events.map(e => `<div class="nrh2-ev">${fmt(e.t)} — <b>${EV[e.type] || e.type}</b>${e.text ? ': ' + esc(e.text) : ''}</div>`).join('')}
+        ${r.files.length ? '<div class="nrh2-sub">Файлы</div>' : ''}${r.files.map((f, i) => `<div class="nrh2-file"><span>${esc(f.name)}</span>${f.driveUrl ? `<a href="${esc(f.driveUrl)}" target="_blank" rel="noopener">Диск ↗</a>` : f.blobKey ? `<button type="button" onclick="nrh2OpenFile('${r.id}',${i})">Открыть</button>` : ''}<em>${f.drive === 'ok' ? 'на Диске' : f.drive === 'pending' ? 'ждёт отправки' + (f.driveError ? ' (' + esc(f.driveError) + ')' : '') : 'локально'}</em></div>`).join('')}
+        </details>`;
+    }).join('');
+  }
+  window.nrh2OpenFile = async function (id, i) {
+    const f = (list || []).find(r => r.id === id)?.files[i];
+    const blob = f && f.blobKey ? await _gdBlobGet(f.blobKey) : null;
+    if (blob) window.open(URL.createObjectURL(blob), '_blank');
+  };
+  window.nrHistory2Sync = async function () {
+    for (const r of await load()) if (r.fb !== 'ok') r.fb = 'pending';
+    await flush();
+  };
+  window.openNrHistory2 = async function () {
+    ensureModal().classList.add('open');
+    await load(); render();
+    flush();
+    if (navigator.onLine !== false && typeof window.__warehouseGetRecent === 'function') {
+      try { // подтягиваем последние 50 записей с других устройств
+        const remote = await window.__warehouseGetRecent(COLL, 50);
+        let added = false;
+        remote.forEach(r => { if (!list.some(x => x.id === r.id)) { list.push({...r, remote: true, fb: 'ok', files: r.files || [], events: r.events || [], products: r.products || []}); added = true; } });
+        if (added) { list.sort((a, b) => b.createdAt - a.createdAt); await persist(); render(); }
+      } catch (e) { console.warn('История2: не удалось прочитать Firebase', e); }
+    }
+  };
+  window.closeNrHistory2 = function () { $('nrHistory2Modal')?.classList.remove('open'); };
+
+  window.nrHistory2 = {
+    log, fromState,
+    onSaved: info => log('saved', fromState(), {driveUrls: info && info.driveUrls}),
+    onFile: (kind, file, text) => track(kind, {file, kind, text}),
+    onError: (message, fileName) => { const src = fromState(); if (src && fileName && !src.fileName) src.fileName = fileName; return log('error', src, {text: message || 'Ошибка'}); }
+  };
+  const origBegin = window.nrBeginGeminiReceive;
+  if (origBegin) window.nrBeginGeminiReceive = function () {
+    try { window.nrTasks && window.nrTasks.leaveActive(); } catch (e) {}
+    cur = null; return origBegin.apply(this, arguments);
+  };
+  const origApply = window.nrApplyGeminiResult;
+  if (origApply) window.nrApplyGeminiResult = function () {
+    const r = origApply.apply(this, arguments);
+    setTimeout(() => track('recognized'), 0);
+    return r;
+  };
+  window.addEventListener('online', () => setTimeout(flush, 1500));
+  window.addEventListener('load', () => setTimeout(flush, 5000));
+  setInterval(flush, 2 * 60 * 1000);
+}());
+</script>
+<script>
+/* ── До 10 одновременных задач «Приём по имени». Каждая накладная — карточка в реестре сканирований. ── */
+(function () {
+  'use strict';
+  const MAX_TASKS = 10, PARALLEL = 3;
+  const api = () => window.nrRegistryApi;
+  const files = new Map();          // id -> {invoiceFiles, processedFiles, fileName}
+  const running = new Set(), waiting = [];
+  const KEY = id => 'nrtask:' + id;
+  const stateOf = () => window.nrGetState && window.nrGetState();
+  const uid = () => 'registry-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+
+  async function saveFiles(id) {
+    const f = files.get(id);
+    if (!f) return;
+    try { await idbSave(KEY(id), f); } catch (e) { console.warn('Задача: файлы не сохранились в IndexedDB', e); }
+  }
+  async function getFiles(id) {
+    if (files.has(id)) return files.get(id);
+    try { const v = await idbLoad(KEY(id)); if (v) { files.set(id, v); return v; } } catch (e) {}
+    return null;
+  }
+  function dropFiles(id) { files.delete(id); try { idbDelete(KEY(id)); } catch (e) {} }
+
+  function setTask(id, patch) {
+    api().patch(id, r => { r.task = Object.assign({}, r.task || {}, patch); });
+    api().render();
+  }
+  function setProgress(id, text) {
+    const rec = api().get(id);
+    if (rec && rec.task) rec.task.progress = text;
+    const el = document.querySelector('.nr-registry-card[data-id="' + id + '"] .nr-task-progress');
+    if (el) el.textContent = text;
+  }
+
+  function buildProducts(invoice) {
+    const map = new Map(), out = [];
+    (Array.isArray(invoice?.items) ? invoice.items : []).forEach(item => {
+      const name = String(item?.name || item?.product || item?.title || '').trim();
+      if (!name) return;
+      const raw = String(item?.menge ?? item?.quantity ?? item?.qty ?? item?.count ?? item?.qtyPlan ?? item?.plannedQty ?? 0).replace(',', '.');
+      const m = /-?\d+(?:\.\d+)?/.exec(raw);
+      const amount = Math.max(0, m ? Math.trunc(Number(m[0])) : 0);
+      const key = api().normalizeProduct(name);
+      if (key && map.has(key)) { map.get(key).qtyPlan += amount; return; }
+      const p = {id: 'task-prod-' + Date.now().toString(36) + '-' + out.length, code: String(item?.ean || item?.article || item?.code || ''),
+        name, unit: '', qtyPlan: amount, qtyActual: 0, qtyDamage: 0};
+      if (key) map.set(key, p);
+      out.push(p);
+    });
+    return out;
+  }
+
+  function geminiSettings() {
+    const selected = typeof _selectGeminiKey === 'function' ? _selectGeminiKey() : null;
+    const base = getGeminiSettings();
+    if (!selected && !base.apiKey) throw new Error('Сначала укажите API-ключ Gemini в настройках.');
+    return {...base, apiKey: selected?.apiKey || base.apiKey, keyId: selected?.id || base.keyId || '',
+      attachInstructionPerFile: false, instruction: ''};
+  }
+
+  async function run(id) {
+    const rec = api().get(id);
+    if (!rec) return;
+    setTask(id, {state: 'processing', progress: 'Подготовка страниц…', error: ''});
+    let invoiceFile = null;
+    try {
+      const stored = await getFiles(id);
+      invoiceFile = stored && stored.invoiceFiles && stored.invoiceFiles[0];
+      if (!invoiceFile) throw new Error('Исходный файл не найден. Удалите карточку и отправьте файл заново.');
+      const invoice = await _processInvoiceViaPreparedPages(invoiceFile, geminiSettings(), msg => setProgress(id, msg));
+      if (!api().get(id)) return;                               // карточку удалили во время распознавания
+      const products = buildProducts(invoice);
+      if (!products.length) throw new Error('Gemini не нашёл товаров в документе.');
+      const clean = (v, bad) => { v = String(v || '').trim(); return v && v !== bad ? v : ''; };
+      const processed = Array.isArray(invoice.processedFiles) ? invoice.processedFiles : [];
+      files.set(id, {invoiceFiles: [invoiceFile], processedFiles: processed, fileName: invoiceFile.name || ''});
+      await saveFiles(id);
+      const r = api().patch(id, r => {
+        r.senderName = clean(invoice.senderName, 'no_name') || 'Поставщик не указан';
+        r.orderNumber = clean(invoice.orderNumber, 'EB_no_data') || 'Без номера';
+        r.date = clean(invoice.date, 'no_date') || new Date().toLocaleDateString('ru-RU');
+        r.products = products; r.positions = products.length; r.pages = processed.length || 1;
+        r.task = Object.assign({}, r.task, {state: 'ready', progress: '', error: ''});
+      });
+      api().render();
+      window.nrHistory2 && window.nrHistory2.log('recognized', {
+        id, sender: r.senderName, order: r.orderNumber, date: r.date, fileName: invoiceFile.name || '',
+        products, invoiceFiles: [invoiceFile], sourceFiles: processed
+      });
+    } catch (error) {
+      if (!api().get(id)) return;
+      const message = error instanceof TypeError ? 'Ошибка сети: проверьте Python-сервер и соединение с Gemini.' : (error?.message || 'Не удалось распознать документ.');
+      setTask(id, {state: 'error', error: message, progress: ''});
+      if (window.nrHistory2) window.nrHistory2.log('error', {id, sender: rec.senderName, fileName: invoiceFile?.name || rec.task?.fileName || '', products: []}, {text: message});
+    } finally {
+      running.delete(id);
+      pump();
+    }
+  }
+
+  function pump() {
+    while (running.size < PARALLEL && waiting.length) {
+      const id = waiting.shift();
+      if (!api().get(id)) continue;
+      running.add(id);
+      run(id);
+    }
+  }
+  function enqueue(id) {
+    if (running.has(id) || waiting.includes(id)) return;
+    setTask(id, {state: 'queued', progress: 'В очереди…', error: ''});
+    waiting.push(id);
+    pump();
+  }
+
+  const free = () => Math.max(0, MAX_TASKS - api().list().length);
+
+  async function add(list) {
+    list = Array.from(list || []).filter(f => f && f.size > 0);
+    if (!list.length) throw new Error('Нет файлов для обработки.');
+    if (!free()) throw new Error(`В реестре уже ${MAX_TASKS} задач. Завершите или удалите одну из них.`);
+    geminiSettings();                                           // бросит ошибку, если нет ключа
+    const accepted = list.slice(0, free());
+    for (const file of accepted) {
+      const id = uid(), now = Date.now();
+      files.set(id, {invoiceFiles: [file], processedFiles: [], fileName: file.name || ''});
+      await saveFiles(id);
+      api().add({id, key: 'task-' + id, senderName: file.name || 'Документ', orderNumber: 'Распознаётся…', date: new Date().toLocaleDateString('ru-RU'),
+        pages: 0, positions: 0, products: [], status: 'in_progress', createdAt: now, updatedAt: now,
+        task: {state: 'queued', progress: 'В очереди…', fileName: file.name || ''}});
+      enqueue(id);
+    }
+    const skipped = list.length - accepted.length;
+    return {added: accepted.length, skipped,
+      message: `Добавлено в реестр: ${accepted.length}.` + (skipped ? ` Не добавлено ${skipped}: лимит ${MAX_TASKS} задач.` : '')};
+  }
+
+  /* ── файлы открытой задачи: сохраняем при уходе с неё, возвращаем при открытии ── */
+  function leaveActive() {
+    const st = stateOf();
+    if (!st || !st.activeRegistryId) return;
+    try { window.nrPersistActive(); } catch (e) {}
+    const id = st.activeRegistryId;
+    if (!api().get(id)) return;
+    if (st.sourceFiles.length || st.sourceInvoiceFiles.length) {
+      files.set(id, {invoiceFiles: st.sourceInvoiceFiles.slice(), processedFiles: st.sourceFiles.slice(), fileName: st.originalFileName});
+      saveFiles(id);
+    }
+  }
+  const origLoad = window.nrLoadRegistryBatch;
+  window.nrLoadRegistryBatch = function (record) {
+    leaveActive();
+    origLoad(record);
+    const st = stateOf();
+    getFiles(record.id).then(f => {
+      if (!f || st.activeRegistryId !== record.id) return;
+      st.sourceInvoiceFiles = (f.invoiceFiles || []).slice();
+      st.sourceFiles = (f.processedFiles || []).slice();
+      st.originalFileName = f.fileName ? String(f.fileName).replace(/\.[^/.]+$/, '') : st.originalFileName;
+    });
+  };
+
+  /* ── Excel тоже становится задачей реестра ── */
+  function registerCurrent() {
+    const st = stateOf();
+    if (!st || !st.products.length || st.activeRegistryId) return;
+    const id = uid(), now = Date.now();
+    const text = sel => { const t = String(document.getElementById(sel)?.textContent || '').trim(); return t === '-' ? '' : t; };
+    api().add({id, key: 'task-' + id, senderName: text('nrSender') || 'Поставщик не указан', orderNumber: text('nrOrder') || 'Без номера',
+      date: text('nrDate') || new Date().toLocaleDateString('ru-RU'), pages: 1, positions: st.products.length,
+      products: st.products.map(p => ({...p})), status: 'in_progress', createdAt: now, updatedAt: now, task: {state: 'ready', fileName: st.originalFileName}});
+    window.nrSetActiveRegistryId(id);
+    window.nrHistory2 && window.nrHistory2.log('recognized', {id, sender: text('nrSender'), order: text('nrOrder'), date: text('nrDate'),
+      fileName: st.originalFileName, products: st.products.map(p => ({name: p.name, code: p.code || '', qtyPlan: p.qtyPlan, qtyActual: p.qtyActual, qtyDamage: p.qtyDamage}))});
+  }
+
+  /* ── партия сохранена → уходит из реестра в Историю 2 ── */
+  function onSaved(id) {
+    if (!id) return;
+    api().remove(id);
+    dropFiles(id);
+  }
+  function onDeleted(id) {
+    const rec = api().get(id) || {};
+    const st = stateOf();
+    if (window.nrHistory2 && (rec.products?.length || rec.task?.state === 'ready')) {
+      window.nrHistory2.log('deleted', {id, sender: rec.senderName, order: rec.orderNumber, date: rec.date, fileName: rec.task?.fileName || '', products: (rec.products || []).map(p => ({name: p.name, code: p.code || '', qtyPlan: p.qtyPlan, qtyActual: p.qtyActual, qtyDamage: p.qtyDamage}))});
+    }
+    const wi = waiting.indexOf(id);
+    if (wi >= 0) waiting.splice(wi, 1);
+    dropFiles(id);
+    if (st && st.activeRegistryId === id) st.activeRegistryId = '';
+  }
+
+  window.nrTaskRetry = function (id) { enqueue(id); };
+  window.nrTasks = {add, leaveActive, registerCurrent, onSaved, onDeleted, canAdd: () => free() > 0, max: MAX_TASKS};
+
+  /* ── после перезапуска приложения: прерванные распознавания помечаем ошибкой ── */
+  (function recover() {
+    if (!api()) return;
+    let changed = false;
+    api().list().forEach(r => {
+      if (r.task && (r.task.state === 'processing' || r.task.state === 'queued')) {
+        r.task = Object.assign({}, r.task, {state: 'error', error: 'Распознавание прервано. Нажмите «Повторить».', progress: ''});
+        changed = true;
+      }
+    });
+    if (changed) { api().patch(api().list()[0].id, () => {}); api().render(); }
+  }());
+}());
 </script>
 </body>
 </html>
