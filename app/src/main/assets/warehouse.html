@@ -6871,8 +6871,36 @@ function tryCloseTopModal() {
   }
   return false;
 }
+/* Кнопка «Назад»: сначала закрывает открытые окна; на главном экране — выход по двойному нажатию. */
 history.pushState({wh:1}, '');
-window.addEventListener('popstate', () => { tryCloseTopModal(); history.pushState({wh:1}, ''); });
+let _exitArmed = false, _exitTimer = null;
+function _showExitHint() {
+  let t = document.getElementById('exitHintToast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'exitHintToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:86vw;padding:11px 18px;border-radius:22px;background:rgba(30,30,30,.92);color:#fff;font:600 14px/1.3 sans-serif;z-index:2147483647;pointer-events:none;text-align:center;transition:opacity .2s';
+    t.textContent = 'Нажмите «Назад» ещё раз для выхода';
+    document.body.appendChild(t);
+  }
+  t.style.opacity = '1';
+  return t;
+}
+function _disarmExit(restoreTrap) {
+  if (!_exitArmed) return;
+  _exitArmed = false; clearTimeout(_exitTimer);
+  const t = document.getElementById('exitHintToast'); if (t) t.style.opacity = '0';
+  if (restoreTrap) history.pushState({wh:1}, '');
+}
+window.addEventListener('popstate', () => {
+  if (tryCloseTopModal()) { _disarmExit(false); history.pushState({wh:1}, ''); return; }
+  if (_exitArmed) return; // второе нажатие за 2 секунды: ловушку не восстанавливаем — система закрывает приложение
+  _exitArmed = true;
+  _showExitHint();
+  _exitTimer = setTimeout(() => _disarmExit(true), 2000);
+});
+// любое касание экрана отменяет ожидание выхода и возвращает защиту
+document.addEventListener('pointerdown', () => _disarmExit(true), true);
+
 
 /* ══════════════════════════════════════════════
    SEARCH — ищет по истории (arrivals)
@@ -24893,94 +24921,79 @@ document.addEventListener('DOMContentLoaded', warehouseLoadFeedbackSettings);
     const driver = record.driverSign !== false;
     const kv = (label, value) => `<tr><th>${label}</th><td>${esc(value || '—')}</td></tr>`;
     const rows = items.map((item, index) => `<tr>
-        <td class="c">${index + 1}</td><td class="n">${esc(item.name)}</td>
-        <td class="c">${Number(item.qty) || 0}</td><td class="c">B-Ware</td></tr>`).join('');
-    return `<!doctype html><html lang="de"><head><meta charset="utf-8">
-      <title>Mitteilung über den Empfang von B-Ware ${esc(docNo)}</title>
+        <td class="c">${index + 1}</td><td class="n">${esc(item.name)}</td><td class="c">${Number(item.qty) || 0}</td><td></td></tr>`).join('');
+    const signRow = title => `<div class="sign-title">${title}</div>
+        <table class="sign"><tr>
+          <td><div class="line"></div><div class="cap">Дата</div></td>
+          <td><div class="line"></div><div class="cap">Имя</div></td>
+          <td><div class="line"></div><div class="cap">Подпись</div></td>
+        </tr></table>`;
+    return `<!doctype html><html lang="ru"><head><meta charset="utf-8">
+      <title>Приём товара - повреждения ${esc(docNo)}</title>
       <style>
-        @page{size:A4;margin:18mm}
+        @page{size:A4;margin:14mm}
         *{box-sizing:border-box}
         html,body{margin:0;padding:0}
-        body{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:11pt;line-height:1.4}
+        body{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:11pt;line-height:1.35}
         .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:3mm;margin-bottom:6mm}
-        .org{font-size:14pt;font-weight:700}.addr{font-size:10pt}
+        .org{font-size:13pt;font-weight:700}.addr{font-size:10pt}
         .docno{text-align:right;font-size:10pt}
-        h1{font-size:18pt;text-align:center;margin:0 0 1mm}
-        .subtitle{text-align:center;font-size:11pt;margin:0 0 6mm}
-        h2{font-size:12.5pt;margin:7mm 0 2.5mm;padding-bottom:1mm;border-bottom:1px solid #000}
-        p{margin:0 0 2mm;text-align:justify}
+        h1{font-size:19pt;text-align:center;margin:0 0 3mm;letter-spacing:.3px}
+        h2{font-size:12pt;margin:4.5mm 0 2mm;padding-bottom:1mm;border-bottom:1px solid #000}
         table{border-collapse:collapse;width:100%}
-        .kv th,.kv td{border:1px solid #000;padding:6px 8px;text-align:left;vertical-align:top}
-        .kv th{width:36%;background:#eee;font-weight:700}
-        .items th,.items td{border:1px solid #000;padding:7px 8px}
+        .kv th,.kv td{border:1px solid #000;padding:5px 8px;text-align:left;vertical-align:top}
+        .kv th{width:38%;background:#eee;font-weight:700}
+        .items th,.items td{border:1px solid #000;padding:6px 8px}
+        .items td{height:9mm}
         .items th{background:#eee;text-align:center}
         .items .c{text-align:center}.items .n{font-weight:700;overflow-wrap:anywhere}
-        .items col.p{width:9%}.items col.q{width:14%}.items col.s{width:18%}
-        tr{page-break-inside:avoid}
+        .items col.p{width:8%}.items col.q{width:13%}.items col.d{width:34%}
         .total{margin-top:2mm;text-align:right;font-weight:700}
-        ol{margin:0;padding-left:6mm}ol li{margin:0 0 2mm;text-align:justify}
-        .sign-block{page-break-inside:avoid;margin-top:5mm}
-        .sign td{width:50%;padding:0 6mm 0 0;vertical-align:bottom}
+        .note div{height:7mm;border-bottom:1px solid #000}
+        .sign-title{font-weight:700;margin:3mm 0 0}
+        .sign td{width:33.3%;padding:0 5mm 0 0;vertical-align:bottom}
         .sign td:last-child{padding-right:0}
-        .sign-title{font-weight:700;margin-bottom:16mm}
-        .sign-line{border-top:1px solid #000}
-        .sign-cap{font-size:9pt;margin-top:1mm}
-        .lkw{margin-top:8mm}.lkw-line{display:inline-block;width:70mm;border-bottom:1px solid #000;height:1em;vertical-align:bottom}
-        .foot{margin-top:8mm;padding-top:2mm;border-top:1px solid #000;font-size:9pt;text-align:center}
-        .print-actions{position:fixed;right:18px;top:18px;padding:9px 13px;border:0;border-radius:7px;
-          background:#1c7ed6;color:#fff;font-weight:700;cursor:pointer}
-        @media print{.print-actions{display:none}}
+        .sign .line{height:10mm;border-bottom:1px solid #000}
+        .sign .cap{font-size:9pt;margin-top:1mm}
+        .notice{margin-top:5mm;padding:3mm 4mm;border:1px solid #000;font-size:10pt;font-style:italic;text-align:justify}
       </style></head><body>
-      <button class="print-actions" onclick="window.print()">Als PDF speichern / Drucken</button>
       <div class="head">
         <div><div class="org">Abteilung Wareneingang</div><div class="addr">STRÖH Duvenstedt triftweg 74</div></div>
-        <div class="docno"><b>Dokument-Nr.</b><br>${esc(docNo)}</div>
+        <div class="docno"><b>Документ №</b><br>${esc(docNo)}</div>
       </div>
-      <h1>Mitteilung über den Empfang von B-Ware</h1>
-      <div class="subtitle">Annahmeprotokoll für beschädigte bzw. mangelhafte Ware</div>
+      <h1>ПРИЁМ ТОВАРА - ПОВРЕЖДЕНИЯ</h1>
+      <h2>ИНФОРМАЦИЯ О ДОСТАВКЕ</h2>
       <table class="kv">
-        ${kv('Datum der Annahme', record.date || created.date)}
-        ${kv('Lieferant (Absender)', record.sender)}
-        ${kv('Bestell-Nr.', record.order)}
-        ${kv('Lieferschein-Nr.', record.ls)}
-        ${kv('Empfänger', 'STRÖH, Abteilung Wareneingang')}
+        ${kv('Дата приёмки', record.date || created.date)}
+        ${kv('Поставщик (отправитель)', record.sender)}
+        ${kv('Номер заказа', record.order)}
+        ${kv('Номер накладной', record.ls)}
+        ${kv('Получатель', 'STRÖH, Abteilung Wareneingang')}
+        ${driver ? '<tr><th>Водитель / гос. номер ТС</th><td style="height:8mm"></td></tr>' : ''}
       </table>
-      <h2>1. Sachverhalt</h2>
-      <p>Bei der Warenannahme wurde festgestellt, dass die unter Ziffer 2 aufgeführten Artikel beschädigt bzw. mangelhaft geliefert wurden. Die Ware wurde ausschließlich als B-Ware und unter Vorbehalt angenommen.</p>
-      <h2>2. Beanstandete Ware</h2>
+      <h2>ПОВРЕЖДЁННЫЙ ТОВАР</h2>
       <table class="items">
-        <colgroup><col class="p"><col><col class="q"><col class="s"></colgroup>
-        <thead><tr><th>Pos.</th><th>Artikelbezeichnung</th><th>Menge</th><th>Status</th></tr></thead>
+        <colgroup><col class="p"><col><col class="q"><col class="d"></colgroup>
+        <thead><tr><th>№</th><th>Наименование товара</th><th>Кол-во</th><th>Описание повреждения</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="total">Gesamt: ${items.length} Position(en), ${total} Stk.</div>
-      <h2>3. Vorbehalt und Rechtswirkung</h2>
-      <ol>
-        <li>Die Annahme erfolgt unter ausdrücklichem Vorbehalt aller Rechte und Ansprüche des Empfängers wegen der festgestellten Mängel.</li>
-        <li>Die Mängelrüge gilt als unverzüglich erhoben. Weitere, bei der Annahme nicht erkennbare (verdeckte) Mängel bleiben ausdrücklich vorbehalten (§ 377 HGB).</li>
-        <li>Die Quittierung dieses Dokuments bestätigt ausschließlich den Empfang der Ware, nicht deren Mängelfreiheit.</li>
-        <li>Die Entscheidung über Rücksendung, Gutschrift oder Ersatzlieferung der beanstandeten Ware bleibt vorbehalten.</li>
-      </ol>
-      <div class="sign-block">
-        <h2>4. Bestätigung</h2>
-        ${driver ? '<p>Der Fahrer bestätigt mit seiner Unterschrift die Kenntnisnahme der festgestellten Beanstandungen.</p>' : ''}
-        <table class="sign"><tr>
-          <td><div class="sign-title">Für die Abteilung Wareneingang</div><div class="sign-line"></div>
-            <div class="sign-cap">Name in Druckbuchstaben, Datum, Unterschrift</div></td>
-          ${driver ? `<td><div class="sign-title">Fahrer / Spediteur</div><div class="sign-line"></div>
-            <div class="sign-cap">Name in Druckbuchstaben, Unterschrift</div></td>` : ''}
-        </tr></table>
-        ${driver ? '<div class="lkw"><b>Amtliches Kennzeichen LKW:</b> <span class="lkw-line"></span></div>' : ''}
-      </div>
-      <div class="foot">Dokument-Nr. ${esc(docNo)} · erstellt am ${esc(created.date)} um ${esc(created.time)} Uhr · Abteilung Wareneingang</div>
+      <div class="total">Всего: ${items.length} поз., ${total} шт.</div>
+      <h2>ПРИМЕЧАНИЕ</h2>
+      <div class="note"><div></div><div></div><div></div></div>
+      <h2>ЗАКЛЮЧЕНИЕ</h2>
+      ${signRow('Сотрудник отдела приёмки товара')}
+      ${driver ? signRow('Водитель / экспедитор') : ''}
+      <div class="notice">Внутренняя документация, подтверждающая выявленное в ходе приемки товара несоответствие. Причина и ответственность не определены.</div>
       </body></html>`;
   }
   async function printDocument(printWindow, record, options = {}) {
     const html = buildDocumentHtml(record);
     if (options.save === false) { // повторная печать из истории: без новой загрузки
-      printWindow.document.open(); printWindow.document.write(html); printWindow.document.close();
-      printWindow.focus(); setTimeout(() => printWindow.print(), 250);
-      return {html};
+      let out = html;
+      try { out = await window.warehouseBwarePrintHtml(html, record.docNo || '', '', record.date || ''); } catch (e) {}
+      printWindow.document.open(); printWindow.document.write(out); printWindow.document.close();
+      printWindow.focus(); setTimeout(() => printWindow.print(), 900);
+      return {html: out};
     }
     const ps = window.bwarePhotoState, photos = ps ? ps.photos.slice() : [];
     status('Загружаю документ на Google Диск…', 'loading');
@@ -25439,10 +25452,19 @@ window.receiveNativeSharedFiles = function (files) {
 const GOOGLE_DRIVE_SETTINGS_KEY = 'warehouse_google_drive_settings_v1';
 const GOOGLE_DRIVE_REQUEST_TIMEOUT = 15000;
 
+const GOOGLE_DRIVE_BACKUP_KEY = 'warehouse_google_drive_settings_backup_v1';
+let _gdSettingsDirty = false;
+
+function _gdReadRaw() {
+  const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null') || null; } catch (e) { return null; } };
+  const main = read(GOOGLE_DRIVE_SETTINGS_KEY), backup = read(GOOGLE_DRIVE_BACKUP_KEY);
+  const has = o => o && (o.url || o.folderId);
+  // если основная запись пустая или пропала — берём резервную копию
+  return has(main) ? main : (has(backup) ? backup : (main || backup || {}));
+}
+
 function _getGoogleDriveSettings() {
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(GOOGLE_DRIVE_SETTINGS_KEY) || '{}') || {}; }
-  catch (e) {}
+  const saved = _gdReadRaw();
   return {
     url: String(saved.url || '').trim(),
     folderId: String(saved.folderId || '').trim(),
@@ -25450,6 +25472,19 @@ function _getGoogleDriveSettings() {
       ? saved.codeField : 'auto',
     makePublic: Boolean(saved.makePublic)
   };
+}
+
+/* Надёжное сохранение: localStorage (2 ключа) + IndexedDB. */
+function _gdPersistSettings(settings) {
+  let ok = false;
+  try {
+    const json = JSON.stringify(settings);
+    localStorage.setItem(GOOGLE_DRIVE_SETTINGS_KEY, json);
+    localStorage.setItem(GOOGLE_DRIVE_BACKUP_KEY, json);
+    ok = true;
+  } catch (e) {}
+  try { Promise.resolve(idbSave(GOOGLE_DRIVE_BACKUP_KEY, settings)).then(() => { ok = true; }).catch(() => {}); } catch (e) {}
+  return ok;
 }
 
 function _setGoogleDriveStatus(type, message, keep = false) {
@@ -25471,41 +25506,86 @@ function loadGoogleDriveSettings() {
   const folder = document.getElementById('googleDriveFolderId');
   const field = document.getElementById('googleDriveCodeField');
   const publicBox = document.getElementById('googleDriveMakePublic');
-  if (url && document.activeElement !== url) url.value = settings.url;
-  if (folder && document.activeElement !== folder) folder.value = settings.folderId;
-  if (field) field.value = settings.codeField;
-  if (publicBox) publicBox.checked = settings.makePublic;
+  if (!_gdSettingsDirty) {
+    if (url && document.activeElement !== url) url.value = settings.url;
+    if (folder && document.activeElement !== folder) folder.value = settings.folderId;
+    if (field) field.value = settings.codeField;
+    if (publicBox) publicBox.checked = settings.makePublic;
+  }
   _gdUpdateOutboxLabel();
   return settings;
 }
 
 function saveGoogleDriveSettings(showStatus = true) {
+  // Тихий вызов (из печати, проверки и т.п.) НЕ читает поля, пока человек ничего не менял:
+  // раньше пустые поля (окно настроек не открывали) затирали сохранённые адрес и папку.
+  if (!showStatus && !_gdSettingsDirty) return _getGoogleDriveSettings();
   const urlInput = document.getElementById('googleDriveWebAppUrl');
   const folderInput = document.getElementById('googleDriveFolderId');
   const fieldInput = document.getElementById('googleDriveCodeField');
   const publicInput = document.getElementById('googleDriveMakePublic');
   const url = String(urlInput?.value || '').trim().replace(/\/+$/, '');
-  const folderId = String(folderInput?.value || '').trim();
+  let folderId = String(folderInput?.value || '').trim();
+  const fm = /\/folders\/([A-Za-z0-9_-]+)/.exec(folderId) || /[?&]id=([A-Za-z0-9_-]+)/.exec(folderId);
+  if (fm) { folderId = fm[1]; if (folderInput) folderInput.value = folderId; } // вставили ссылку на папку — берём ID
   if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\/)?$/i.test(url)) {
-    _setGoogleDriveStatus('error', 'URL должен быть адресом опубликованного Web App вида https://script.google.com/macros/s/.../exec');
-    urlInput?.focus();
-    return null;
+    if (showStatus) {
+      _setGoogleDriveStatus('error', 'URL должен быть адресом опубликованного Web App вида https://script.google.com/macros/s/.../exec');
+      urlInput?.focus();
+      return null;
+    }
+    return _getGoogleDriveSettings(); // автосохранение: неполный адрес не пишем, старый не трогаем
   }
+  const prev = _getGoogleDriveSettings();
   const settings = {
     url,
     folderId,
-    codeField: fieldInput?.value || 'auto',
-    makePublic: Boolean(publicInput?.checked)
+    codeField: fieldInput?.value || prev.codeField || 'auto',
+    makePublic: publicInput ? Boolean(publicInput.checked) : prev.makePublic
   };
-  try { localStorage.setItem(GOOGLE_DRIVE_SETTINGS_KEY, JSON.stringify(settings)); }
-  catch (e) {
+  // пустое поле при автосохранении не стирает сохранённое значение; очистить можно кнопкой «Сохранить»
+  if (!showStatus) { if (!settings.url) settings.url = prev.url; if (!settings.folderId) settings.folderId = prev.folderId; }
+  if (!_gdPersistSettings(settings)) {
     _setGoogleDriveStatus('error', 'Не удалось сохранить настройки в этом браузере.');
     return null;
   }
+  _gdSettingsDirty = false;
   if (showStatus) _setGoogleDriveStatus('success', url ? 'Настройки Google Диска сохранены.' : 'Google Диск отключён.', true);
   if (showStatus && url && folderId) setTimeout(() => { _gdFlushOutbox(); }, 400);
   return settings;
 }
+
+(function _gdSettingsGuards() {
+  const IDS = ['googleDriveWebAppUrl', 'googleDriveFolderId', 'googleDriveCodeField', 'googleDriveMakePublic'];
+  let timer = null;
+  const autosave = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const s = saveGoogleDriveSettings(false);
+      if (s && (s.url || s.folderId)) _setGoogleDriveStatus('success', 'Сохранено автоматически.');
+    }, 600);
+  };
+  document.addEventListener('input', e => { if (e.target && IDS.includes(e.target.id)) { _gdSettingsDirty = true; autosave(); } });
+  document.addEventListener('change', e => { if (e.target && IDS.includes(e.target.id)) { _gdSettingsDirty = true; clearTimeout(timer); saveGoogleDriveSettings(false); } });
+  document.addEventListener('focusout', e => { if (e.target && IDS.includes(e.target.id) && _gdSettingsDirty) { clearTimeout(timer); saveGoogleDriveSettings(false); } });
+  const flush = () => { if (_gdSettingsDirty) { clearTimeout(timer); saveGoogleDriveSettings(false); } };
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+  // восстановление при запуске: если localStorage очистили — берём копию из IndexedDB
+  window.addEventListener('load', async () => {
+    try {
+      const cur = _getGoogleDriveSettings();
+      const b = await idbLoad(GOOGLE_DRIVE_BACKUP_KEY);
+      if (b && (b.url || b.folderId) && (!cur.url || !cur.folderId)) {
+        _gdPersistSettings({url: cur.url || b.url || '', folderId: cur.folderId || b.folderId || '',
+          codeField: b.codeField || cur.codeField, makePublic: Boolean(b.makePublic || cur.makePublic)});
+        loadGoogleDriveSettings();
+      } else if ((cur.url || cur.folderId) && !(b && (b.url || b.folderId))) {
+        await idbSave(GOOGLE_DRIVE_BACKUP_KEY, cur);
+      }
+    } catch (e) {}
+  });
+}());
 
 function _googleDriveRequireSettings() {
   const settings = saveGoogleDriveSettings(false) || _getGoogleDriveSettings();
@@ -26456,7 +26536,25 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
   /* ── HTML → PDF-страницы (JPEG) ── */
   const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
   const readUrl = blob => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
-  async function htmlToPages(html) {
+  function drawFooter(ctx, W, yTop, k, docNo, n, total) {
+    ctx.save();
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, yTop, W, Math.round(11 * k));
+    ctx.fillStyle = '#000'; ctx.font = `${Math.round(3.2 * k)}px Arial, Helvetica, sans-serif`; ctx.textBaseline = 'alphabetic';
+    const base = yTop + Math.round(4.2 * k), mx = Math.round(14 * k);
+    ctx.textAlign = 'left'; ctx.fillText(docNo || '', mx, base);
+    ctx.textAlign = 'center'; ctx.fillText('Внутренняя документация поступления товара', W / 2, base);
+    ctx.textAlign = 'right'; ctx.fillText(`${n} из ${total}`, W - mx, base);
+    ctx.restore();
+  }
+  async function footerStrip(docNo, n, total) {
+    const W = 1588, k = W / 210, Hs = Math.round(11 * k), c = document.createElement('canvas');
+    c.width = W; c.height = Hs;
+    drawFooter(c.getContext('2d'), W, 0, k, docNo, n, total);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
+    return {bytes: new Uint8Array(await blob.arrayBuffer()), w: W, h: Hs};
+  }
+  /* opt.footer = {docNo}: на каждом листе внизу надпись и «N из M» (M = листы документа + opt.extra листов с фото) */
+  async function htmlToPages(html, opt = {}) {
     if (typeof html2canvas === 'undefined') throw new Error('Библиотека html2canvas недоступна (нужен интернет для загрузки).');
     const fr = document.createElement('iframe');
     fr.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1123px;border:0;opacity:0;pointer-events:none;z-index:-1';
@@ -26467,13 +26565,15 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
       const d = fr.contentDocument; d.open(); d.write(clean); d.close();
       await Promise.all([...d.images].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
       await new Promise(r => setTimeout(r, 250));
-      const canvas = await html2canvas(d.body, {scale: 1.5, backgroundColor: '#ffffff', useCORS: true, logging: false, width: 794, windowWidth: 794});
-      const W = canvas.width, PH = Math.floor(W * 841.89 / 595.28), ctx = canvas.getContext('2d'), pages = [];
+      const canvas = await html2canvas(d.body, {scale: opt.footer ? 2 : 1.5, backgroundColor: '#ffffff', useCORS: true, logging: false, width: 794, windowWidth: 794});
+      const W = canvas.width, PH = Math.floor(W * 841.89 / 595.28), ctx = canvas.getContext('2d'), k = W / 210;
+      const foot = opt.footer ? Math.round(16 * k) : 0, topPx = opt.footer ? Math.round(12 * k) : 0, cvs = [];
       let y = 0;
       while (y < canvas.height) {
-        let h = Math.min(PH, canvas.height - y);
+        const offY = cvs.length ? topPx : 0, avail = PH - offY - foot;
+        let h = Math.min(avail, canvas.height - y);
         if (y + h < canvas.height) { // режем по пустой строке, чтобы не рвать строки таблицы
-          const lim = Math.floor(PH * 0.15);
+          const lim = Math.floor(avail * 0.15);
           for (let yy = y + h; yy > y + h - lim; yy--) {
             const row = ctx.getImageData(0, yy - 1, W, 1).data; let blank = true;
             for (let i = 0; i < row.length; i += 16) { if (row[i] < 245 || row[i + 1] < 245 || row[i + 2] < 245) { blank = false; break; } }
@@ -26481,11 +26581,16 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
           }
         }
         const pc = document.createElement('canvas'); pc.width = W; pc.height = PH;
-        const px = pc.getContext('2d'); px.fillStyle = '#fff'; px.fillRect(0, 0, W, PH); px.drawImage(canvas, 0, y, W, h, 0, 0, W, h);
-        const blob = await new Promise(r => pc.toBlob(r, 'image/jpeg', 0.88));
-        pages.push({imgs: [{bytes: new Uint8Array(await blob.arrayBuffer()), w: W, h: PH, x: 0, y: 0, cw: 595.28, ch: 841.89}], texts: []});
-        y += h;
+        const px = pc.getContext('2d'); px.fillStyle = '#fff'; px.fillRect(0, 0, W, PH); px.drawImage(canvas, 0, y, W, h, 0, offY, W, h);
+        cvs.push(pc); y += h;
       }
+      const total = cvs.length + (opt.extra || 0), pages = [];
+      for (let i = 0; i < cvs.length; i++) {
+        if (opt.footer) drawFooter(cvs[i].getContext('2d'), W, PH - Math.round(11 * k), k, opt.footer.docNo, i + 1, total);
+        const blob = await new Promise(r => cvs[i].toBlob(r, 'image/jpeg', 0.9));
+        pages.push({imgs: [{bytes: new Uint8Array(await blob.arrayBuffer()), w: W, h: PH, x: 0, y: 0, cw: 595.28, ch: 841.89}], texts: []});
+      }
+      pages.total = total;
       return pages;
     } finally { fr.remove(); }
   }
@@ -26498,8 +26603,92 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     return _googleDriveFetch(settings.url, {method: 'POST', body: f});
   }
 
+  /* ── B-Ware: листы документа (с нижней надписью и «N из M») + листы с фото и QR ── */
+  const PRINT_CSS = '<style>@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.pg,.sheet{display:block;width:210mm;height:296.5mm;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child,.sheet:last-child{page-break-after:auto;break-after:auto}.sheet{position:relative;font-family:Arial,Helvetica,sans-serif;color:#000}</style>';
+  const pageImgsHtml = pages => pages.map(p => `<img class="pg" src="data:image/jpeg;base64,${b64(p.imgs[0].bytes)}">`).join('');
+  const printShell = (title, body) => `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${PRINT_CSS}</head><body>${body}</body></html>`;
+  function photoPageCount(n, hasQr) { // как в warehouseBwareLayout: 12 фото на лист; если на последнем >9 — QR на отдельном листе
+    if (!n) return 0;
+    const p = Math.ceil(n / 12), last = n - (p - 1) * 12;
+    return last > 9 && hasQr ? p + 1 : p;
+  }
+  function photoPagesHtml(urls, qrData, startNo, total, docNo) {
+    const chunks = [];
+    for (let i = 0; i < urls.length; i += 12) chunks.push(urls.slice(i, i + 12));
+    if (qrData && chunks.length && chunks[chunks.length - 1].length > 9) chunks.push([]);
+    return chunks.map((c, i) => {
+      const last = i === chunks.length - 1;
+      const grid = c.length ? `<div style="position:absolute;left:10mm;right:10mm;top:10mm;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:67mm;gap:3mm">${
+        c.map(u => `<div style="display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${u}" style="max-width:100%;max-height:100%"></div>`).join('')}</div>` : '';
+      const qr = last && qrData ? `<div style="position:absolute;left:10mm;top:${c.length ? 234.5 : 10}mm;display:flex;align-items:center;gap:4mm;font-size:11pt"><img src="${qrData}" style="width:38mm;height:38mm"><span>Scan QR to download this PDF</span></div>` : '';
+      const foot = `<div style="position:absolute;left:14mm;right:14mm;bottom:5mm;display:grid;grid-template-columns:1fr auto 1fr;font-size:8.5pt"><span>${esc(docNo)}</span><span>Внутренняя документация поступления товара</span><span style="text-align:right">${startNo + i} из ${total}</span></div>`;
+      return `<section class="sheet">${grid}${qr}${foot}</section>`;
+    }).join('');
+  }
+  window.warehouseBwarePrintHtml = async function (html, docNo, driveId, date) {
+    let h = html;
+    if (driveId) {
+      const qb = await window.warehouseQrJpeg(`https://drive.google.com/uc?export=download&id=${driveId}`);
+      h = addBlock(h, qrBlock('data:image/jpeg;base64,' + b64(qb), docNo, date || ''));
+    }
+    const pages = await htmlToPages(h, {footer: {docNo}, extra: 0});
+    return printShell(docNo, pageImgsHtml(pages));
+  };
+  async function publishBware(opt) {
+    const now = new Date(), date = opt.date || fmtDate(now);
+    const photos = Array.isArray(opt.photos) ? opt.photos : [], withPhotos = photos.length > 0;
+    const docNo = opt.docNo || `BW-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const fileName = `${docNo}.pdf`;
+    const urls = await Promise.all(photos.map(p => readUrl(p.blob)));
+    let id = '', qrBytes = null, err = '', settings = null, pages = null;
+    try {
+      if (navigator.onLine === false) throw new Error('Нет сети.');
+      settings = _googleDriveRequireSettings();
+      const res = await dpost(settings, {action: 'pdfReserve', fileName});
+      id = res.id || res.file?.id;
+      if (!id) throw new Error('Google Apps Script не вернул ID файла (обновите скрипт и версию развёртывания).');
+      qrBytes = await window.warehouseQrJpeg(`https://drive.google.com/uc?export=download&id=${id}`);
+    } catch (e) { err = e?.message || String(e); id = ''; qrBytes = null; }
+    let qrData = qrBytes ? 'data:image/jpeg;base64,' + b64(qrBytes) : '';
+    const render = async () => {
+      const docHtml = withPhotos || !qrData ? opt.html : addBlock(opt.html, qrBlock(qrData, docNo, date));
+      pages = await htmlToPages(docHtml, {footer: {docNo}, extra: withPhotos ? photoPageCount(photos.length, !!qrData) : 0});
+    };
+    try { await render(); }
+    catch (e) {
+      return {html: withPhotos ? addBlock(opt.html, photoSheet(urls, '')) : opt.html, storeHtml: opt.html, docNo,
+        driveId: '', driveUrl: '', previewUrl: '', error: err || e?.message || String(e)};
+    }
+    if (id && qrBytes) {
+      try {
+        let pdfPages = pages;
+        if (withPhotos) {
+          for (const ph of photos) ph.bytes = new Uint8Array(await ph.blob.arrayBuffer());
+          const pp = window.warehouseBwareLayout(photos, qrBytes, {id: docNo, date});
+          for (let i = 0; i < pp.length; i++) {
+            pp[i].texts = pp[i].texts.filter(t => t.s.indexOf(docNo) !== 0);
+            const f = await footerStrip(docNo, pages.length + i + 1, pages.total);
+            pp[i].imgs.push({bytes: f.bytes, w: f.w, h: f.h, x: 0, y: 0, cw: 595.28, ch: 595.28 * f.h / f.w});
+          }
+          pdfPages = pages.concat(pp);
+        }
+        const pdf = window.warehouseBuildPdf(pdfPages);
+        await dpost(settings, {action: 'pdfFinalize', id, fileName, mimeType: 'application/pdf',
+          contentBase64: await _googleDriveFileToBase64(new File([pdf], fileName, {type: 'application/pdf'}))});
+        try { _gdFlushOutbox().catch(() => {}); } catch (e) {}
+      } catch (e) { // загрузка не удалась — QR вести будет в пустоту, печатаем без него
+        err = e?.message || String(e); id = ''; qrBytes = null; qrData = '';
+        try { await render(); } catch (e2) {}
+      }
+    }
+    const body = pageImgsHtml(pages) + (withPhotos ? photoPagesHtml(urls, qrData, pages.length + 1, pages.total, docNo) : '');
+    return {html: printShell(docNo, body), storeHtml: opt.html, docNo, driveId: id,
+      driveUrl: id ? `https://drive.google.com/file/d/${id}/view` : '', previewUrl: id ? `https://drive.google.com/file/d/${id}/preview` : '', error: err};
+  }
+
   /* Публикация: резерв файла на Диске → QR → PDF (страницы документа + лист с фото и QR) → загрузка. */
   window.warehouseDocsPublish = async function (opt) {
+    if (opt.type === 'bware') return publishBware(opt);
     const now = new Date(), date = opt.date || fmtDate(now);
     const photos = Array.isArray(opt.photos) ? opt.photos : [];
     const docNo = opt.docNo || `${PREFIX[opt.type] || 'DOC'}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
@@ -26538,7 +26727,7 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     const pub = await window.warehouseDocsPublish({html, docNo: rec.docNo, date: rec.date, type: rec.type, photos: rec.photos});
     try {
       win.document.open(); win.document.write(pub.html); win.document.close(); win.focus();
-      setTimeout(() => { try { win.print(); } catch (e) {} }, (rec.photos && rec.photos.length) ? 800 : 300);
+      setTimeout(() => { try { win.print(); } catch (e) {} }, ((rec.photos && rec.photos.length) || rec.type === 'bware') ? 1200 : 300);
     } catch (e) {}
     try {
       await window.warehouseDocsAdd({type: rec.type, title: rec.title, subtitle: rec.subtitle, html: pub.storeHtml, docNo: pub.docNo,
@@ -26608,13 +26797,15 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
     window.closeDocumentDetail();
     $('documentsModal')?.classList.remove('open');
   };
-  window.printStoredDocument = function (id) {
+  window.printStoredDocument = async function (id) {
     const doc = (docs || []).find(item => item.id === id);
     if (!doc) return;
     const win = window.open('', '_blank');
     if (!win) { window.alert('Разрешите открытие окна печати.'); return; }
-    win.document.open(); win.document.write(doc.html); win.document.close();
-    win.focus(); setTimeout(() => win.print(), 300);
+    let html = doc.html;
+    if (doc.type === 'bware') { try { html = await window.warehouseBwarePrintHtml(doc.html, doc.docNo, doc.driveId, doc.date); } catch (e) {} }
+    win.document.open(); win.document.write(html); win.document.close();
+    win.focus(); setTimeout(() => win.print(), doc.type === 'bware' ? 900 : 300);
   };
   window.deleteStoredDocument = async function (id) {
     clearTimeout(confirmTimer);
@@ -27130,25 +27321,57 @@ window.closeReceiveHub = function () {
     });
     box.scrollLeft = box.scrollWidth;
   }
+  async function waitVideo(v, ms) { // ждём реальные кадры, а не только открытый поток
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      if (v.videoWidth > 0 && v.readyState >= 2) return true;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    return false;
+  }
+  function frameIsBlack(v) {
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = 16;
+      const x = c.getContext('2d'); x.drawImage(v, 0, 0, 16, 16);
+      const d = x.getImageData(0, 0, 16, 16).data; let sum = 0;
+      for (let k = 0; k < d.length; k += 4) sum += d[k] + d[k + 1] + d[k + 2];
+      return sum / (256 * 3) < 3;
+    } catch (e) { return false; }
+  }
   async function startStream() {
     stopStream();
     const camId = (function () { try { return localStorage.getItem('bi_cam_id') || ''; } catch (e) { return ''; } })();
+    const camLabel = (function () { try { return localStorage.getItem('bi_cam_label') || ''; } catch (e) { return ''; } })();
     const opts = {width: {ideal: 1920}};
-    const gum = c => navigator.mediaDevices.getUserMedia({video: c, audio: false});
-    try {
+    const tries = [];
+    if (camId) tries.push({video: {deviceId: {exact: camId}, ...opts}, sel: true});
+    if (camLabel) { // id камеры в WebView мог измениться — ищем выбранную камеру по названию
       try {
-        // камера, выбранная в настройках; если её нет — основная
-        st.stream = await gum(camId ? {deviceId: {exact: camId}, ...opts} : {facingMode: {ideal: 'environment'}, ...opts});
-      } catch (e1) {
-        if (!camId) throw e1;
-        say('Выбранная камера недоступна, использую основную.', 'error');
-        st.stream = await gum({facingMode: {ideal: 'environment'}, ...opts});
-      }
-      const v = $('bwarePhotoVideo'); v.srcObject = st.stream; await v.play();
-    } catch (e) {
-      if (st.mode === 'scan') { $('bwarePhotoModal').style.display = 'none'; $('bwareCameraInput')?.click(); return; }
-      say('Нет доступа к камере: ' + (e?.message || e), 'error');
+        const dev = (await navigator.mediaDevices.enumerateDevices()).find(d => d.kind === 'videoinput' && d.label === camLabel && d.deviceId !== camId);
+        if (dev) tries.push({video: {deviceId: {exact: dev.deviceId}, ...opts}, sel: true});
+      } catch (e) {}
     }
+    tries.push({video: {facingMode: {ideal: 'environment'}, ...opts}, sel: false});
+    tries.push({video: true, sel: false});
+    const v = $('bwarePhotoVideo');
+    let lastErr = null, fellBack = false;
+    for (let n = 0; n < tries.length; n++) {
+      const last = n === tries.length - 1;
+      try {
+        st.stream = await navigator.mediaDevices.getUserMedia({...tries[n], audio: false});
+        v.srcObject = st.stream; await v.play().catch(() => {});
+        const ok = await waitVideo(v, 2500);
+        if (ok && !last) { await new Promise(r => setTimeout(r, 600)); if (frameIsBlack(v)) throw new Error('Камера выдаёт чёрный кадр.'); }
+        if (!ok && !last) throw new Error('Камера не отдаёт кадры.');
+        say(fellBack && camId ? 'Выбранная камера недоступна, использую другую.' : '');
+        return;
+      } catch (e) {
+        lastErr = e; fellBack = true; stopStream(); v.srcObject = null;
+        await new Promise(r => setTimeout(r, 500)); // даём камере освободиться
+      }
+    }
+    if (st.mode === 'scan') { $('bwarePhotoModal').style.display = 'none'; $('bwareCameraInput')?.click(); return; }
+    say('Нет доступа к камере: ' + (lastErr?.message || lastErr), 'error');
   }
   function setMode(m) {
     st.mode = m;
