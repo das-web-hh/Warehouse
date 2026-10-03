@@ -3023,15 +3023,15 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 </div>
 
 <!-- ═══ ПРИНЯТЬ ТОВАРЫ (список) ═══ -->
-<div class="rh-modal" id="receiveHubModal" role="dialog" aria-label="Принять товары">
+<div class="rh-modal" id="receiveHubModal" role="dialog" aria-label="Приём товаров">
   <div class="modal-topbar">
-    <h2>Принять товары</h2>
-    <button class="btn-modal-close" type="button" onclick="closeReceiveHub()" aria-label="Закрыть">✕</button>
+    <h2>Приём товаров</h2>
   </div>
   <div class="rh-list">
-    <button type="button" class="rh-row" onclick="openReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 10 4l7 3.5v7L10 18l-7-3.5z"/><path d="M3 7.5 10 11l7-3.5"/><path d="M10 11v7"/><path d="M20 7v6M17 10h6"/></svg></span><span class="rh-label">Приём товаров - вручную</span></button>
-    <button type="button" class="rh-row" onclick="openNameReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.5-1.6 1.7-2.4 3-2.4s2.5.8 3 2.4M14 10h4M14 14h4"/></svg></span><span class="rh-label">Приём товаров по называниями</span></button>
-    <button type="button" class="rh-row" onclick="openAutoReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></span><span class="rh-label">Автоприём</span></button>
+    <button type="button" class="rh-row" id="rhUnifiedRow" style="display:none" onclick="openUnifiedReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 10 4l7 3.5v7L10 18l-7-3.5z"/><path d="M3 7.5 10 11l7-3.5"/><path d="M10 11v7"/><path d="M20 7v6M17 10h6"/></svg></span><span class="rh-label">Приём товаров</span></button>
+    <button type="button" class="rh-row" data-rcv-old="1" onclick="openReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 10 4l7 3.5v7L10 18l-7-3.5z"/><path d="M3 7.5 10 11l7-3.5"/><path d="M10 11v7"/><path d="M20 7v6M17 10h6"/></svg></span><span class="rh-label">Приём товаров - вручную</span></button>
+    <button type="button" class="rh-row" data-rcv-old="1" onclick="openNameReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.5-1.6 1.7-2.4 3-2.4s2.5.8 3 2.4M14 10h4M14 14h4"/></svg></span><span class="rh-label">Приём товаров по называниями</span></button>
+    <button type="button" class="rh-row" data-rcv-old="1" onclick="openAutoReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></span><span class="rh-label">Автоприём</span></button>
     <button type="button" class="rh-row" onclick="openBwareReceive()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><path d="M12 12v9"/><path d="M7.5 5.3 16.5 9.8"/></svg></span><span class="rh-label">Приём B-Ware</span></button>
     <button type="button" class="rh-row" onclick="openBarcodePlanning()"><span class="rh-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 13 2 2 4-4"/></svg></span><span class="rh-label">Приём по заданию</span></button>
   </div>
@@ -3041,14 +3041,12 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="rh-modal docs-modal" id="documentsModal" role="dialog" aria-label="Документы">
   <div class="modal-topbar">
     <h2>Документы</h2>
-    <button class="btn-modal-close" type="button" onclick="closeDocuments()" aria-label="Закрыть">✕</button>
   </div>
   <div class="rh-list docs-list" id="documentsList"></div>
 </div>
 <div class="rh-modal docs-modal" id="documentDetailModal" role="dialog" aria-label="Документ">
   <div class="modal-topbar">
     <h2 id="docDetailTitle">Документ</h2>
-    <button class="btn-modal-close" type="button" onclick="closeDocumentDetail()" aria-label="Закрыть">✕</button>
   </div>
   <div class="docs-detail" id="docDetailBody"></div>
 </div>
@@ -3144,8 +3142,8 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
         <path d="M10 11v7"/>
         <path class="receive-plus" d="M20 7v6"/>
         <path class="receive-plus" d="M17 10h6"/>
-      </svg></span>
-      <span class="quick-action-label">Принять товары</span>
+      </svg><img class="qa-bg-img" alt="" src="data:image/webp;base64,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"></span>
+      <span class="quick-action-label">Приём товаров</span>
     </button>
     <button class="quick-action red" onclick="openInventory()">
       <span class="quick-action-icon featured-app-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2D3748" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -3184,7 +3182,7 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
       <span class="quick-action-label">Импорт / Экспорт</span>
     </button>
     <button class="quick-action gray" onclick="openSettings()">
-      <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+      <span class="quick-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg></span>
        <span class="quick-action-label">Настройки</span>
      </button>
      <button class="quick-action blue" onclick="openLinkTool()">
@@ -3216,11 +3214,43 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   </div>
 </div>
 
+
+<style id="nrStartRedesign">
+.name-receive-modal{--nrs-card:#ffffff;--nrs-text:#1e293b;--nrs-muted:#64748b;--nrs-border:#e2e8f0;--nrs-primary:#2563eb;--nrs-bg:#f8fafc;--nrs-zone:#cbd5e1;--nrs-soft:#f1f5f9;}
+body[data-theme="dark"] .name-receive-modal{--nrs-card:#14263a;--nrs-text:#f3f6f8;--nrs-muted:#9fb0c3;--nrs-border:#243a52;--nrs-primary:#74a8ff;--nrs-bg:#0b1622;--nrs-zone:#3a5675;--nrs-soft:#1a2f4a;}
+html body .name-receive-modal #nrScreenStart{align-items:stretch;padding:16px 16px 110px;gap:0;background:var(--nrs-bg);}
+html body .name-receive-modal .nr-body{background:var(--nrs-bg);}
+.nr-import-zone{position:relative;background:var(--nrs-card);border:2px dashed var(--nrs-zone);border-radius:16px;padding:20px;text-align:center;margin:0 0 16px;transition:all .2s;}
+.nr-import-zone:active{border-color:var(--nrs-primary);background:var(--nrs-soft);}
+.nr-import-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0;}
+.nr-import-icon{font-size:28px;margin-bottom:6px;display:inline-block;}
+.nr-import-title{font-size:15px;font-weight:600;color:var(--nrs-text);margin-bottom:4px;}
+.nr-import-sub{font-size:12px;color:var(--nrs-muted);}
+html body .name-receive-modal #nrScreenStart .nr-status{width:100%;margin:0 0 12px;}
+html body .name-receive-modal #nrScreenStart .nr-registry{width:100%;margin:0 0 12px;}
+html body .name-receive-modal #nrScreenStart .nr-registry-title{margin:0 0 8px;font-size:12px;font-weight:700;color:var(--nrs-muted);text-transform:uppercase;letter-spacing:.5px;}
+html body .name-receive-modal #nrScreenStart .nr-registry-count{background:var(--nrs-border);color:var(--nrs-muted);font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;}
+html body .name-receive-modal #nrScreenStart .nr-registry-list{gap:12px;}
+html body .name-receive-modal #nrScreenStart .nr-registry-empty{background:var(--nrs-card);border:1px dashed var(--nrs-zone);color:var(--nrs-muted);border-radius:16px;}
+html body .name-receive-modal #nrScreenStart .nr-registry-swipe{border-radius:16px;}
+html body .name-receive-modal #nrScreenStart .nr-registry-card{background:var(--nrs-card);color:var(--nrs-text);border:1px solid var(--nrs-border);border-radius:16px;padding:16px;min-height:0;box-shadow:0 4px 12px rgba(0,0,0,.04);}
+html body .name-receive-modal #nrScreenStart .nr-registry-card:active{background:var(--nrs-soft);}
+html body .name-receive-modal #nrScreenStart .nr-registry-card-head{align-items:flex-start;}
+html body .name-receive-modal #nrScreenStart .nr-registry-sender{font-size:16px;font-weight:600;white-space:normal;overflow-wrap:anywhere;}
+html body .name-receive-modal #nrScreenStart .nr-registry-order{margin-top:2px;font-size:14px;font-weight:400;letter-spacing:0;color:var(--nrs-primary);font-family:monospace;}
+html body .name-receive-modal #nrScreenStart .nr-registry-status{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;background:#fef3c7;color:#a16207;}
+html body .name-receive-modal #nrScreenStart .nr-registry-status.complete{background:#dcfce7;color:#15803d;}
+html body .name-receive-modal #nrScreenStart .nr-registry-meta{gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid var(--nrs-border);font-size:12px;color:var(--nrs-muted);}
+.nr-history-card{width:100%;background:var(--nrs-card);color:var(--nrs-text);border:1px solid var(--nrs-border);border-radius:16px;padding:14px;font:600 14px/1.2 inherit;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin:0;}
+.nr-history-card:active{background:var(--nrs-soft);}
+.nr-fab-camera{display:none;position:absolute;right:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:68px;height:68px;border-radius:50%;border:0;align-items:center;justify-content:center;font-size:30px;color:#fff;background:linear-gradient(135deg,#f97316,#ea580c);box-shadow:0 10px 25px rgba(249,115,22,.45);cursor:pointer;z-index:20;}
+.name-receive-modal.nr-on-start .nr-fab-camera{display:flex;}
+.nr-fab-camera:active{transform:scale(.96);}
+</style>
 <!-- ═══ NAME RECEIVING (Web7 integrated window) ═══ -->
 <div class="fullscreen-modal name-receive-modal" id="nameReceiveModal" aria-label="Приём товаров по наименованиям">
   <div class="nr-header">
-    <button type="button" id="nrBackButton" onclick="nrBack()" aria-label="Назад">‹</button>
-    <h2 id="nrTitle">Приём товаров по наименованиям</h2>
+    <h2 id="nrTitle">Приём товаров</h2>
     <div class="nr-header-meta" id="nrHeaderMeta" aria-live="polite">
       <span class="nr-hm" id="nrHmOrder"></span><span class="nr-hm" id="nrHmDate"></span>
       <span class="nr-hm" id="nrHmCount"></span><span class="nr-hm" id="nrHmPct"></span>
@@ -3234,26 +3264,28 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
       <span id="nrReceiveProgressCount">0/0 позиций</span>
     </div>
   </div>
+  <button class="nr-fab-camera" id="nrFabCamera" type="button" onclick="openNrCamera()" title="Снять документ" aria-label="Снять документ">📷</button>
   <div class="nr-body">
     <section class="nr-screen nr-start active" id="nrScreenStart">
-      <div class="nr-start-title">Приём товаров по наименованиям</div>
-       <div class="nr-start-subtitle">Загрузите PDF-накладную, Excel или снимите несколько страниц камерой для распознавания.</div>
       <input class="nr-file-input" id="nrExcelInput" type="file" accept=".xlsx,.xls,.csv" onchange="nrHandleFile(this)">
       <input class="nr-file-input" id="nrPdfInput" type="file" accept="application/pdf,.pdf" multiple onchange="nrHandlePdfFile(this)">
-      <button class="nr-main-btn" type="button" onclick="document.getElementById('nrExcelInput').click()">📂 Выбрать Excel файл</button>
-      <button class="nr-main-btn" type="button" onclick="document.getElementById('nrPdfInput').click()">📄 Выбрать PDF-накладную</button>
-      <button class="nr-camera-btn" type="button" onclick="openNrCamera()">📷 Снимок</button>
-      <button class="nr-camera-btn nr-history-btn" type="button" onclick="openNrHistory2()">🕘 История</button>
+      <div class="nr-import-zone">
+        <input class="nr-import-input" id="nrImportInput" type="file" multiple accept=".xlsx,.xls,.csv,.pdf,application/pdf" onchange="nrHandleImport(this)" aria-label="Выбрать файл">
+        <div class="nr-import-icon">📁</div>
+        <div class="nr-import-title">Выбрать файл</div>
+        <div class="nr-import-sub">Excel или PDF</div>
+      </div>
       <div class="nr-status" id="nrStartStatus" role="status" aria-live="polite"></div>
       <div class="nr-registry" id="nrRegistry">
         <div class="nr-registry-title">
-          <span>Реестр сканирований</span>
+          <span>Текущая сессия приёма</span>
           <span class="nr-registry-count" id="nrRegistryCount">0</span>
         </div>
         <div class="nr-registry-list" id="nrRegistryList">
           <div class="nr-registry-empty" id="nrRegistryEmpty">Здесь появятся успешно распознанные накладные.</div>
         </div>
       </div>
+      <button class="nr-history-card" type="button" onclick="openNrHistory2()"><span>🕒</span> История сканирований</button>
     </section>
     <section class="nr-screen" id="nrScreenList">
       <div id="nrSnapshot2Progress" style="display:none;">
@@ -3340,7 +3372,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal name-receive-modal bware-modal" id="bwareReceiveModal"
   aria-label="Приём B-Ware">
   <div class="nr-header bware-header">
-    <button type="button" onclick="closeBwareReceive()" aria-label="Назад">‹</button>
     <h2>Приём B-Ware</h2>
     <button type="button" class="bware-history-button" onclick="openBwareHistory()" aria-label="История B-Ware">История</button>
     <button type="button" class="bware-next-button" id="bwareNextButton"
@@ -3407,7 +3438,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   aria-label="История B-Ware">
   <div class="modal-topbar">
     <h2>История B-Ware</h2>
-    <button class="btn-modal-close" type="button" onclick="closeBwareHistory()" aria-label="Закрыть">✕</button>
   </div>
   <div class="bware-history-list" id="bwareHistoryList"></div>
 </div>
@@ -3417,7 +3447,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   <div class="nr-camera-viewfinder">
     <video id="nrCameraVideo" autoplay playsinline muted></video>
     <div class="nr-camera-topbar">
-      <button class="nr-camera-close" type="button" onclick="closeNrCamera()" aria-label="Закрыть">✕</button>
       <div class="nr-camera-counter" id="nrCameraCounter">0 кадров</div>
     </div>
     <div class="nr-camera-message" id="nrCameraMessage" role="status" aria-live="polite"></div>
@@ -3616,7 +3645,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <!-- ═══ INVENTORY / STORAGE LOCATIONS ═══ -->
 <div class="fullscreen-modal inventory-modal" id="inventoryModal">
   <div class="modal-topbar">
-    <button class="btn-modal-close inventory-close-left" onclick="closeInventory()" aria-label="Закрыть">✕</button>
     <h2 data-i18n="inventoryTitle">Инвентаризация</h2>
     <div class="inventory-topbar-spacer" aria-hidden="true"></div>
   </div>
@@ -3822,7 +3850,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   onclick="if(event.target===this)closeInventoryImport()">
   <div class="modal-topbar">
     <h2>📥 Импорт Excel в строки</h2>
-    <button class="btn-modal-close" onclick="closeInventoryImport()">✕</button>
   </div>
   <div class="modal-scroll-body inventory-export-body">
     <div class="inventory-export-hint">Строки добавятся в выбранное место. Одинаковые товар, срок годности и адрес объединяются в одно количество.</div>
@@ -3897,10 +3924,8 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 
 <div class="fullscreen-modal barcode-session-modal" id="barcodeSessionModal">
   <div class="modal-topbar">
-    <button class="barcode-back-btn" type="button" onclick="backToBarcodePlanning()" aria-label="Назад">&lt;</button>
     <h2>Приём по заданию</h2>
     <button class="barcode-next-btn" type="button" onclick="finishBarcodeSession()">Далее</button>
-    <button class="btn-modal-close" onclick="closeBarcodeSession()">✕</button>
   </div>
   <div class="barcode-session-body">
     <div class="barcode-scan-list" id="barcodeScanList"></div>
@@ -3913,7 +3938,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 
 <div class="fullscreen-modal barcode-result-modal" id="barcodeResultModal">
   <div class="modal-topbar">
-    <button class="barcode-back-btn" type="button" onclick="backToBarcodeSession()" aria-label="Назад">&lt;</button>
     <h2>Результат сверки</h2>
     <button class="barcode-save-btn" type="button" onclick="openBarcodeOrderModal()"
       aria-label="Сохранить" title="Сохранить">💾</button>
@@ -3946,7 +3970,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="baseModal">
   <div class="modal-topbar">
     <h2 data-i18n="baseTitle">Каталог</h2>
-    <button class="btn-modal-close" onclick="closeBase()">✕</button>
   </div>
   <div class="modal-search-row">
     <input type="text" class="modal-search-input" id="baseSearchInput" placeholder="…" oninput="handleBaseLocalSearch()">
@@ -3958,7 +3981,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="linkToolModal">
   <div class="modal-topbar">
     <h2>Товар + Штрихкод</h2>
-    <button class="btn-modal-close" onclick="closeLinkTool()">✕</button>
   </div>
   <div class="modal-scroll-body" style="padding-bottom:100px;">
     <div class="link-tool-field">
@@ -4001,7 +4023,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="importModal">
   <div class="modal-topbar">
     <h2>📊 Импорт из Excel</h2>
-    <button class="btn-modal-close" onclick="closeImport()">✕</button>
   </div>
   <div id="importStatus" class="modal-status"></div>
   <div class="modal-scroll-body" style="padding-bottom:100px;">
@@ -4062,16 +4083,20 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="historyModal">
   <div class="modal-topbar">
     <h2 data-i18n="historyTitle">История</h2>
-    <button class="btn-modal-close" onclick="closeHistory()">✕</button>
   </div>
   <div class="modal-scroll-body" id="historyList"></div>
+</div>
+<div class="fullscreen-modal" id="historyBatchModal" aria-label="Приёмка">
+  <div class="modal-topbar">
+    <h2 id="hbTitle">Приёмка</h2>
+  </div>
+  <div class="modal-scroll-body" id="hbBody"></div>
 </div>
 
 <!-- ═══ TASKS MODAL (Задачи) ═══ -->
 <div class="fullscreen-modal" id="tasksModal">
   <div class="modal-topbar">
     <h2>Задачи</h2>
-    <button class="btn-modal-close" onclick="closeTasks()">✕</button>
   </div>
   <div class="modal-scroll-body" id="tasksList"></div>
 </div>
@@ -4080,7 +4105,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="profileModal">
   <div class="modal-topbar">
     <h2>Профиль</h2>
-    <button class="btn-modal-close" onclick="closeProfile()">✕</button>
   </div>
   <div class="modal-scroll-body">
     <div style="padding:14px 16px;display:flex;flex-direction:column;gap:2px;">
@@ -4100,50 +4124,33 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 
 <!-- ═══ RECEIVE MODAL (Принять) ═══ -->
 <div class="receive-modal" id="receiveModal">
-  <div class="modal-topbar">
+  <div class="rv-head">
     <h2 data-i18n="receiveTitle">Принять товар</h2>
-    <button class="barcode-plan-paste-btn" type="button"
-      onclick="openHistory()" aria-label="Открыть партии" title="Открыть партии">
-      Партии
-    </button>
-    <button class="barcode-plan-paste-btn" id="receivePasteButton" type="button"
-      onclick="pasteReceiveFromClipboard()" aria-label="Вставить из буфера" title="Вставить из буфера">
-      Вставить
-    </button>
-    <button class="btn-modal-close btn-recv-save" id="btnRecvSave"
-      onclick="startRecvAccept()" disabled style="display:none;"
-      aria-label="Сохранить приёмку" title="Сохранить приёмку">💾</button>
+    <button class="btn-modal-close btn-recv-save" id="btnRecvSave" onclick="startRecvAccept()" disabled style="display:none;" aria-label="Сохранить приёмку">💾</button>
   </div>
-  <!-- Ввод товара: поиск начинается после трёх символов, поддерживается обычный ввод и вставка -->
-  <div class="recv-search-area">
-    <label class="recv-paste-header recv-product-label" for="recvUnifiedInput">Наименование товара</label>
-    <div class="recv-search-row">
-      <textarea class="recv-search-input recv-receive-input" id="recvUnifiedInput"
-        rows="1" autocomplete="off" autocapitalize="none"
-        placeholder=""
-         oninput="scheduleRecvSearchUnified()" onkeydown="recvKeyDown(event)"
-        onpaste="setTimeout(handleReceivePaste, 0)"></textarea>
-       <button class="recv-scan-btn" type="button" onclick="openScanner('receive')"
-         aria-label="Сканировать EAN" title="Сканировать EAN">
-         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true">
-           <path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/>
-           <path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/>
-           <line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/>
-           <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
-         </svg>
-       </button>
+  <div class="rv-search">
+    <div class="recv-search-row rv-field">
+      <textarea class="recv-search-input recv-receive-input" id="recvUnifiedInput" rows="1" autocomplete="off" autocapitalize="none"
+        placeholder="Название или штрихкод" aria-label="Наименование товара"
+        oninput="scheduleRecvSearchUnified()" onkeydown="recvKeyDown(event)" onpaste="setTimeout(handleReceivePaste, 0)"></textarea>
+      <button class="recv-scan-btn" type="button" onclick="openScanner('receive')" aria-label="Сканировать EAN" title="Сканировать EAN">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/>
+          <line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
+        </svg>
+      </button>
       <div class="recv-dropdown" id="recvUnifiedDropdown"></div>
     </div>
   </div>
-  <div class="recv-pending-area">
-    <div class="recv-pending-header" id="recvPendingHeader" style="display:none;" data-i18n="recvListEmpty">Список пуст — найдите товар выше</div>
+  <div class="rv-body">
+    <div class="rv-sec" id="recvPendingHeader" data-i18n="recvListEmpty">Список пуст — найдите товар выше</div>
     <div id="recvItemList"></div>
   </div>
-  <!-- Footer -->
   <div class="recv-footer" style="display:none;">
-    <button class="btn-recv-accept" id="btnRecvAccept" onclick="startRecvAccept()" disabled style="display:none;" data-i18n="recvAcceptBtn">✅ Принять товар</button>
+    <div class="rv-bar">
+      <div class="rv-sum" id="recvSummary"></div>
+      <button class="btn-recv-accept" id="btnRecvAccept" onclick="startRecvAccept()" disabled style="display:none;" data-i18n="recvAcceptBtn">✅ Принять товар</button>
+    </div>
   </div>
 </div>
 
@@ -4238,26 +4245,19 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <!-- ═══ AUTO RECEIVE MODAL ═══ -->
 <div class="fullscreen-modal auto-receive-modal" id="autoReceiveModal">
   <div class="md3-appbar" id="autoReceiveAppbar">
-    <button class="md3-icon-btn md3-appbar__back" onclick="closeAutoReceive()" aria-label="Назад">
-      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
-    <div class="md3-appbar__title-wrap">
+    <div class="md3-appbar__title-wrap" role="button" tabindex="0" aria-label="Выбрать папку" onclick="pickAutoReceiveFolder()" style="cursor:pointer;">
       <h2 class="md3-appbar__title" data-i18n="autoReceiveTitle">Автоприем</h2>
       <span class="md3-appbar__sub" id="autoReceiveFolderName" data-i18n="arNoFolder">Папка не выбрана</span>
     </div>
+    <button class="md3-icon-btn" onclick="pickAutoReceiveFolder()" aria-label="Выбрать папку" title="Выбрать папку">
+      <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+    </button>
     <button class="md3-icon-btn" onclick="refreshAutoReceiveFiles()" aria-label="Обновить">
       <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
     </button>
-    <div class="md3-menu-wrap">
-      <button class="md3-icon-btn" onclick="toggleAutoReceiveOverflow()" aria-haspopup="true" aria-expanded="false" id="autoReceiveOverflowBtn" aria-label="Ещё">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
-      </button>
-      <div class="md3-menu" id="autoReceiveOverflowMenu" role="menu">
-        <button role="menuitem" onclick="closeAutoReceiveOverflow();startPdfConversion()">⚙️ <span data-i18n="arMenuCheckPdf">Проверить PDF</span></button>
-        <button role="menuitem" onclick="closeAutoReceiveOverflow();toggleAutoReceiveServerSettings()">🖥️ <span data-i18n="arMenuServer">Сервер</span></button>
-        <button role="menuitem" id="autoReceiveChatBtn" onclick="closeAutoReceiveOverflow();openGeminiChat()">💬 <span data-i18n="autoReceiveChat">Чат</span></button>
-      </div>
-    </div>
+    <button class="md3-icon-btn" id="autoReceiveChatBtn" onclick="openGeminiChat()" aria-label="Чат" title="Чат">
+      <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+    </button>
   </div>
   <div class="gemini-limit-bar" aria-label="Дневной расход токенов">
     <div class="gemini-limit-bar-fill" id="autoReceiveTokenBar"></div>
@@ -4310,7 +4310,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <!-- ═══ GEMINI CHAT MODAL ═══ -->
 <div class="gemini-chat-modal" id="geminiChatModal" aria-label="Чат с Gemini">
   <div class="modal-topbar">
-    <button class="gemini-chat-back" type="button" onclick="closeGeminiChat()" aria-label="Назад">‹</button>
     <h2>Чат с Gemini</h2>
   </div>
   <div class="gemini-limit-bar" aria-label="Дневной расход токенов">
@@ -4411,7 +4410,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="exportExcelModal">
   <div class="modal-topbar">
     <h2 data-i18n="exportExcelTitle">Экспорт в Excel</h2>
-    <button class="btn-modal-close" onclick="closeExportExcel()">✕</button>
   </div>
   <div class="modal-scroll-body" id="exportDateList"></div>
   <div class="modal-footer-fixed" style="display:flex;flex-direction:column;gap:8px;">
@@ -4424,7 +4422,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="inventoryExportModal">
   <div class="modal-topbar">
     <h2>Экспорт</h2>
-    <button class="btn-modal-close" onclick="closeInventoryExport()">✕</button>
   </div>
   <div class="modal-scroll-body inventory-export-body">
     <div class="inventory-export-hint">Выберите дату сканирования. Просроченные до 11.2026 будут на отдельном листе.</div>
@@ -4614,7 +4611,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
       <div id="piModalName" style="font-size:17px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
       <div id="piModalMeta" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px;"></div>
     </div>
-    <button class="btn-modal-close" onclick="closeProductInfoModal()">✕</button>
   </div>
   <div style="padding:10px 16px 4px;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;" data-i18n="historyArrivals">История приёмок</div>
   <div class="modal-scroll-body" id="piArrivalsList" style="padding-top:4px;"></div>
@@ -4623,12 +4619,10 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <!-- ═══ CARD FILTER MODAL (товары по дате / отправителю / заказу) ═══ -->
 <div class="fullscreen-modal" id="cardFilterModal">
   <div class="modal-topbar">
-    <button class="btn-modal-back" type="button" onclick="closeCardFilterModal()" aria-label="Назад" title="Назад">‹</button>
     <div style="flex:1;min-width:0;">
       <div id="cardFilterModalTitle" style="font-size:17px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
       <div id="cardFilterModalValue" style="font-size:12px;color:rgba(255,255,255,0.58);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
     </div>
-    <button class="btn-modal-close" onclick="closeCardFilterModal()" aria-label="Закрыть">✕</button>
   </div>
   <div class="card-filter-summary" id="cardFilterModalSummary"></div>
   <div class="modal-scroll-body" id="cardFilterModalList"></div>
@@ -4646,7 +4640,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
       <span class="invoice-nav-label" id="invoiceNavLabel">1 / 1</span>
       <button class="invoice-nav-btn" id="invoiceNextBtn" type="button" onclick="invoiceNext()" aria-label="Следующая накладная">›</button>
     </div>
-    <button class="btn-close-invoice" onclick="closeInvoiceModal()">✕</button>
   </div>
   <div class="invoice-img-wrap" id="invoiceImgWrap">
     <img id="invoiceViewImg" src="" alt="">
@@ -4676,14 +4669,12 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
   <div class="scanner-hint" data-i18n="scanHint">Наведите камеру на штрихкод</div>
   <div class="scanner-cam-error" id="scannerCamError"></div>
   <button class="btn-retry-cam" id="btnRetryCam" onclick="retryScannerCam()" style="display:none;" data-i18n="retryBtn">🔄 Разрешить камеру</button>
-  <button class="btn-close-scanner" onclick="closeScanner()">✕ <span data-i18n="close">Закрыть</span></button>
 </div>
 
 <!-- ═══ DB IMPORT MODAL (импорт из JSON-бэкапа) ═══ -->
 <div class="fullscreen-modal" id="dbImportModal">
   <div class="modal-topbar">
     <h2 data-i18n="importTitle">Импорт базы</h2>
-    <button class="btn-modal-close" onclick="closeDbImport()">✕</button>
   </div>
   <div id="dbImportStatus" class="modal-status"></div>
   <div class="modal-scroll-body" style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
@@ -4734,7 +4725,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="settings-modal" id="settingsModal">
   <div class="modal-topbar">
     <h2 data-i18n="settingsMenu">Настройки</h2>
-    <button class="btn-modal-close" onclick="closeSettings()">✕</button>
   </div>
   <div class="settings-scroll">
     <div class="settings-section-label" data-i18n="appearanceMenu">Оформление</div>
@@ -4760,6 +4750,26 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
           <div class="md3-wp-hint" data-i18n="wallpaperHint">Главное окно · светлая тема</div>
         </div>
         <div class="md3-wp-picker" id="wpPicker" role="group" aria-label="Wallpaper"></div>
+      </div>
+      <div class="md3-pref-row">
+        <div>
+          <div class="md3-pref-title">Фон иконок</div>
+          <div class="md3-wp-hint">Главный экран</div>
+        </div>
+        <div class="md3-seg md3-seg--compact" role="group" aria-label="Icon background" id="iconBgSeg">
+          <button type="button" data-icon-bg="0" onclick="setIconBg(false)">Как сейчас</button>
+          <button type="button" data-icon-bg="1" onclick="setIconBg(true)">С фоном</button>
+        </div>
+      </div>
+      <div class="md3-pref-row">
+        <div>
+          <div class="md3-pref-title">Окно приёма</div>
+          <div class="md3-wp-hint">Как открывается приём товаров</div>
+        </div>
+        <div class="md3-seg md3-seg--compact" role="group" aria-label="Receive window style" id="rcvStyleSeg">
+          <button type="button" data-rcv-style="classic" onclick="setReceiveStyle('classic')">Три окна</button>
+          <button type="button" data-rcv-style="unified" onclick="setReceiveStyle('unified')">Единое окно</button>
+        </div>
       </div>
     </div>
     <!-- Google Drive is used only for photos and PDFs. Product data remains in Firebase. -->
@@ -5279,7 +5289,6 @@ body:not([data-theme="dark"]) .nrh2-meta,body:not([data-theme="dark"]) .nrh2-ev,
 <div class="fullscreen-modal" id="statsModal">
   <div class="modal-topbar">
     <h2>Инфо</h2>
-    <button class="btn-modal-close" onclick="closeInfoStats()">✕</button>
   </div>
   <div class="modal-scroll-body" id="statsBody" style="padding:0 0 30px;">
     <div id="statsContent" style="padding-top:4px;"></div>
@@ -5614,6 +5623,7 @@ const LANGS = {
    и к alert/confirm/prompt, поэтому покрывает и динамические сообщения.
 ══════════════════════════════════════════════ */
 const RU_TR_RAW = String.raw`Принять товары ¦ Receive goods ¦ Waren annehmen
+Приём товаров ¦ Receive goods ¦ Waren annehmen
 Приём товаров - вручную ¦ Receiving goods – manual ¦ Wareneingang – manuell
 Приём товаров по называниями ¦ Receiving goods by name ¦ Wareneingang nach Namen
 Автоприём ¦ Auto receiving ¦ Auto-Annahme
@@ -6302,7 +6312,14 @@ Gemini не вернул распознанные данные. ¦ Gemini did no
 ~^Озвучка: браузерная(.*)$ ¦ Voice output: browser$1 ¦ Sprachausgabe: Browser$1
 ~^ — голосов нет\. В APK не подключён Android\.speak: обновите MainActivity\.kt и пересоберите\.$ ¦ — no voices. Android.speak is not connected in the APK: update MainActivity.kt and rebuild. ¦ — keine Stimmen. Android.speak ist im APK nicht angebunden: MainActivity.kt aktualisieren und neu bauen.
 ~^, голосов: (\d+)$ ¦ , voices: $1 ¦ , Stimmen: $1
-Авто (по языку приложения) ¦ Auto (by app language) ¦ Auto (nach App-Sprache)`;
+Авто (по языку приложения) ¦ Auto (by app language) ¦ Auto (nach App-Sprache)
+Окно приёма ¦ Receiving window ¦ Annahme-Fenster
+Как открывается приём товаров ¦ How receiving opens ¦ Wie die Warenannahme öffnet
+Три окна ¦ Three windows ¦ Drei Fenster
+Единое окно ¦ One window ¦ Ein Fenster
+Вручную ¦ Manual ¦ Manuell
+По накладной ¦ By invoice ¦ Nach Lieferschein
+Авто ¦ Auto ¦ Auto`;
 const RuTr = (() => {
   const CY = /[А-Яа-яЁё]/;
   const PREFIX = /^([^A-Za-zА-Яа-яЁё0-9«"“(]+)(.+)$/u;
@@ -6862,12 +6879,102 @@ function _closeModalById(id) {
     case 'bwareReceiveModal': closeBwareReceive(); break;
     case 'documentDetailModal': closeDocumentDetail(); break;
     case 'documentsModal':    closeDocuments(); break;
+    case 'historyBatchModal': closeHistoryBatch(); break;
+    case 'receiveHubModal':   closeReceiveHub(); break;
+    case 'nameReceiveModal':  nrBack(); break;
+    case 'nrCameraModal':     closeNrCamera(); break;
+    case 'nrHistory2Modal':   closeNrHistory2(); break;
+    case 'inventoryImportModal': closeInventoryImport(); break;
+    case 'linkToolModal':     closeLinkTool(); break;
+    case 'tasksModal':        closeTasks(); break;
+    case 'profileModal':      closeProfile(); break;
+    case 'bwarePhotoModal':   bwareClosePhotos(); break;
   }
 }
+/* ── Системная кнопка «Назад» (Android): закрывает самое верхнее открытое окно любого типа ── */
+const BACK_WINDOW_SELECTOR = [
+  '.fullscreen-modal','.rh-modal','.settings-modal','.receive-modal','.info-modal','.invoice-modal','.scanner-overlay',
+  '.confirm-overlay','.qty-overlay','.sheet-overlay','.edit-overlay-modal','.attach-modal','.success-modal','.gemini-chat-modal',
+  '.app-info-modal','.menu-panel','.nr-overlay','.share-route-overlay','.inventory-address-picker-overlay',
+  '.inventory-expiry-picker-overlay','.inventory-name-modal-overlay','.inventory-edit-overlay','.inventory-merge-overlay',
+  '.gemini-key-editor-overlay','.batch-history-overlay','.camera-picker-overlay','.barcode-order-overlay','#md3LangPop',
+  '#bwarePhotoModal','[id$="Modal"]','[id$="Overlay"]','[id$="Sheet"]'
+].join(',');
+const BACK_SKIP_IDS = new Set(['menuOverlay','exitHintToast']);
+const BACK_CLOSE_BUTTONS = [
+  '#nrBackButton','.btn-modal-close','.modal-close','[data-back]','[aria-label="Назад"]','[aria-label="Закрыть"]',
+  '.nr-cancel','.nr-dialog-cancel','button[onclick*="close"]','button[onclick*="Close"]','button[onclick*="ancel"]','button[onclick*="Back"]'
+];
+const BACK_SELF_HANDLED = new Set(['nameReceiveModal','bwarePhotoModal','receiveHubModal','historyBatchModal','nrCameraModal','nrHistory2Modal','inventoryImportModal','linkToolModal','tasksModal','profileModal']);
+let _backLast = {el: null, t: 0};
+function _backIsOpen(el) {
+  if (!el || BACK_SKIP_IDS.has(el.id)) return false;
+  const cs = getComputedStyle(el);
+  if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05 || cs.pointerEvents === 'none') return false;
+  if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+  const r = el.getBoundingClientRect();
+  if (r.width < 40 || r.height < 40) return false;
+  if (r.right <= 2 || r.left >= innerWidth - 2 || r.bottom <= 2 || r.top >= innerHeight - 2) return false;
+  return true;
+}
+function _backTopWindow() {
+  const all = Array.from(document.querySelectorAll(BACK_WINDOW_SELECTOR)).filter(_backIsOpen);
+  if (!all.length) return null;
+  const z = el => { const v = parseInt(getComputedStyle(el).zIndex, 10); return isNaN(v) ? 0 : v; };
+  return all.reduce((best, el) => {
+    if (!best) return el;
+    if (el.contains(best)) return best;           // вложенное окно (диалог внутри окна) — выше
+    if (best.contains(el)) return el;
+    if (z(el) !== z(best)) return z(el) > z(best) ? el : best;
+    return (best.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) ? el : best;
+  }, null);
+}
+function _backVisible(btn) {
+  if (!btn) return false;
+  const r = btn.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 && getComputedStyle(btn).visibility !== 'hidden';
+}
+function _backClose(el) {
+  const id = el.id;
+  try {
+    if (id && typeof _closeModalById === 'function') {
+      const before = _backIsOpen(el);
+      _closeModalById(id);
+      if (BACK_SELF_HANDLED.has(id) || !_backIsOpen(el) || !before) return;
+    }
+  } catch (e) { console.warn('back: close handler failed', id, e); }
+  if (id === 'md3LangPop' && typeof closeLangPopup === 'function') { try { closeLangPopup(); return; } catch (e) {} }
+  for (const sel of BACK_CLOSE_BUTTONS) {
+    const btn = Array.from(el.querySelectorAll(sel)).find(_backVisible);
+    if (btn) { btn.click(); return; }
+  }
+  el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true})); // закрытие по клику на фон
+}
+function _backForceHide(el) {
+  el.classList.remove('open', 'show', 'active', 'visible');
+  if (el.classList.contains('nr-overlay')) el.classList.add('hidden');
+  el.style.display = 'none';
+  setTimeout(() => { el.style.display = ''; }, 400);
+}
 function tryCloseTopModal() {
+  const el = _backTopWindow();
+  if (el) {
+    const now = Date.now();
+    const repeat = _backLast.el === el && now - _backLast.t < 1500; // окно не закрылось с прошлого нажатия — прячем принудительно
+    _backLast = {el, t: now};
+    if (repeat) { _backForceHide(el); return true; }
+    _backClose(el);
+    return true;
+  }
+  // запасной вариант: прежний перечень окон с классом open
   for (const id of MODAL_CLOSE_ORDER) {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('open')) { _closeModalById(id); return true; }
+    const w = document.getElementById(id);
+    if (w && w.classList.contains('open')) { _closeModalById(id); return true; }
+  }
+  // главный экран: со второй страницы — на первую
+  const pager = document.getElementById('homeScreenPages');
+  if (pager && pager.clientWidth && pager.scrollLeft > pager.clientWidth / 2 && typeof goHomeMenuPage === 'function') {
+    goHomeMenuPage(0); return true;
   }
   return false;
 }
@@ -8914,6 +9021,7 @@ function _autoReceiveRecordFor(file, folderName = _autoReceiveCurrentFolderName(
     batchId: saved?.batchId || file?.batchId || '',
     senderName: saved?.senderName || file?.senderName || '',
     orderNumber: saved?.orderNumber || file?.orderNumber || '',
+    duplicate: Boolean(saved?.duplicate ?? file?.duplicate ?? false),
     receivedItems: Number(saved?.receivedItems ?? file?.receivedItems ?? 0),
     apiKeyId: saved?.apiKeyId || file?.apiKeyId || '',
     apiKeyIndex: Number(saved?.apiKeyIndex ?? file?.apiKeyIndex ?? -1)
@@ -8943,6 +9051,7 @@ async function _saveAutoReceiveState() {
       batchId: file.batchId,
       senderName: file.senderName,
       orderNumber: file.orderNumber,
+      duplicate: Boolean(file.duplicate),
       receivedItems: file.receivedItems,
       apiKeyId: file.apiKeyId || '',
       apiKeyIndex: Number(file.apiKeyIndex ?? -1)
@@ -9447,6 +9556,21 @@ async function _saveAutoReceiveBatch(record, sourceFile, responseText) {
     source: 'auto_receipt'
   });
 
+  // Все позиции отклонены как дубль уже сохранённого заказа: не создаём
+  // «осиротевшую» партию, а прикрепляем документ к существующему заказу.
+  if (!committed.positions && _autoReceiveOrderInHistory(parsed.orderNumber)) {
+    const attached = await _autoReceiveAttachFileToOrder(sourceFile, parsed.orderNumber);
+    if (attached) {
+      return {
+        ...parsed, ...committed,
+        batchId: attached.batchId,
+        invoiceFolderFile: attached.folderFile,
+        invoiceFolderFiles: attached.folderFile ? [attached.folderFile] : [],
+        attachedToExisting: true
+      };
+    }
+  }
+
   // Автоприём не сохраняет фотографии. Исходный документ сохраняется
   // как накладная, чтобы его можно было открыть из карточки товара.
   try {
@@ -9486,6 +9610,14 @@ async function _saveAutoReceiveBatch(record, sourceFile, responseText) {
     console.warn('auto receive batch metadata backup failed', e);
   }
 
+  // Google Диск: накладная = сырой исходный файл в формате PDF
+  // (снимок/скан превращается в PDF без обработки Python).
+  try {
+    await _gdQueueInvoiceFileForBatch(batchId, committed.batchDate || fileDate, sourceFile);
+  } catch (e) {
+    console.warn('auto receive Google Drive queue failed', e);
+  }
+
   return { ...parsed, ...committed, batchId, invoiceFolderFile, invoiceFolderFiles };
 }
 
@@ -9501,6 +9633,97 @@ async function _runAutoReceiveQueue() {
     _autoReceiveQueueRunning = false;
     _refreshAutoReceiveGlobalNotice();
   }
+}
+
+/* Предпроверка заказа: Python читает номер EB из текстового слоя PDF
+   (/extract-order, без Gemini и без OCR). Если такой заказ уже есть в
+   истории приёмок, файл не отправляется на ИИ. Сканы/фото без текстового
+   слоя номер не дают — они идут на Gemini как раньше. */
+async function _autoReceivePrecheckOrder(file) {
+  try {
+    const base = _warehousePythonBaseUrl();
+    if (!base || !file) return '';
+    const formData = new FormData();
+    formData.append('file', file, file.name || 'invoice.pdf');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 90000);
+    let response;
+    try {
+      response = await fetch(base + '/extract-order', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!response.ok) return '';
+    const payload = await response.json();
+    if (payload?.status !== 'success') return '';
+    const order = String(payload.orderNumber || '').trim();
+    return /^eb[\s_-]*no[\s_-]*data$/i.test(order) ? '' : order;
+  } catch (e) {
+    // Любая ошибка предпроверки не должна блокировать приём:
+    // тогда файл просто идёт на ИИ.
+    return '';
+  }
+}
+
+function _autoReceiveOrderInHistory(orderNumber) {
+  if (/^eb[\s_-]*no[\s_-]*data$/i.test(String(orderNumber || '').trim())) return false;
+  const normalized = _normalizeOrderNumber(orderNumber);
+  if (!normalized) return false;
+  return (Array.isArray(arrivals) ? arrivals : []).some(a => {
+    const raw = String(a?.orderNumber || '').trim();
+    return raw && !/^eb[\s_-]*no[\s_-]*data$/i.test(raw)
+      && _normalizeOrderNumber(raw) === normalized;
+  });
+}
+
+/* Документ пришёл позже, а заказ уже есть в базе: файл не теряем, а
+   прикрепляем к существующей партии. Локально лежит исходный файл, на
+   Google Диск уходит он же в формате PDF. Gemini не вызывается. */
+async function _autoReceiveAttachFileToOrder(sourceFile, orderNumber) {
+  if (!sourceFile) return null;
+  const normalized = _normalizeOrderNumber(orderNumber);
+  const target = (Array.isArray(arrivals) ? arrivals : []).find(a =>
+    a?.batchId && _normalizeOrderNumber(a.orderNumber) === normalized
+      && !/^eb[\s_-]*no[\s_-]*data$/i.test(String(a.orderNumber || '').trim())
+  );
+  if (!target) return null;
+  const batchId = String(target.batchId);
+  const batchDate = target.date || '';
+  const safeBatch = batchId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+  const safeName = name => String(name || 'document').replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  let folderFile = '';
+  try {
+    await restoreUserFolders();
+    if (_invoiceDirHandle) {
+      const targetName = `invoice_${safeBatch}_${Date.now()}_${safeName(sourceFile.name)}`;
+      folderFile = await writeToUserFolder(_invoiceDirHandle, targetName, sourceFile) || '';
+    }
+  } catch (e) {
+    console.warn('attach: invoice folder copy failed', e);
+  }
+  try { await idbSaveBlob('invoices', batchId, sourceFile); }
+  catch (e) { console.warn('attach: invoice backup failed', e); }
+  try {
+    const prev = (await idbLoad(makeBatchKey(batchId))) || {};
+    const names = _invoiceFolderFileNames(prev);
+    if (folderFile && !names.includes(folderFile)) names.push(folderFile);
+    await idbSave(makeBatchKey(batchId), {
+      ...prev,
+      invoiceFolderFile: prev.invoiceFolderFile || folderFile || '',
+      invoiceFolderFiles: names
+    });
+  } catch (e) {
+    console.warn('attach: batch metadata update failed', e);
+  }
+  let queued = 0;
+  try { queued = await _gdQueueInvoiceFileForBatch(batchId, batchDate, sourceFile); }
+  catch (e) { console.warn('attach: Google Drive queue failed', e); }
+  return {batchId, folderFile, queued};
 }
 
 async function _runAutoReceiveQueueOnce() {
@@ -9573,6 +9796,28 @@ async function _runAutoReceiveQueueOnce() {
     return;
   }
 
+  // Предпроверка номера заказа до Gemini (см. _autoReceivePrecheckOrder).
+  const precheckOrder = await _autoReceivePrecheckOrder(file);
+  if (precheckOrder && _autoReceiveOrderInHistory(precheckOrder)) {
+    // Заказ уже в истории: на ИИ не отправляем, но документ не теряем,
+    // а прикрепляем к существующему заказу (и ставим в очередь на Диск).
+    const attached = await _autoReceiveAttachFileToOrder(file, precheckOrder);
+    await _setAutoReceiveRecord(record._key, {
+      status: 'success',
+      duplicate: true,
+      orderNumber: precheckOrder,
+      batchId: attached?.batchId || '',
+      processedAt: Date.now(),
+      nextAttemptAt: 0,
+      lastError: '',
+      quotaRetry: false,
+      lastResponse: `Заказ ${precheckOrder} уже есть в истории. Накладная добавлена к заказу, на ИИ не отправлялась.`
+    });
+    // Gemini не вызывался, поэтому минутную паузу выдерживать не нужно.
+    _scheduleAutoReceiveQueue(300);
+    return;
+  }
+
   const selectedKey = _selectGeminiKey();
   if (!selectedKey) {
     _autoReceiveConfigError = 'Все API-ключи Gemini исчерпали заданные лимиты токенов.';
@@ -9617,6 +9862,7 @@ async function _runAutoReceiveQueueOnce() {
     });
     _setAutoReceiveRecord(record._key, {
       status: 'success',
+      duplicate: Boolean(savedBatch.attachedToExisting),
       lastResponse: responseText.slice(0, 2000),
       processedAt: Date.now(),
       nextAttemptAt: 0,
@@ -13967,12 +14213,20 @@ function _autoReceiveFileIcon(fileName) {
   return '📎';
 }
 
+/* Автоприём берёт из папки только PDF и изображения PNG/JPEG. */
+function _autoReceiveFileAllowed(name, mime) {
+  const ext = String(name || '').split('.').pop().toLowerCase();
+  if (['pdf', 'png', 'jpg', 'jpeg'].includes(ext)) return true;
+  return ['application/pdf', 'image/png', 'image/jpeg'].includes(String(mime || '').toLowerCase());
+}
+
 async function _readAutoReceiveDirectory(dirHandle, parentPath = '') {
   const result = [];
   if (!dirHandle?.values) return result;
   for await (const entry of dirHandle.values()) {
     const path = parentPath ? `${parentPath}/${entry.name}` : entry.name;
     if (entry.kind === 'file') {
+      if (!_autoReceiveFileAllowed(entry.name, entry.__meta && entry.__meta.mime)) continue;
       if (entry.__meta) {
         // Android-мост: размер и дата уже пришли в списке, содержимое не читаем.
         result.push({
@@ -14121,7 +14375,9 @@ function _renderAutoReceiveFiles() {
     const meta = document.createElement('p');
     meta.className = 'md3-card__meta';
     meta.style.color = key === 'error' ? 'var(--md-error)' : key === 'waiting' ? 'var(--md-warning)' : key === 'success' ? 'var(--md-success)' : 'var(--md-primary)';
-    meta.textContent = info.label;
+    meta.textContent = (key === 'success' && file.duplicate)
+      ? `Дубликат: ${file.orderNumber || 'заказ'} уже в истории, накладная добавлена к заказу`
+      : info.label;
     main.append(name, meta);
     head.append(icon, main);
     card.append(head);
@@ -14144,6 +14400,7 @@ function _renderAutoReceiveFiles() {
 }
 
 function setAutoReceiveFilter(filter) {
+  if (filter !== 'all' && window._autoReceiveFilter === filter) filter = 'all'; // повторное нажатие снимает фильтр
   window._autoReceiveFilter = filter;
   document.querySelectorAll('#autoReceiveFilterChips .md3-chip').forEach(chip => {
     chip.classList.toggle('is-selected', chip.dataset.filter === filter);
@@ -14264,9 +14521,10 @@ async function pickAutoReceiveFolder() {
 }
 
 async function handleAutoReceiveFolderFiles(input) {
-  const selected = Array.from(input?.files || []);
-  if (!selected.length) return;
-  const firstPath = selected[0].webkitRelativePath || selected[0].name;
+  const selectedAll = Array.from(input?.files || []);
+  const selected = selectedAll.filter(f => _autoReceiveFileAllowed(f.name, f.type));
+  if (!selectedAll.length) return;
+  const firstPath = selectedAll[0].webkitRelativePath || selectedAll[0].name;
   const rootName = firstPath.includes('/') ? firstPath.split('/')[0] : 'Выбранная папка';
   _autoReceiveDirHandle = null;
   try { await idbDelete(AUTO_RECEIVE_FOLDER_KEY); } catch (e) {}
@@ -15523,6 +15781,7 @@ function renderRecvList() {
     return;
   }
   header.textContent = recvPendingItems.length + ' ' + t('items');
+  try { const sm = document.getElementById('recvSummary'); if (sm) sm.textContent = recvPendingItems.length + ' поз. · ' + recvPendingItems.reduce((a, i) => a + (parseInt(i.menge, 10) || 0), 0) + ' шт'; } catch (e) {}
   const readyToSave = recvPendingItems.every(item =>
     Math.max(0, parseInt(item.menge, 10) || 0) > 0
   );
@@ -15533,7 +15792,7 @@ function renderRecvList() {
   updateReceiveHeaderAction();
   recvPendingItems.forEach((item, idx) => {
     const row = document.createElement('div');
-    row.className = 'recv-item-row';
+    row.className = 'recv-item-row' + ((parseInt(item.menge, 10) || 0) < 1 ? ' is-zero' : '');
      const senderHtml = _receiveSenderName
        ? `<div class="recv-item-sender">${_escapeHtml(_receiveSenderName)}</div>`
        : '';
@@ -15549,8 +15808,12 @@ function renderRecvList() {
            ${_receiveOrderNumber ? `<span class="recv-item-order">Заказ: ${_escapeHtml(_receiveOrderNumber)}</span>` : ''}
          </div>` : ''}
       </div>
-      <button type="button" class="recv-item-qty" onclick="editRecvItemQty(${idx})" aria-label="Изменить количество">${item.menge}</button>
-      <button class="recv-item-del" onclick="removeRecvItem(${idx})">✕</button>`;
+      <div class="rv-step">
+        <button type="button" class="rv-step-btn" onclick="recvStep(${idx},-1)" aria-label="Меньше">−</button>
+        <button type="button" class="recv-item-qty" onclick="editRecvItemQty(${idx})" aria-label="Изменить количество">${item.menge}</button>
+        <button type="button" class="rv-step-btn" onclick="recvStep(${idx},1)" aria-label="Больше">+</button>
+      </div>
+      <button class="recv-item-del" onclick="removeRecvItem(${idx})" aria-label="Удалить">✕</button>`;
     list.appendChild(row);
   });
 }
@@ -15561,6 +15824,13 @@ function moveRecvItem(idx, dir) {
   const tmp = recvPendingItems[idx];
   recvPendingItems[idx] = recvPendingItems[newIdx];
   recvPendingItems[newIdx] = tmp;
+  renderRecvList();
+}
+
+function recvStep(idx, d) {
+  const item = recvPendingItems[idx];
+  if (!item) return;
+  item.menge = Math.max(0, (parseInt(item.menge, 10) || 0) + d);
   renderRecvList();
 }
 
@@ -15806,7 +16076,7 @@ async function _uploadReceiveSaveFilesToGoogleDrive(batchId, batchDate, orderNum
   }
 
   for (let i = 0; i < _rsPendingInvoiceFiles.length; i++) {
-    const file = _rsPendingInvoiceFiles[i];
+    const file = await _invoiceFileToPdf(_rsPendingInvoiceFiles[i]);
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
     const original = _googleDriveSafePart(file?.name || (isPdf ? 'invoice.pdf' : 'invoice.jpg'));
     const fileName = `${key}_${dateToken}_invoice_${i + 1}_${original}`;
@@ -21987,7 +22257,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const active = Boolean($('nrScreenList')?.classList.contains('active')
       || $('nrScreenReport')?.classList.contains('active'));
     const sender = String($('nrSender')?.textContent || '').trim();
-    title.textContent = active && sender && sender !== '-' ? sender : 'Приём товаров по наименованиям';
+    title.textContent = active && sender && sender !== '-' ? sender : 'Приём товаров';
     meta.classList.toggle('on', active);
     if (!active) { nrHeaderReset(); return; }
     const n = state.products.length;
@@ -22042,6 +22312,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     const next = $('nrNextButton');
     if (next) next.style.display = name === 'List' ? 'flex' : 'none';
+    $('nameReceiveModal')?.classList.toggle('nr-on-start', name === 'Start');
     if (name === 'List') {
       requestAnimationFrame(() => nrCarouselLayout(true));
     } else {
@@ -22067,6 +22338,30 @@ document.addEventListener('DOMContentLoaded', function () {
       }))
     });
   }
+  function nrSyncSaveButton() {
+    const b = $('nrSaveBatchButton');
+    if (!b) return;
+    const saved = Boolean(state.savedBatchId);
+    b.disabled = saved;
+    b.textContent = saved ? '✓ Сохранено' : '💾 Сохранить';
+  }
+  window.nrSyncSaveButton = nrSyncSaveButton;
+  window.nrHandleImport = function (input) {
+    const files = Array.from(input?.files || []);
+    if (!files.length) return;
+    const isPdf = f => /\.pdf$/i.test(f.name || '') || f.type === 'application/pdf';
+    const pdfs = files.filter(isPdf);
+    const fail = text => {
+      const el = $('nrStartStatus');
+      if (el) { el.textContent = text; el.className = 'nr-status show error'; }
+      input.value = '';
+    };
+    if (pdfs.length && pdfs.length !== files.length) return fail('Выберите либо PDF-накладные, либо один Excel-файл.');
+    if (pdfs.length) return window.nrHandlePdfFile(input);
+    if (files.length > 1) return fail('Excel: выберите один файл.');
+    window.nrHandleFile(input);
+    input.value = '';
+  };
   window.nrLoadRegistryBatch = function (record) {
     if (!record) return;
     state.activeRegistryId = String(record.id || '');
@@ -22074,8 +22369,9 @@ document.addEventListener('DOMContentLoaded', function () {
     state.originalFileName = String(record.orderNumber || 'приёмка');
     state.sourceFiles = [];
     state.sourceInvoiceFiles = [];
-    state.savedBatchId = '';
+    state.savedBatchId = String(record.savedBatchId || '');
     state.saving = false;
+    nrSyncSaveButton();
     state.highlighted = null;
     state.newIds.clear();
     $('nrSender').textContent = String(record.senderName || '-');
@@ -22708,6 +23004,7 @@ document.addEventListener('DOMContentLoaded', function () {
     state.highlighted = null;
     state.savedBatchId = '';
     state.saving = false;
+    nrSyncSaveButton();
     $('nrSender').textContent = '-';
     $('nrOrder').textContent = '-';
     $('nrDate').textContent = '-';
@@ -22805,6 +23102,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const driveSettings = typeof _getGoogleDriveSettings === 'function'
       ? _getGoogleDriveSettings()
       : {};
+    // Обработанные Python-страницы (PNG) нужны только для распознавания и
+    // остаются на устройстве. На Google Диск уходит исходная накладная
+    // (PDF), а не картинки. Фото партии добавим отдельной функцией.
+    const uploadProcessedPngToDrive = false;
     const safeBatch = String(batchId || 'batch').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
     const safeDate = typeof _googleDriveSafePart === 'function'
       ? _googleDriveSafePart(batchDate || 'no_date', 24)
@@ -22817,7 +23118,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const file = sourceFiles[index];
       // Локальная копия сохраняется даже при недоступном Google Drive.
       await idbSaveBlob('photos', batchId, file);
-      if (driveSettings.url && driveSettings.folderId && typeof _uploadOneFileToGoogleDrive === 'function') {
+      if (uploadProcessedPngToDrive && driveSettings.url && driveSettings.folderId && typeof _uploadOneFileToGoogleDrive === 'function') {
         try {
           const fileName = `${driveKey}_${safeDate}_processed_${index + 1}.png`;
           const uploaded = await _uploadOneFileToGoogleDrive(file, {
@@ -22840,31 +23141,36 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     for (let index = 0; index < sourceInvoices.length; index++) {
       const file = sourceInvoices[index];
+      // Локально остаётся исходный файл как есть.
       await idbSaveBlob('invoices', batchId, file);
-      if (driveSettings.url && driveSettings.folderId && typeof _uploadOneFileToGoogleDrive === 'function') {
+      const driveReady = Boolean(driveSettings.url && driveSettings.folderId
+        && typeof _uploadOneFileToGoogleDrive === 'function');
+      if (driveReady) {
         try {
-          const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-          const extension = isPdf
-            ? 'pdf'
-            : String(file.type || '').split('/')[1]?.replace(/[^a-z0-9]+/gi, '') || 'bin';
-          const fileName = `${driveKey}_${safeDate}_source_${index + 1}.${extension}`;
-          const uploaded = await _uploadOneFileToGoogleDrive(file, {
+          // На Google Диск — сырой исходник, снимок/скан в формате PDF.
+          const pdfFile = await _invoiceFileToPdf(file);
+          const fileName = `${driveKey}_${safeDate}_invoice_${index + 1}_${_googleDriveSafePart(pdfFile?.name || 'invoice.pdf')}`;
+          const uploaded = await _uploadOneFileToGoogleDrive(pdfFile, {
             key: driveKey,
             code: batchId,
             fileName
           }, driveSettings);
           const url = typeof _googleDriveFileUrl === 'function'
-            ? _googleDriveFileUrl(uploaded, isPdf)
+            ? _googleDriveFileUrl(uploaded, true)
             : '';
           if (url) driveInvoiceUrls.push({
             url,
-            name: uploaded?.name || file.name || fileName,
-            isPdf
+            name: uploaded?.name || pdfFile?.name || fileName,
+            isPdf: true
           });
         } catch (error) {
           driveError = error?.message || 'Google Drive недоступен';
-          console.warn('Не удалось сохранить исходный файл на Google Drive:', error);
+          console.warn('Не удалось сохранить исходную накладную на Google Drive:', error);
+          try { await _gdQueueInvoiceFileForBatch(batchId, batchDate, file); } catch (e2) {}
         }
+      } else {
+        // Диск не настроен: накладная ждёт в очереди и уйдёт позже.
+        try { await _gdQueueInvoiceFileForBatch(batchId, batchDate, file); } catch (e2) {}
       }
     }
 
@@ -22979,17 +23285,19 @@ document.addEventListener('DOMContentLoaded', function () {
          committed.batchId,
          committed.batchDate,
          orderNumber === '-' ? '' : orderNumber,
-         state.sourceFiles
+         state.sourceFiles,
+         state.sourceInvoiceFiles
        );
       state.savedBatchId = committed.batchId;
+      try { window.whSaveRecon && window.whSaveRecon(committed.batchId, state.products); } catch (e) {}
       try { window.nrHistory2 && window.nrHistory2.onSaved({driveUrls: mediaResult.driveUrls}); } catch (e) {}
-      try { window.nrTasks && window.nrTasks.onSaved(state.activeRegistryId); } catch (e) {}
+      try { window.nrTasks && window.nrTasks.onSaved(state.activeRegistryId, committed.batchId); } catch (e) {}
       if (typeof renderHistoryList === 'function') renderHistoryList();
       if (button) button.textContent = '✓ Сохранено';
        const driveNote = mediaResult.driveError
          ? ` Файлы сохранены на устройстве и уйдут на Google Диск позже (${mediaResult.driveError}).`
-         : (mediaResult.driveUrls.length ? ` PNG загружено в Google Drive: ${mediaResult.driveUrls.length}.` : '');
-       $('nrInfoText').textContent = `Партия сохранена: ${committed.positions} позиций, ${committed.totalQty} шт.${driveNote}  Партия убрана из реестра и находится в Истории 2.${navigator.onLine === false ? ' Нет связи: данные и файлы отправятся автоматически, когда появится сеть.' : ''}`;
+         : (mediaResult.driveInvoiceUrls.length ? ' Накладная (PDF) загружена в Google Drive.' : '');
+       $('nrInfoText').textContent = `Партия сохранена: ${committed.positions} позиций, ${committed.totalQty} шт.${driveNote}  Партия записана в Историю 2 и останется в реестре сканирований до конца дня.${navigator.onLine === false ? ' Нет связи: данные и файлы отправятся автоматически, когда появится сеть.' : ''}`;
       $('nrInfoOverlay').classList.remove('hidden');
     } catch (error) {
       if (button) { button.disabled = false; button.textContent = '💾 Сохранить'; }
@@ -22997,6 +23305,7 @@ document.addEventListener('DOMContentLoaded', function () {
       $('nrInfoOverlay').classList.remove('hidden');
     } finally {
       state.saving = false;
+      try { nrSyncSaveButton(); } catch (e) {}
       window.nrBusyHide && window.nrBusyHide();
     }
   };
@@ -23086,6 +23395,7 @@ document.addEventListener('DOMContentLoaded', function () {
         state.newIds.clear();
         state.savedBatchId = '';
         state.saving = false;
+        nrSyncSaveButton();
         $('nrSnapshot2Progress').style.display = 'none';
         state.products = [];
         for (let index = 3; index < rows.length; index++) {
@@ -23205,6 +23515,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ts === 'processing') return 'Распознаётся';
     if (ts === 'queued') return 'В очереди';
     if (ts === 'error') return 'Ошибка';
+    if (record?.savedBatchId) return 'Сохранено';
     return registryStatus(record) === 'complete' ? 'Принято' : 'В работе';
   }
   function registryItemCount(record) {
@@ -23270,7 +23581,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
   function mergeRegistryRecord(incoming) {
-    const existing = registry.find(item => item.key === incoming.key);
+    const existing = registry.find(item => item.key === incoming.key && !item.savedBatchId);
     if (!existing) {
       registry.unshift(incoming);
       saveRegistry();
@@ -23305,7 +23616,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const empty = $('nrRegistryEmpty');
     const count = $('nrRegistryCount');
     if (!list) return;
-    if (count) count.textContent = registry.length + '/10';
+    if (count) count.textContent = registry.filter(item => !item.savedBatchId).length + '/10';
     if (empty) empty.style.display = registry.length ? 'none' : 'block';
     list.querySelectorAll('.nr-registry-swipe').forEach(item => item.remove());
     registry.forEach(record => {
@@ -23328,15 +23639,16 @@ document.addEventListener('DOMContentLoaded', function () {
       card.addEventListener('touchend', event => window.nrRegistryTouchEnd(event, card), {passive:true});
       const head = document.createElement('div');
       head.className = 'nr-registry-card-head';
-      head.innerHTML = `<div class="nr-registry-sender">${deliveryEscape(record.senderName || 'Поставщик не указан')}</div>
-        <span class="nr-registry-status ${registryStatus(record) === 'complete' ? 'complete' : ''}">${registryStatusLabel(record)}</span>`;
+      head.innerHTML = `<div style="min-width:0"><div class="nr-registry-sender">${deliveryEscape(record.senderName || 'Поставщик не указан')}</div>
+        <div class="nr-registry-order">${deliveryEscape(record.orderNumber || 'Без номера')}</div></div>
+        <span class="nr-registry-status ${(registryStatus(record) === 'complete' || record.savedBatchId) ? 'complete' : ''}">${registryStatusLabel(record)}</span>`;
       const order = document.createElement('div');
       order.className = 'nr-registry-order';
       order.textContent = record.orderNumber || 'Без номера';
       const meta = document.createElement('div');
       meta.className = 'nr-registry-meta';
       meta.innerHTML = `<span>📄 ${Number(record.pages || 0)} стр.</span><span>📦 ${registryItemCount(record)} поз.</span>`;
-      card.append(head, order, meta);
+      card.append(head, meta);
       const task = record.task;
       if (task && task.state !== 'ready') {
         card.classList.add('nr-task-' + task.state);
@@ -25743,6 +26055,203 @@ function _googleDriveFileToBase64(file) {
   });
 }
 
+/* ══════════════════════════════════════════════
+   НАКЛАДНАЯ ДЛЯ GOOGLE ДИСКА = СЫРОЙ ИСХОДНЫЙ ФАЙЛ В ФОРМАТЕ PDF.
+   Python оптимизирует страницы только для Gemini. На Диск уходит то, что
+   было получено или снято изначально: PDF как есть; снимок/скан
+   (JPEG, PNG) заворачивается в PDF без пересжатия и без обработки.
+   ══════════════════════════════════════════════ */
+function _jpegInfo(b) {
+  if (!b || b.length < 4 || b[0] !== 0xFF || b[1] !== 0xD8) return null;
+  let orientation = 1, i = 2;
+  while (i + 4 < b.length) {
+    if (b[i] !== 0xFF) { i++; continue; }
+    const marker = b[i + 1];
+    if (marker === 0xFF) { i++; continue; }
+    if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { i += 2; continue; }
+    if (marker === 0xD9 || marker === 0xDA) break;
+    const len = (b[i + 2] << 8) | b[i + 3];
+    if (len < 2) break;
+    if (marker === 0xE1 && b[i + 4] === 0x45 && b[i + 5] === 0x78 && b[i + 6] === 0x69 && b[i + 7] === 0x66) {
+      const t = i + 10;
+      const le = b[t] === 0x49;
+      const r16 = p => le ? (b[p] | (b[p + 1] << 8)) : ((b[p] << 8) | b[p + 1]);
+      const r32 = p => le
+        ? (b[p] | (b[p + 1] << 8) | (b[p + 2] << 16)) + b[p + 3] * 16777216
+        : b[p] * 16777216 + ((b[p + 1] << 16) | (b[p + 2] << 8) | b[p + 3]);
+      try {
+        const ifd = t + r32(t + 4);
+        const n = r16(ifd);
+        for (let k = 0; k < n; k++) {
+          const e = ifd + 2 + k * 12;
+          if (r16(e) === 0x0112) { orientation = r16(e + 8) || 1; break; }
+        }
+      } catch (e) {}
+    }
+    if (marker >= 0xC0 && marker <= 0xC2) {
+      if (b[i + 4] !== 8) return null;
+      return {
+        width: (b[i + 7] << 8) | b[i + 8],
+        height: (b[i + 5] << 8) | b[i + 6],
+        components: b[i + 9],
+        orientation
+      };
+    }
+    i += 2 + len;
+  }
+  return null;
+}
+
+function _pngRawInfo(b) {
+  const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+  if (!b || b.length < 33 || sig.some((v, k) => b[k] !== v)) return null;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  let p = 8, width = 0, height = 0, depth = 0, color = -1, interlace = 1, total = 0;
+  const parts = [];
+  while (p + 12 <= b.length) {
+    const len = dv.getUint32(p);
+    const type = String.fromCharCode(b[p + 4], b[p + 5], b[p + 6], b[p + 7]);
+    const d = p + 8;
+    if (type === 'IHDR') {
+      width = dv.getUint32(d); height = dv.getUint32(d + 4);
+      depth = b[d + 8]; color = b[d + 9]; interlace = b[d + 12];
+    } else if (type === 'IDAT') {
+      parts.push(b.subarray(d, d + len)); total += len;
+    } else if (type === 'IEND') break;
+    p = d + len + 4;
+  }
+  // Только то, что PDF принимает без перекодирования: 8 бит, серый или RGB,
+  // без чересстрочности. Остальное (палитра, альфа) пойдёт через canvas.
+  if (!width || !height || depth !== 8 || interlace !== 0 || (color !== 0 && color !== 2) || !total) return null;
+  const data = new Uint8Array(total);
+  let o = 0;
+  parts.forEach(part => { data.set(part, o); o += part.length; });
+  return {width, height, colors: color === 0 ? 1 : 3, data};
+}
+
+function _pdfFromImageStream(img) {
+  const w = img.width, h = img.height;
+  const portrait = h >= w;
+  const pageW = portrait ? 595.28 : 841.89;
+  const pageH = portrait ? 841.89 : 595.28;
+  const k = Math.min(pageW / w, pageH / h);
+  const dw = w * k, dh = h * k;
+  const x = (pageW - dw) / 2, y = (pageH - dh) / 2;
+  const enc = new TextEncoder();
+  const chunks = [];
+  const offsets = [];
+  let offset = 0;
+  const push = part => {
+    const u = typeof part === 'string' ? enc.encode(part) : part;
+    chunks.push(u); offset += u.length;
+  };
+  const obj = (n, body) => { offsets[n] = offset; push(`${n} 0 obj\n${body}\nendobj\n`); };
+  push('%PDF-1.4\n');
+  push(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] `
+    + '/Resources << /XObject << /Im0 4 0 R >> /ProcSet [/PDF /ImageB /ImageC] >> /Contents 5 0 R >>');
+  offsets[4] = offset;
+  push('4 0 obj\n');
+  push(`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace ${img.colorSpace} `
+    + `/BitsPerComponent 8 /Filter ${img.filter}${img.decodeParms ? ' /DecodeParms ' + img.decodeParms : ''} `
+    + `/Length ${img.data.length} >>\nstream\n`);
+  push(img.data);
+  push('\nendstream\nendobj\n');
+  const content = `q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im0 Do Q`;
+  obj(5, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  const xrefAt = offset;
+  let xref = 'xref\n0 6\n0000000000 65535 f \n';
+  for (let n = 1; n <= 5; n++) xref += String(offsets[n]).padStart(10, '0') + ' 00000 n \n';
+  push(xref);
+  push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`);
+  return new Blob(chunks, {type: 'application/pdf'});
+}
+
+async function _imageToJpegBytes(file) {
+  let bitmap;
+  try { bitmap = await createImageBitmap(file, {imageOrientation: 'from-image'}); }
+  catch (e) { bitmap = await createImageBitmap(file); }
+  const MAX_SIDE = 4200;
+  const k = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * k));
+  const height = Math.max(1, Math.round(bitmap.height * k));
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  try { bitmap.close && bitmap.close(); } catch (e) {}
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  if (!blob) throw new Error('Не удалось подготовить JPEG.');
+  return {bytes: new Uint8Array(await blob.arrayBuffer()), width, height};
+}
+
+async function _invoiceFileToPdf(file) {
+  if (!file) return file;
+  const name = String(file.name || 'invoice');
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(name);
+  if (isPdf) return file;
+  const isImage = /^image\//i.test(file.type || '') || /\.(jpe?g|png|webp|bmp|gif|heic|heif)$/i.test(name);
+  if (!isImage) return file;
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let stream = null;
+    const jpeg = _jpegInfo(bytes);
+    if (jpeg && jpeg.orientation === 1 && (jpeg.components === 1 || jpeg.components === 3)) {
+      // Исходные байты снимка без пересжатия.
+      stream = {
+        width: jpeg.width, height: jpeg.height, data: bytes,
+        colorSpace: jpeg.components === 1 ? '/DeviceGray' : '/DeviceRGB', filter: '/DCTDecode'
+      };
+    }
+    if (!stream) {
+      const png = _pngRawInfo(bytes);
+      if (png) {
+        stream = {
+          width: png.width, height: png.height, data: png.data,
+          colorSpace: png.colors === 1 ? '/DeviceGray' : '/DeviceRGB', filter: '/FlateDecode',
+          decodeParms: `<< /Predictor 15 /Colors ${png.colors} /BitsPerComponent 8 /Columns ${png.width} >>`
+        };
+      }
+    }
+    if (!stream) {
+      // Повёрнутый по EXIF JPEG, палитра/альфа PNG, WebP и т. п.
+      const converted = await _imageToJpegBytes(file);
+      stream = {
+        width: converted.width, height: converted.height, data: converted.bytes,
+        colorSpace: '/DeviceRGB', filter: '/DCTDecode'
+      };
+    }
+    const base = name.replace(/\.[^./\\]+$/, '') || 'invoice';
+    return new File([_pdfFromImageStream(stream)], base + '.pdf', {
+      type: 'application/pdf', lastModified: file.lastModified || Date.now()
+    });
+  } catch (error) {
+    console.warn('Не удалось собрать PDF из снимка, на Диск уйдёт исходный файл:', error);
+    return file;
+  }
+}
+
+/* Накладная партии → очередь Google Диска (уйдёт сразу, если Диск настроен
+   и есть связь, иначе позже). Всегда сырой исходник в формате PDF. */
+async function _gdQueueInvoiceFileForBatch(batchId, batchDate, rawFile) {
+  if (!rawFile || !batchId) return 0;
+  const pdf = await _invoiceFileToPdf(rawFile);
+  const key = _googleDriveKeyForContext({batchId, codeField: 'batchId'})
+    || _googleDriveSafePart(batchId, 40);
+  const dateToken = _googleDriveSafePart(batchDate || isoFromToday(), 24);
+  const original = _googleDriveSafePart(pdf?.name || 'invoice.pdf');
+  const queued = await _gdEnqueue([{
+    file: pdf, kind: 'invoice', batchId, key, code: batchId,
+    fileName: `${key}_${dateToken}_invoice_1_${original}`
+  }]);
+  setTimeout(() => { try { _gdFlushOutbox(); } catch (e) {} }, 500);
+  return queued;
+}
+
 async function _uploadOneFileToGoogleDrive(file, metadata, settings) {
   const base64 = await _googleDriveFileToBase64(file);
   const form = new FormData();
@@ -25815,13 +26324,14 @@ async function _gdQueueReceiveFiles(batchId, batchDate, orderNumber) {
     file, kind: 'photo', batchId, key, code,
     fileName: `${key}_${dateToken}_photo_${i + 1}_${_googleDriveSafePart(file?.name || 'photo.jpg')}`
   }));
-  _rsPendingInvoiceFiles.forEach((file, i) => {
+  for (let i = 0; i < _rsPendingInvoiceFiles.length; i++) {
+    const file = await _invoiceFileToPdf(_rsPendingInvoiceFiles[i]);
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
     entries.push({
       file, kind: 'invoice', batchId, key, code,
       fileName: `${key}_${dateToken}_invoice_${i + 1}_${_googleDriveSafePart(file?.name || (isPdf ? 'invoice.pdf' : 'invoice.jpg'))}`
     });
-  });
+  }
   return _gdEnqueue(entries);
 }
 async function _gdFlushOutbox() {
@@ -25914,6 +26424,10 @@ async function _uploadPendingFilesToGoogleDrive(queueOnly = false) {
     ...(Array.isArray(_pendingPhotoFiles) ? _pendingPhotoFiles : []).map((file, index) => ({file, kind: 'photo', index})),
     ...(_pendingInvoiceFile ? [{file: _pendingInvoiceFile, kind: 'invoice', index: 0}] : [])
   ];
+  // Накладная на Google Диск — всегда исходный файл в формате PDF.
+  for (const entry of files) {
+    if (entry.kind === 'invoice') entry.file = await _invoiceFileToPdf(entry.file);
+  }
   if (queueOnly) {
     const entries = files.map(entry => ({
       file: entry.file, kind: entry.kind, batchId: _pendingBatchId, key, code,
@@ -26101,7 +26615,53 @@ body[data-theme] .home-screen-page .quick-action{background:transparent;border-c
 body[data-theme] .home-screen-page .quick-action:active{background:rgba(127,127,127,.16);}
 body[data-theme] .home-screen-page .quick-action-label{white-space:normal;overflow:visible;text-overflow:clip;
   max-width:100%;overflow-wrap:anywhere;word-break:normal;hyphens:auto;line-height:1.18;}
-.home-second-app-grid{grid-template-rows:repeat(5,minmax(104px,auto));}
+/* Кнопки главного экрана: одинаковый размер, иконка всегда на одном уровне, под названием место на 2 строки */
+.home-first-app-grid,.home-second-app-grid{grid-template-rows:none;grid-auto-rows:116px;row-gap:14px;column-gap:10px;align-content:start;}
+body[data-theme] .home-screen-page .quick-action{box-sizing:border-box;width:100%;height:116px;min-height:116px;max-height:116px;
+  justify-content:flex-start;align-items:center;padding:10px 3px 6px;gap:8px;}
+body[data-theme] .home-screen-page .quick-action-icon,
+body[data-theme] .home-screen-page .quick-action-icon.featured-app-icon{flex:0 0 48px;width:48px;height:48px;}
+body[data-theme] .home-screen-page .quick-action-label{flex:0 0 auto;display:block;width:100%;height:2.4em;line-height:1.2;
+  overflow:visible;text-align:center;}
+
+/* Фон иконок (настройки → Оформление → «С фоном»): цветные плитки с белыми значками */
+html.icon-bg body[data-theme] .home-screen-page .quick-action{--tile:#7fa9e8;--tile2:#6b97dc;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openHistory"],
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openTasks"]{--tile:#7fa9e8;--tile2:#6b97dc;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openBase"],
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openProfile"]{--tile:#a08ae2;--tile2:#8b74d8;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openImportExportSheet"],
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openInfoStats"]{--tile:#7ec8a2;--tile2:#64b88b;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openSettings"],
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openDocuments"]{--tile:#f6ab78;--tile2:#f0955c;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openLinkTool"]{--tile:#f28fa8;--tile2:#ea7894;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openInventory"]{--tile:#6cc3cf;--tile2:#52b2bf;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openReceiveHub"]{--tile:#6f93f0;--tile2:#5679e2;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon,
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon.featured-app-icon{flex:0 0 58px;width:58px;height:58px;border-radius:20px;position:relative;
+  background:linear-gradient(145deg,var(--tile),var(--tile2));box-shadow:0 6px 14px rgba(15,23,42,.14);}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon svg,
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon.featured-app-icon svg{width:34px;height:34px;fill:none;stroke-width:2.2;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon svg,html.icon-bg body[data-theme] .home-screen-page .quick-action-icon svg *{stroke:#fff!important;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openBase"] svg path{fill:#fff;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openProfile"] svg circle,html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openProfile"] svg path{fill:#fff;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openInfoStats"] svg circle{fill:#fff;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openInfoStats"] svg path{stroke:var(--tile)!important;stroke-width:2.8;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openSettings"] svg path{fill:#fff;stroke-width:.8;stroke-linejoin:round;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openSettings"] svg circle{fill:var(--tile);stroke:var(--tile)!important;stroke-width:0;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openTasks"] svg{width:38px;height:38px;transform:translate(-4px,4px);}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openTasks"] svg path{stroke-width:2.8;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openTasks"] svg path:nth-child(2){display:none;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openLinkTool"] svg{transform:translateY(-6px);}
+html.icon-bg body[data-theme] .home-screen-page .quick-action[onclick^="openLinkTool"] .quick-action-icon::after{content:'ШК';position:absolute;left:0;right:0;bottom:8px;text-align:center;
+  font:700 10px/1 sans-serif;color:#fff;letter-spacing:.3px;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-label{font-size:13px;font-weight:400;color:#2b303b;letter-spacing:0;}
+html[data-theme="dark"].icon-bg body[data-theme] .home-screen-page .quick-action-label{color:#fff;}
+/* «Приём товаров»: вместо плитки — готовая иконка на белом фоне */
+.qa-bg-img{display:none;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon:has(.qa-bg-img){border:0!important;padding:7px;box-sizing:border-box;overflow:hidden;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon:has(.qa-bg-img) svg{display:none;}
+html.icon-bg body[data-theme] .home-screen-page .quick-action-icon:has(.qa-bg-img) .qa-bg-img{display:block;width:100%;height:100%;object-fit:contain;}
 /* Счётчик нажатий в «Приём товаров по названиям» */
 #nrTapFx{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
   pointer-events:none;}
@@ -26460,6 +27020,24 @@ details.md3-acc .md3-acc__body{padding:0 0 4px;font-size:12px;color:var(--md-on-
   function init() { build(); apply(saved()); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+</script>
+<script>
+/* Фон иконок главного экрана: сохраняется в localStorage */
+(function () {
+  const KEY = 'warehouse_icon_bg_v1';
+  function read() { try { const v = localStorage.getItem(KEY); return v === null ? true : v === '1'; } catch (e) { return true; } }
+  function apply(on) {
+    document.documentElement.classList.toggle('icon-bg', on);
+    document.querySelectorAll('#iconBgSeg button').forEach(b => b.classList.toggle('is-active', (b.dataset.iconBg === '1') === on));
+  }
+  window.setIconBg = function (on) {
+    try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {}
+    apply(on);
+  };
+  document.documentElement.classList.toggle('icon-bg', read());
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => apply(read()));
+  else apply(read());
+}());
 </script>
 <script id="documents-runtime">
 /* «Документы»: все напечатанные документы хранятся в IndexedDB, каждый загружается на Google Диск как PDF со своим QR-кодом. */
@@ -27004,7 +27582,7 @@ window.closeReceiveHub = function () {
     if (m) return m;
     m = document.createElement('div');
     m.className = 'fullscreen-modal nrh2-modal'; m.id = 'nrHistory2Modal';
-    m.innerHTML = '<div class="modal-topbar"><h2>История 2</h2><button class="nrh2-sync" type="button" onclick="nrHistory2Sync()">⟳ Синхр.</button><button class="btn-modal-close" type="button" onclick="closeNrHistory2()">✕</button></div><div class="modal-scroll-body" id="nrh2List"></div>';
+    m.innerHTML = '<div class="modal-topbar"><h2>История 2</h2><button class="nrh2-sync" type="button" onclick="nrHistory2Sync()">⟳ Синхр.</button></div><div class="modal-scroll-body" id="nrh2List"></div>';
     document.body.appendChild(m);
     return m;
   }
@@ -27053,6 +27631,7 @@ window.closeReceiveHub = function () {
 
   window.nrHistory2 = {
     log, fromState,
+    byBatch: async id => { await load(); return list.find(r => r.batchId === id) || null; },
     onSaved: info => log('saved', fromState(), {driveUrls: info && info.driveUrls}),
     onFile: (kind, file, text) => track(kind, {file, kind, text}),
     onError: (message, fileName) => { const src = fromState(); if (src && fileName && !src.fileName) src.fileName = fileName; return log('error', src, {text: message || 'Ошибка'}); }
@@ -27189,7 +27768,7 @@ window.closeReceiveHub = function () {
     pump();
   }
 
-  const free = () => Math.max(0, MAX_TASKS - api().list().length);
+  const free = () => Math.max(0, MAX_TASKS - api().list().filter(r => !r.savedBatchId).length);
 
   async function add(list) {
     list = Array.from(list || []).filter(f => f && f.size > 0);
@@ -27250,12 +27829,23 @@ window.closeReceiveHub = function () {
       fileName: st.originalFileName, products: st.products.map(p => ({name: p.name, code: p.code || '', qtyPlan: p.qtyPlan, qtyActual: p.qtyActual, qtyDamage: p.qtyDamage}))});
   }
 
-  /* ── партия сохранена → уходит из реестра в Историю 2 ── */
-  function onSaved(id) {
+  /* ── партия сохранена: остаётся в реестре (помечена) до наступления нового дня ── */
+  const dayKey = ts => { const d = new Date(ts || Date.now()); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  function onSaved(id, batchId) {
     if (!id) return;
-    api().remove(id);
-    dropFiles(id);
+    api().patch(id, r => { r.savedBatchId = String(batchId || 'saved'); r.savedAt = Date.now(); r.savedDay = dayKey(r.savedAt); });
+    api().render();
   }
+  function purgeSavedOld() { // со сменой дня сохранённые партии уходят из реестра (в Истории 2 они уже есть)
+    if (!api()) return;
+    const today = dayKey();
+    const old = api().list().filter(r => r.savedBatchId && (r.savedDay || dayKey(r.savedAt)) !== today);
+    old.forEach(r => { dropFiles(r.id); const st = stateOf(); if (st && st.activeRegistryId === r.id) st.activeRegistryId = ''; });
+    if (old.length) { const ids = new Set(old.map(r => r.id)); [...ids].forEach(id => api().remove(id)); }
+  }
+  setTimeout(purgeSavedOld, 500);
+  setInterval(purgeSavedOld, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') purgeSavedOld(); });
   function onDeleted(id) {
     const rec = api().get(id) || {};
     const st = stateOf();
@@ -27290,7 +27880,6 @@ window.closeReceiveHub = function () {
   <div id="bwarePhotoMsg" style="padding:6px 12px;font-size:12px;min-height:18px"></div>
   <div id="bwarePhotoThumbs" style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto"></div>
   <div style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))">
-    <button type="button" onclick="bwareClosePhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#495057;color:#fff;font-weight:800">Закрыть</button>
     <span id="bwarePhotoCount" style="font-weight:800">0/20</span>
     <button type="button" id="bwareShootBtn" onclick="bwareShoot()" style="flex:1;border:0;border-radius:30px;height:56px;background:#fff;color:#000;font-size:22px">⚪</button>
     <button type="button" id="bwareDonePhotoBtn" onclick="bwareFinishPhotos()" style="border:0;border-radius:10px;padding:12px 14px;background:#2b8a3e;color:#fff;font-weight:800">Готово ✓</button>
@@ -27506,5 +28095,388 @@ window.closeReceiveHub = function () {
 }());
 
 </script>
+<style id="history-v2-style">
+.hv-list{padding:8px 12px 24px;display:flex;flex-direction:column;gap:8px;}
+.hv-row{display:flex;align-items:center;gap:10px;padding:14px 14px;border-radius:14px;background:var(--md-card,#fff);
+  border:1px solid var(--border,#dee2e6);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.hv-row:active{background:rgba(28,126,214,.09);}
+.hv-name{flex:1;min-width:0;font-size:16px;font-weight:800;color:var(--text,#212529);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hv-time{flex-shrink:0;font-size:13px;font-weight:700;color:var(--muted,#868e96);}
+.hv-warn{flex-shrink:0;font-size:15px;line-height:1;}
+.hv-card{margin:10px 12px 0;padding:14px;border-radius:16px;background:var(--md-card,#fff);border:1px solid var(--border,#dee2e6);}
+.hv-kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14px;color:var(--text,#212529);}
+.hv-kv span{color:var(--muted,#868e96);}.hv-kv b{text-align:right;word-break:break-word;}
+.hv-sum{display:flex;gap:8px;margin-top:10px;}
+.hv-sum div{flex:1;text-align:center;padding:8px 4px;border-radius:12px;background:rgba(127,127,127,.12);font-size:11px;color:var(--muted,#868e96);}
+.hv-sum b{display:block;font-size:20px;color:var(--text,#212529);}
+.hv-sum .bad b{color:#e03131;}
+.hv-actions{display:flex;gap:8px;margin-top:12px;}
+.hv-btn{flex:1;border:0;border-radius:12px;padding:13px 10px;font-size:15px;font-weight:800;background:#1c7ed6;color:#fff;cursor:pointer;}
+.hv-btn.alt{background:rgba(127,127,127,.16);color:var(--text,#212529);flex:0 0 auto;}
+.hv-btn:active{opacity:.75;}
+.hv-sec{margin:16px 14px 6px;font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#868e96);}
+.hv-sec.bad{color:#e03131;}
+.hv-item{margin:0 12px 6px;padding:11px 12px;border-radius:12px;background:var(--md-card,#fff);border:1px solid var(--border,#dee2e6);
+  border-left:5px solid #adb5bd;display:flex;gap:10px;align-items:center;}
+.hv-item.miss{border-left-color:#e03131;background:rgba(224,49,49,.07);}
+.hv-item.less{border-left-color:#f08c00;background:rgba(240,140,0,.08);}
+.hv-item.more{border-left-color:#1c7ed6;background:rgba(28,126,214,.08);}
+.hv-item.dmg{border-left-color:#9c36b5;background:rgba(156,54,181,.08);}
+.hv-item.ok{border-left-color:#2b8a3e;}
+.hv-iname{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--text,#212529);word-break:break-word;}
+.hv-tags{margin-top:3px;display:flex;flex-wrap:wrap;gap:4px;}
+.hv-tag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:8px;color:#fff;background:#868e96;}
+.hv-tag.miss{background:#e03131;}.hv-tag.less{background:#f08c00;}.hv-tag.more{background:#1c7ed6;}.hv-tag.dmg{background:#9c36b5;}
+.hv-qty{flex-shrink:0;text-align:right;font-size:12px;color:var(--muted,#868e96);line-height:1.5;}
+.hv-qty b{color:var(--text,#212529);font-size:16px;}
+.hv-note{margin:12px 14px 0;font-size:13px;color:var(--muted,#868e96);}
+.hv-del{display:block;margin:22px auto 30px;border:0;background:none;color:#e03131;font-size:14px;font-weight:700;cursor:pointer;}
+</style>
+<script id="history-v2">
+/* История приёмок v2: список «отправитель + время», по нажатию — карточка приёмки со сверкой и печатью. */
+(function () {
+  'use strict';
+  const RKEY = 'wh_recon_v1';
+  const esc = v => _escapeHtml(String(v ?? ''));
+  const num = v => Math.max(0, parseInt(v, 10) || 0);
+  const $ = id => document.getElementById(id);
+  let current = null; // {group, products|null}
+
+  function readMap() { try { return JSON.parse(localStorage.getItem(RKEY) || '{}') || {}; } catch (e) { return {}; } }
+  window.whSaveRecon = function (batchId, products) {
+    if (!batchId || !Array.isArray(products)) return;
+    const m = readMap();
+    m[batchId] = products.map(p => ({name: String(p.name || ''), code: String(p.code || ''),
+      qtyPlan: num(p.qtyPlan), qtyActual: num(p.qtyActual), qtyDamage: num(p.qtyDamage)}));
+    const keys = Object.keys(m);
+    if (keys.length > 300) keys.slice(0, keys.length - 300).forEach(k => delete m[k]);
+    try { localStorage.setItem(RKEY, JSON.stringify(m)); } catch (e) {}
+  };
+  async function loadRecon(batchId) {
+    let prods = readMap()[batchId];
+    if (!prods && window.nrHistory2 && window.nrHistory2.byBatch) {
+      try { const r = await window.nrHistory2.byBatch(batchId); if (r && Array.isArray(r.products) && r.products.length) prods = r.products; } catch (e) {}
+    }
+    return Array.isArray(prods) && prods.some(p => num(p.qtyPlan) > 0) ? prods : null;
+  }
+  function classify(p) {
+    const plan = num(p.qtyPlan), fact = num(p.qtyActual), dmg = num(p.qtyDamage), tags = [];
+    let cls = 'ok';
+    if (plan > 0 && fact === 0 && dmg === 0) { tags.push(['miss', 'Не пришло']); cls = 'miss'; }
+    else if (fact < plan) { tags.push(['less', 'Недостача −' + (plan - fact)]); cls = 'less'; }
+    else if (fact > plan) { tags.push(['more', plan === 0 ? 'Лишний товар +' + fact : 'Больше +' + (fact - plan)]); cls = 'more'; }
+    if (dmg > 0) { tags.push(['dmg', 'Брак ' + dmg]); if (cls === 'ok') cls = 'dmg'; }
+    return {plan, fact, dmg, tags, cls, bad: cls !== 'ok'};
+  }
+  const titleOf = g => g.senderName || (g.orderNumber ? 'Заказ ' + g.orderNumber : 'Без отправителя');
+  const timeOf = g => formatDateTimeDMY(g.receivedAt, g.date) || g.date || '—';
+
+  window.renderHistoryList = async function () {
+    const box = $('historyList');
+    if (!box) return;
+    const groups = receivedBatchGroups();
+    if (!groups.length) { box.innerHTML = `<div class="empty-hint">${t('noData')}</div>`; return; }
+    const map = readMap();
+    box.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'hv-list';
+    groups.forEach(g => {
+      const rec = map[g.batchId];
+      const bad = Array.isArray(rec) && rec.some(p => classify(p).bad);
+      const row = document.createElement('div');
+      row.className = 'hv-row';
+      row.innerHTML = `<div class="hv-name">${esc(titleOf(g))}</div>${bad ? '<span class="hv-warn" title="Есть расхождения">⚠️</span>' : ''}<div class="hv-time">${esc(timeOf(g))}</div>`;
+      row.onclick = () => openHistoryBatch(g.key);
+      wrap.appendChild(row);
+    });
+    box.appendChild(wrap);
+  };
+
+  window.openHistoryBatch = async function (key) {
+    const group = receivedBatchGroups().find(g => String(g.key) === String(key));
+    if (!group) return;
+    const products = await loadRecon(group.batchId);
+    current = {group, products};
+    renderBatch();
+    $('historyBatchModal').classList.add('open');
+    const body = $('hbBody'); if (body) body.scrollTop = 0;
+  };
+  window.closeHistoryBatch = function () { $('historyBatchModal')?.classList.remove('open'); };
+
+  function renderBatch() {
+    if (!current) return;
+    const {group, products} = current, body = $('hbBody');
+    const sumFact = group.rows.reduce((a, r) => a + num(r.menge), 0);
+    $('hbTitle').textContent = 'Приёмка';
+    let h = '<div class="hv-card">';
+    h += `<div class="hv-kv"><span>Отправитель</span><b>${esc(titleOf(group))}</b></div>`;
+    if (group.orderNumber) h += `<div class="hv-kv"><span>Заказ</span><b>${esc(group.orderNumber)}</b></div>`;
+    h += `<div class="hv-kv"><span>Время приёмки</span><b>${esc(timeOf(group))}</b></div>`;
+    let rowsHtml = '';
+    if (products) {
+      const list = products.map(p => ({p, c: classify(p)}));
+      const bad = list.filter(x => x.c.bad), ok = list.filter(x => !x.c.bad);
+      const tp = list.reduce((a, x) => a + x.c.plan, 0), tf = list.reduce((a, x) => a + x.c.fact, 0), td = list.reduce((a, x) => a + x.c.dmg, 0);
+      h += `<div class="hv-sum"><div>План<b>${tp}</b></div><div>Факт<b>${tf}</b></div><div class="${td ? 'bad' : ''}">Брак<b>${td}</b></div><div class="${bad.length ? 'bad' : ''}">Расхождений<b>${bad.length}</b></div></div>`;
+      const item = x => `<div class="hv-item ${x.c.cls}"><div class="hv-iname">${esc(x.p.name)}${x.c.tags.length ? '<div class="hv-tags">' + x.c.tags.map(t => `<span class="hv-tag ${t[0]}">${esc(t[1])}</span>`).join('') + '</div>' : ''}</div>`
+        + `<div class="hv-qty">план ${x.c.plan}<br>факт <b>${x.c.fact}</b>${x.c.dmg ? '<br>брак ' + x.c.dmg : ''}</div></div>`;
+      rowsHtml = bad.length ? `<div class="hv-sec bad">Расхождения (${bad.length})</div>${bad.map(item).join('')}` : '<div class="hv-note">✅ Расхождений нет — всё пришло в нужном количестве.</div>';
+      if (ok.length) rowsHtml += `<div class="hv-sec">Без расхождений (${ok.length})</div>${ok.map(item).join('')}`;
+    } else {
+      h += `<div class="hv-sum"><div>Позиций<b>${group.rows.length}</b></div><div>Принято<b>${sumFact}</b></div></div>`;
+      rowsHtml = `<div class="hv-note">Для этой приёмки нет данных плана — показан список принятых товаров.</div><div class="hv-sec">Принятые товары (${group.rows.length})</div>`
+        + group.rows.map((r, i) => `<div class="hv-item ok" onclick="openHistoryBatchItem(${i})"><div class="hv-iname">${esc(r.name || '—')}</div><div class="hv-qty"><b>${num(r.menge)}</b></div></div>`).join('');
+    }
+    h += `<div class="hv-actions"><button type="button" class="hv-btn" onclick="printHistoryBatch()">🖨 Печать${products ? ' сверки и расхождений' : ''}</button>`
+      + `<button type="button" class="hv-btn alt" onclick="attachHistoryBatch()" title="Файлы и накладная">📎</button></div></div>`;
+    body.innerHTML = h + rowsHtml + '<button type="button" class="hv-del" onclick="deleteHistoryBatch()">🗑 Удалить приёмку</button>';
+  }
+  window.openHistoryBatchItem = function (i) {
+    const r = current && current.group.rows[i]; if (!r) return;
+    const db = database.find(d => String(d.name || '').toLowerCase() === String(r.name || '').toLowerCase()) || {};
+    openInfoModal(db.ean || r.ean || '', r.name, r.date || '', r.batchId || '', false);
+  };
+  window.attachHistoryBatch = function () {
+    const r = current && current.group.rows[0]; if (r) openAttachFromHistory(r);
+  };
+  window.deleteHistoryBatch = async function () {
+    if (!current) return;
+    const g = current.group;
+    const ok = await showConfirm('🗑️', t('confirmDelete'), '"' + titleOf(g) + '" · ' + g.rows.length, t('yesDelete'), t('no'));
+    if (!ok) return;
+    const ids = new Set(g.rows.map(r => r.id));
+    for (let i = arrivals.length - 1; i >= 0; i--) if (ids.has(arrivals[i].id)) arrivals.splice(i, 1);
+    try { localStorage.setItem('my_off_arr6', JSON.stringify(arrivals)); } catch (e) {}
+    try { autoBackup(); } catch (e) {}
+    closeHistoryBatch(); current = null;
+    renderHistoryList();
+    try { handleSearch(); } catch (e) {}
+  };
+  window.printHistoryBatch = function () {
+    if (!current) return;
+    const {group, products} = current;
+    if (!products) { printReceivedBatch(group.batchId); return; }
+    const list = products.map(p => ({p, c: classify(p)}));
+    const bad = list.filter(x => x.c.bad);
+    const date = timeOf(group), title = 'Сверка приёмки и расхождения';
+    const status = x => x.c.tags.length ? x.c.tags.map(t => t[1]).join(', ') : 'OK';
+    const tr = (x, i) => `<tr class="${x.c.bad ? 'bad' : ''}"><td>${i + 1}</td><td>${esc(x.p.name)}</td><td class="q">${x.c.plan}</td><td class="q">${x.c.fact}</td><td class="q">${x.c.dmg}</td><td>${esc(status(x))}</td></tr>`;
+    const head = '<thead><tr><th>№</th><th>Товар</th><th>План</th><th>Факт</th><th>Брак</th><th>Статус</th></tr></thead>';
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) { alert('Разрешите открытие окна печати в браузере.'); return; }
+    const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:26px}h1{font-size:20px;margin:0 0 12px}h2{font-size:15px;margin:20px 0 8px}
+      .meta{font-size:12px;line-height:1.7;margin-bottom:14px}table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{border:1px solid #777;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee}.q{text-align:right;font-weight:700}
+      tr.bad td{background:#fff0f0}@media print{body{margin:12mm}}</style></head><body>
+      <h1>${esc(title)}</h1><div class="meta"><div><b>Отдел:</b> Abteilung Wareneingang</div>
+      <div><b>Отправитель:</b> ${esc(titleOf(group))}</div>${group.orderNumber ? `<div><b>Заказ:</b> ${esc(group.orderNumber)}</div>` : ''}
+      <div><b>Время приёмки:</b> ${esc(date)}</div></div>
+      <h2>Расхождения (${bad.length})</h2>${bad.length ? `<table>${head}<tbody>${bad.map(tr).join('')}</tbody></table>` : '<div>Расхождений нет.</div>'}
+      <h2>Полная сверка (${list.length})</h2><table>${head}<tbody>${list.map(tr).join('')}</tbody></table></body></html>`;
+    window.warehousePublishAndPrint(w, html, {type: 'report', title,
+      subtitle: [group.senderName, group.orderNumber].filter(Boolean).join(' · '),
+      data: {sender: group.senderName || '', order: group.orderNumber || '', date,
+        items: list.map(x => ({name: x.p.name, plan: x.c.plan, fact: x.c.fact, damage: x.c.dmg}))}});
+  };
+}());
+</script>
+<style id="rcv-unified-style">
+:root{--rcv-bar-h:calc(58px + env(safe-area-inset-top,0px));}
+#rcvModeBar{display:none;position:fixed;top:0;left:0;right:0;z-index:1950;height:var(--rcv-bar-h);box-sizing:border-box;
+  padding:calc(env(safe-area-inset-top,0px) + 9px) 12px 9px;background:var(--md-surface,#fff);align-items:center;}
+#rcvModeBar .md3-seg{display:flex;width:100%;}
+#rcvModeBar .md3-seg button{flex:1;min-width:0;padding:0 6px;font-size:14px;}
+html.rcv-unified.rcv-bar-on #rcvModeBar{display:flex;}
+html.rcv-unified.rcv-bar-on #receiveModal,html.rcv-unified.rcv-bar-on #nameReceiveModal,html.rcv-unified.rcv-bar-on #autoReceiveModal{top:var(--rcv-bar-h);}
+html.rcv-unified #receiveHubModal .rh-row[data-rcv-old]{display:none;}
+html.rcv-unified #receiveHubModal #rhUnifiedRow{display:flex !important;}
+html[data-theme="dark"] #rcvModeBar{background:#000;}
+</style>
+<div id="rcvModeBar" role="tablist" aria-label="Режим приёма">
+  <div class="md3-seg">
+    <button type="button" role="tab" data-mode="manual" onclick="rcvSwitchMode('manual')">Вручную</button>
+    <button type="button" role="tab" data-mode="name" onclick="rcvSwitchMode('name')">По накладной</button>
+    <button type="button" role="tab" data-mode="auto" onclick="rcvSwitchMode('auto')">Авто</button>
+  </div>
+</div>
+<script id="rcv-unified">
+/* Единое окно приёма: «Вручную / По накладной / Авто» в одной панели. Стиль переключается в Настройках. */
+(function () {
+  'use strict';
+  const SKEY = 'wh_receive_style', MKEY = 'wh_receive_last_mode';
+  const IDS = {manual: 'receiveModal', name: 'nameReceiveModal', auto: 'autoReceiveModal'};
+  const ORDER = ['manual', 'name', 'auto'];
+  let barTimer = null;
+  const root = document.documentElement;
+  const getStyle = () => { try { return localStorage.getItem(SKEY) === 'classic' ? 'classic' : 'unified'; } catch (e) { return 'unified'; } };
+  const el = m => document.getElementById(IDS[m]);
+  const current = () => Object.keys(IDS).find(m => el(m) && el(m).classList.contains('open')) || '';
+  function sync() {
+    const cur = current(), unified = getStyle() === 'unified';
+    root.classList.toggle('rcv-unified', unified);
+    clearTimeout(barTimer);
+    if (unified && cur) root.classList.add('rcv-bar-on');
+    else barTimer = setTimeout(() => root.classList.remove('rcv-bar-on'), 400); // панель уходит вместе с окном
+    document.querySelectorAll('#rcvModeBar button').forEach(b => b.classList.toggle('is-active', b.dataset.mode === cur));
+    document.querySelectorAll('#rcvStyleSeg button').forEach(b => b.classList.toggle('is-active', b.dataset.rcvStyle === getStyle()));
+    if (cur) { try { localStorage.setItem(MKEY, cur); } catch (e) {} }
+  }
+  window.setReceiveStyle = function (v) {
+    try { localStorage.setItem(SKEY, v === 'classic' ? 'classic' : 'unified'); } catch (e) {}
+    sync();
+  };
+  window.rcvSwitchMode = function (m) {
+    const cur = current();
+    if (!IDS[m] || cur === m) return;
+    /* кнопка слева: текущее окно уходит вправо, новое приходит слева; кнопка справа — наоборот */
+    const dir = ORDER.indexOf(m) > ORDER.indexOf(cur) ? 1 : -1;
+    const out = el(cur), inn = el(m);
+    out.style.transform = dir > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+    if (dir < 0) { inn.style.transition = 'none'; inn.style.transform = 'translateX(-100%)'; void inn.offsetWidth; inn.style.transition = ''; }
+    setTimeout(() => { out.style.transition = 'none'; out.style.transform = ''; void out.offsetWidth; out.style.transition = ''; }, 450);
+    if (cur === 'manual') el('manual').classList.remove('open');
+    else if (cur === 'name') { try { closeNameReceive(); } catch (e) { el('name').classList.remove('open'); } }
+    else if (cur === 'auto') { try { _doCloseAutoReceive(); } catch (e) { el('auto').classList.remove('open'); } }
+    if (m === 'manual') {
+      if (typeof recvPendingItems !== 'undefined' && recvPendingItems.length) el('manual').classList.add('open'); // список не теряем
+      else openReceive();
+    } else if (m === 'name') openNameReceive();
+    else openAutoReceive();
+    inn.style.transform = '';
+    sync();
+  };
+  window.openUnifiedReceive = function () {
+    if (current()) return;
+    let m = 'manual';
+    try { m = localStorage.getItem(MKEY) || 'manual'; } catch (e) {}
+    if (m === 'name') openNameReceive(); else if (m === 'auto') openAutoReceive(); else openReceive();
+    sync();
+  };
+  const obs = new MutationObserver(sync);
+  Object.keys(IDS).forEach(m => { if (el(m)) obs.observe(el(m), {attributes: true, attributeFilter: ['class']}); });
+  sync();
+}());
+</script>
+<style id="rcv-redesign-style">
+#receiveModal{background:var(--md-surface,#f6f8fc);color:var(--md-on-surface,#171b22);}
+#receiveModal .rv-head{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:max(10px,env(safe-area-inset-top,10px)) 16px 8px;background:var(--md-surface,#f6f8fc);}
+#receiveModal .rv-head h2{flex:1;margin:0;font-size:20px;font-weight:600;color:var(--md-on-surface,#171b22);}
+#receiveModal .rv-chip{border:1px solid var(--md-outline-variant,#c9cfdb);background:transparent;color:var(--md-primary,#2b5cb0);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+#receiveModal .rv-chip:active{background:var(--md-surface-container,#e9edf5);}
+#receiveModal .rv-search{flex-shrink:0;padding:2px 16px 10px;background:var(--md-surface,#f6f8fc);position:relative;z-index:5;}
+#receiveModal .rv-field{display:flex;align-items:center;gap:4px;padding:2px 4px 2px 14px;border-radius:16px;background:var(--rcv-card);border:1px solid var(--md-outline-variant,#c9cfdb);}
+#receiveModal .rv-field:focus-within{border-color:var(--md-primary,#2b5cb0);}
+#receiveModal .rv-field .recv-search-input{flex:1;border:0;outline:0;background:transparent;color:inherit;font-size:16px;padding:10px 0;min-height:44px;box-shadow:none;}
+#receiveModal .rv-field .recv-scan-btn{flex:0 0 44px;width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:var(--md-primary,#2b5cb0);display:flex;align-items:center;justify-content:center;}
+#receiveModal .rv-field .recv-scan-btn svg{width:26px;height:26px;}
+#receiveModal .rv-field .recv-dropdown{top:calc(100% + 6px);border-radius:14px;max-height:46vh;overflow-y:auto;}
+#receiveModal .rv-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px 16px;}
+#receiveModal .rv-sec{padding:6px 2px 10px;font-size:13px;font-weight:600;color:var(--md-on-surface-variant,#414853);}
+#receiveModal #recvItemList{display:flex;flex-direction:column;gap:8px;}
+#receiveModal .recv-item-row{display:flex;align-items:center;gap:8px;padding:12px 8px 12px 14px;border-radius:16px;background:var(--rcv-card);border:1px solid var(--md-outline-variant,#c9cfdb);}
+#receiveModal .recv-item-row.is-zero{border-color:var(--red,#e03131);}
+#receiveModal .recv-item-info{flex:1;min-width:0;}
+#receiveModal .recv-item-name{font-size:15px;font-weight:600;line-height:1.3;word-break:break-word;color:var(--md-on-surface,#171b22);}
+#receiveModal .recv-item-sub{margin-top:3px;font-size:12px;color:var(--md-on-surface-variant,#414853);display:flex;flex-wrap:wrap;gap:4px;}
+#receiveModal .rv-step{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+#receiveModal .rv-step-btn{width:38px;height:38px;border:0;border-radius:50%;background:var(--md-surface-container,#e9edf5);color:var(--md-on-surface,#171b22);font-size:22px;line-height:1;cursor:pointer;}
+#receiveModal .rv-step-btn:active{background:var(--md-outline-variant,#c9cfdb);}
+#receiveModal .recv-item-qty{min-width:40px;height:38px;border:0;background:transparent;color:var(--md-on-surface,#171b22);font-size:18px;font-weight:700;text-align:center;}
+#receiveModal .recv-item-row.is-zero .recv-item-qty{color:var(--red,#e03131);}
+#receiveModal .recv-item-del{width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:var(--md-on-surface-variant,#414853);font-size:15px;cursor:pointer;flex-shrink:0;}
+#receiveModal .recv-footer{flex-shrink:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--rcv-card);border-top:1px solid var(--md-outline-variant,#c9cfdb);}
+#receiveModal .rv-bar{display:flex;align-items:center;gap:12px;}
+#receiveModal .rv-sum{flex:1;font-size:14px;font-weight:600;color:var(--md-on-surface-variant,#414853);}
+#receiveModal .btn-recv-accept{flex:0 0 auto;width:auto;margin:0;padding:13px 22px;border:0;border-radius:14px;font-size:16px;font-weight:700;background:var(--md-primary,#2b5cb0);color:var(--md-on-primary,#fff);}
+#receiveModal .btn-recv-accept:disabled{opacity:.4;}
+#receiveModal #btnRecvSave{display:none !important;}
+
+#autoReceiveModal .auto-receive-body{gap:10px;padding:8px 16px max(20px,env(safe-area-inset-bottom,20px));background:var(--md-surface,#f6f8fc);}
+#autoReceiveModal .auto-receive-toolbar{position:sticky;top:0;z-index:4;gap:8px;padding:4px 0 8px;background:var(--md-surface,#f6f8fc);}
+#autoReceiveModal .auto-receive-toolbar .md3-btn--block{justify-content:flex-start;min-height:52px;border-radius:16px;font-size:15px;}
+#autoReceiveModal .md3-chips{flex-wrap:nowrap;overflow-x:auto;gap:8px;padding-bottom:2px;scrollbar-width:none;}
+#autoReceiveModal .md3-chips::-webkit-scrollbar{display:none;}
+#autoReceiveModal .md3-chip{flex:0 0 auto;min-height:38px;white-space:nowrap;}
+#autoReceiveModal .auto-receive-files-card{background:transparent;border:0;box-shadow:none;border-radius:0;overflow:visible;min-height:0;}
+#autoReceiveModal .auto-receive-files-count{display:inline-block;margin:2px 2px 8px;background:transparent;color:var(--md-on-surface-variant,#414853);padding:0;font-size:13px;font-weight:600;}
+#autoReceiveModal .auto-receive-file-list{min-height:0;max-height:none;overflow:visible;gap:8px;}
+#autoReceiveModal .auto-receive-file-row{min-height:60px;padding:10px 14px;border:1px solid var(--md-outline-variant,#c9cfdb);border-radius:16px;background:var(--rcv-card);}
+#autoReceiveModal .auto-receive-file-row:last-child{border-bottom:1px solid var(--md-outline-variant,#c9cfdb);}
+#autoReceiveModal .auto-receive-file-name{font-size:14px;color:var(--md-on-surface,#171b22);}
+#autoReceiveModal .auto-receive-file-state{width:32px;height:32px;border-radius:50%;}
+</style>
+<style id="rcv-redesign-2">
+:root{--rcv-card:#fff;}
+html[data-theme="dark"]{--rcv-card:#171a1f;}
+#receiveModal .rv-tools{display:flex;gap:8px;padding:10px 0 0;}
+#receiveModal .rv-chip{border:1px solid var(--md-outline-variant,#c9cfdb);background:transparent;color:var(--md-primary,#2b5cb0);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+/* шапки окон скрыты: остаётся только переключатель режимов */
+html.rcv-unified.rcv-bar-on #receiveModal .rv-head{display:none;}
+html.rcv-unified.rcv-bar-on #receiveModal .rv-search{padding-top:6px;}
+html.rcv-unified.rcv-bar-on #autoReceiveModal #autoReceiveAppbar{position:static;min-height:48px;padding:0 8px 0 16px;background:transparent;box-shadow:none;}
+html.rcv-unified.rcv-bar-on #autoReceiveModal .md3-appbar__title{display:none;}
+html.rcv-unified.rcv-bar-on #autoReceiveModal .md3-appbar__sub{font-size:14px;font-weight:600;color:var(--md-on-surface,#171b22);}
+
+/* «По накладной»: тот же минималистичный вид */
+html.rcv-unified.rcv-bar-on #nameReceiveModal{background:var(--md-surface,#f6f8fc);color:var(--md-on-surface,#171b22);
+  --nrs-card:var(--rcv-card);--nrs-text:var(--md-on-surface,#171b22);--nrs-muted:var(--md-on-surface-variant,#414853);
+  --nrs-border:var(--md-outline-variant,#c9cfdb);--nrs-primary:var(--md-primary,#2b5cb0);--nrs-bg:var(--md-surface,#f6f8fc);
+  --nrs-zone:var(--md-outline,#727a88);--nrs-soft:var(--md-surface-container,#e9edf5);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-header{min-height:0;padding:0 16px;gap:10px;background:transparent;box-shadow:none;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-header h2{display:none;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-header-meta{flex:1;text-align:left;color:var(--md-on-surface,#171b22);font-size:14px;padding:6px 0;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-hm{justify-self:start;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal #nrHmPct{color:#2b8a3e;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal #nrNextButton{width:44px;height:44px;margin-left:auto;border-radius:50%;background:var(--md-primary,#2b5cb0);color:var(--md-on-primary,#fff);font-size:26px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-receive-progress{background:transparent;border:0;padding:0 16px 8px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-receive-progress-track{height:6px;border-radius:6px;background:var(--md-surface-container,#e9edf5);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-receive-progress-fill{background:var(--md-primary,#2b5cb0);border-radius:6px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-body{background:transparent;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-import-zone{border:1.5px dashed var(--md-outline,#727a88);border-radius:20px;background:var(--rcv-card);padding:26px 20px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-title{color:var(--md-on-surface-variant,#414853);font-size:13px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-count{background:var(--md-surface-container,#e9edf5);color:var(--md-primary,#2b5cb0);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-empty{border:1px dashed var(--md-outline-variant,#c9cfdb);color:var(--md-on-surface-variant,#414853);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-card{background:var(--rcv-card);border:1px solid var(--md-outline-variant,#c9cfdb);color:var(--md-on-surface,#171b22);border-radius:16px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-card:active{background:var(--md-surface-container,#e9edf5);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-order{color:var(--md-primary,#2b5cb0);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-registry-meta{color:var(--md-on-surface-variant,#414853);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-search{background:transparent;border:0;padding:4px 16px 10px;gap:8px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-search input{min-height:46px;border:1px solid var(--md-outline-variant,#c9cfdb);border-radius:14px;background:var(--rcv-card);color:var(--md-on-surface,#171b22);font-size:16px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-search input::placeholder{color:var(--md-on-surface-variant,#414853);opacity:.7;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-add-btn{width:46px;border-radius:14px;background:var(--md-primary,#2b5cb0);color:var(--md-on-primary,#fff);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-row,
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-row.zebra{background:var(--rcv-card);color:var(--md-on-surface,#171b22);border-bottom:1px solid var(--md-outline-variant,#c9cfdb);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-row.green{background:rgba(43,138,62,.16) !important;color:var(--md-on-surface,#171b22);border-left:4px solid #2b8a3e;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-row.yellow{background:rgba(240,140,0,.18) !important;color:var(--md-on-surface,#171b22);border-left:4px solid #f08c00;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-plan,
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-row.green .nr-plan,
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-row.yellow .nr-plan{color:var(--md-on-surface-variant,#414853);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-qty-btn{border:0;border-radius:12px;background:var(--md-surface-container,#e9edf5);color:var(--md-primary,#2b5cb0);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-toolbar{background:transparent;border:0;padding:8px 16px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-toolbar button{border-radius:12px;padding:10px 13px;font-size:13px;background:var(--md-surface-container,#e9edf5);color:var(--md-on-surface,#171b22);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-toolbar button.primary,
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-toolbar button.active{background:var(--md-primary,#2b5cb0);color:var(--md-on-primary,#fff);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-summary{color:var(--md-on-surface-variant,#414853);font-size:12px;}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-row{background:var(--rcv-card);color:var(--md-on-surface,#171b22);border-bottom:1px solid var(--md-outline-variant,#c9cfdb);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-row:nth-child(even){background:var(--rcv-card);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-report-values{color:var(--md-primary,#2b5cb0);}
+html.rcv-unified.rcv-bar-on #nameReceiveModal .nr-footer-note{color:var(--md-on-surface-variant,#414853);}
+</style>
+<style id="rcv-folder-btn">
+html.rcv-unified.rcv-bar-on #autoReceiveModal #autoReceiveFolderName{display:inline-flex;align-items:center;max-width:100%;padding:9px 16px;border-radius:999px;background:var(--md-secondary-container,#dbe3f5);color:var(--md-on-secondary-container,#171b22);font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+html.rcv-unified.rcv-bar-on #autoReceiveModal .auto-receive-toolbar > .md3-btn--block{display:none;}
+</style>
+<style id="rcv-auto-nocount">
+#autoReceiveModal #autoReceiveFilterChips .md3-chip[data-filter="all"]{display:none;}
+#autoReceiveModal #autoReceiveFilesCount{display:none;}
+</style>
+<style id="rcv-auto-chips-fixed">
+#autoReceiveModal #autoReceiveFilterChips{display:flex;flex-wrap:nowrap;overflow:hidden;gap:6px;width:100%;touch-action:pan-y;}
+#autoReceiveModal #autoReceiveFilterChips .md3-chip{flex:1 1 0;min-width:0;justify-content:center;gap:4px;padding:0 4px;font-size:13px;overflow:hidden;white-space:nowrap;}
+#autoReceiveModal #autoReceiveFilterChips .md3-chip span:not(.md3-dot){overflow:hidden;text-overflow:ellipsis;min-width:0;}
+#autoReceiveModal #autoReceiveFilterChips .md3-chip b{flex:0 0 auto;}
+#autoReceiveModal #autoReceiveFilterChips .md3-dot{flex:0 0 auto;}
+</style>
 </body>
 </html>
