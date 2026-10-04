@@ -1,5 +1,6 @@
 package ru.warehouse.app.ui
 
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
