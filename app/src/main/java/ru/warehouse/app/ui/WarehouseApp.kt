@@ -21,8 +21,6 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,7 +54,7 @@ import ru.warehouse.app.data.WarehouseState
 @Composable
 fun WarehouseApp(
     viewModel: WarehouseViewModel,
-    state: WarehouseState,
+    state: WarehouseState = viewModel.state.collectAsState().value,
 ) {
     val context = LocalContext.current
     val snackbarHost = remember { SnackbarHostState() }
@@ -179,7 +177,7 @@ fun WarehouseApp(
     if (scannerOpen) {
         BarcodeScannerDialog(
             onDismiss = { scannerOpen = false },
-            onBarcode = { code ->
+            onBarcodeScanned = { code ->
                 scanResult = code
                 if (screen == WarehouseScreen.Home) homeSearch = code
                 scannerOpen = false
