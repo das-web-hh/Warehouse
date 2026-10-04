@@ -88,3 +88,7 @@ data class ExtraSettings(
     val email: String = "",
     val accountId: String = UUID.randomUUID().toString(),
 )
+
+enum class WarehouseDocumentType(var customName: String? = null) {
+    INVOICE, RECEIPT, WAYBILL, TRANSFER, WRITE_OFF, RETURN, TASK, OTHER
+}
