@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val state by viewModel.state.collectAsState()
-            
+
             WarehouseTheme(darkTheme = state.darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
