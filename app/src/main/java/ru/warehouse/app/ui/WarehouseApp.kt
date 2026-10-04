@@ -2,104 +2,117 @@
 
 package ru.warehouse.app.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseScreen
 import ru.warehouse.app.data.WarehouseState
 
 @Composable
 fun WarehouseApp(
-    viewModel: WarehouseViewModel,
-    extra: ExtraViewModel,
-    state: WarehouseState = viewModel.state.collectAsState().value,
+    state: WarehouseState,
+    onStateChange: (WarehouseState) -> Unit,
+    onScanRequest: () -> Unit = {},
+    scanResult: String? = null,
 ) {
-    val context = LocalContext.current
-    val snackbarHost = remember { SnackbarHostState() }
-    var screen by rememberSaveable { mutableStateOf(WarehouseScreen.Home) }
-    var homeSearch by rememberSaveable { mutableStateOf("") }
-    var scanResult by rememberSaveable { mutableStateOf<String?>(null) }
-    var scannerOpen by rememberSaveable { mutableStateOf(false) }
-    var editorProduct by remember { mutableStateOf<Product?>(null) }
-    var homePage by rememberSaveable { mutableStateOf(0) }
+    var currentScreen by remember { mutableStateOf<WarehouseScreen>(WarehouseScreen.Home) }
+    var editingProduct by remember { mutableStateOf<Product?>(null) }
+    var isAddingProduct by remember { mutableStateOf(false) }
 
-    // Куда возвращает «Назад»: из под-окон приёма — в меню приёма, из «История 2» — в «По накладной».
-    fun parentOf(target: WarehouseScreen): WarehouseScreen = when (target) {
-        WarehouseScreen.Receive, WarehouseScreen.ByInvoice, WarehouseScreen.Auto -> WarehouseScreen.ReceiveHub
-        WarehouseScreen.History2 -> WarehouseScreen.ByInvoice
-        WarehouseScreen.Integrations -> WarehouseScreen.Settings
-        else -> WarehouseScreen.Home
-    }
-    val goBack = { screen = parentOf(screen) }
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+    ) { innerPadding ->
+        val modifier = Modifier.padding(innerPadding)
 
-    // Файл, отправленный в приложение через «Поделиться», открывает окно «По накладной».
-    val openRequest by extra.openRequest.collectAsState()
-    LaunchedEffect(openRequest) {
-        openRequest?.let { screen = it; extra.consumeOpenRequest() }
-    }
-    val extraMessage by extra.message.collectAsState()
-    LaunchedEffect(extraMessage) {
-        extraMessage?.takeIf(String::isNotBlank)?.let {
-            snackbarHost.showSnackbar(it)
-            extra.dismissMessage()
+        when (currentScreen) {
+            WarehouseScreen.Home -> {
+                HomeScreen(
+                    state = state,
+                    onScreenSelected = { screen -> currentScreen = screen },
+                    onScanClick = onScanRequest,
+                    onProductSelected = { product ->
+                        editingProduct = product
+                        currentScreen = WarehouseScreen.Catalog
+                    },
+                    onMenuClick = { currentScreen = WarehouseScreen.Settings },
+                    modifier = modifier,
+                )
+            }
+
+            WarehouseScreen.Catalog -> {
+                CatalogScreen(
+                    state = state,
+                    scanResult = scanResult,
+                    onScan = onScanRequest,
+                    onEdit = { product -> editingProduct = product },
+                    onAdd = { isAddingProduct = true },
+                    modifier = modifier,
+                )
+            }
+
+            // Заглушки для остальных экранов (будут обновляться по мере разработки)
+            else -> {
+                HomeScreen(
+                    state = state,
+                    onScreenSelected = { screen -> currentScreen = screen },
+                    onScanClick = onScanRequest,
+                    onProductSelected = { product ->
+                        editingProduct = product
+                        currentScreen = WarehouseScreen.Catalog
+                    },
+                    onMenuClick = { currentScreen = WarehouseScreen.Settings },
+                    modifier = modifier,
+                )
+            }
+        }
+
+        // Диалог редактирования / создания товара
+        if (editingProduct != null || isAddingProduct) {
+            val targetProduct = editingProduct ?: Product(
+                id = System.currentTimeMillis().toString(),
+                name = "",
+                barcode = scanResult ?: "",
+                sku = "",
+                category = "",
+                unit = "шт",
+                stock = 0.0,
+                bwareStock = 0.0,
+            )
+
+            ProductEditorDialog(
+                product = targetProduct,
+                onDismiss = {
+                    editingProduct = null
+                    isAddingProduct = false
+                },
+                onSave = { updatedProduct ->
+                    val updatedList = if (editingProduct != null) {
+                        state.products.map { if (it.id == updatedProduct.id) updatedProduct else it }
+                    } else {
+                        state.products + updatedProduct
+                    }
+                    onStateChange(state.copy(products = updatedList))
+                    editingProduct = null
+                    isAddingProduct = false
+                },
+                onDelete = { productId ->
+                    val updatedList = state.products.filterNot { it.id == productId }
+                    onStateChange(state.copy(products = updatedList))
+                    editingProduct = null
+                    isAddingProduct = false
+                },
+            )
         }
     }
+}
 
-    val cameraPermission = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted ->
-            if (granted) scannerOpen = true
-            else viewModel.showTransferMessage("Для сканирования разрешите доступ к камере")
-        },
-    )
-    val openScanner = {
-        scanResult = null
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            scannerOpen = true
         } else {
             cameraPermission.launch(Manifest.permission.CAMERA)
         }
