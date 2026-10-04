@@ -12,6 +12,17 @@ enum class WarehouseScreen(val title: String) {
     Tasks("Задачи"),
     Transfer("Импорт / экспорт"),
     Settings("Настройки"),
+    ReceiveHub("Приём товаров"),
+    ByInvoice("По накладной"),
+    Auto("Автоприём"),
+    History2("История 2"),
+    Plan("Приём по заданию"),
+    LinkTool("Товар + штрихкод"),
+    Profile("Профиль"),
+    Info("Инфо"),
+    Documents("Документы"),
+    Gemini("Чат Gemini"),
+    Integrations("Gemini и сервер"),
 }
 
 data class Product(
