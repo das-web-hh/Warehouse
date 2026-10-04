@@ -92,3 +92,6 @@ data class ExtraSettings(
 enum class WarehouseDocumentType(var customName: String? = null) {
     INVOICE, RECEIPT, WAYBILL, TRANSFER, WRITE_OFF, RETURN, TASK, OTHER
 }
+
+typealias WarehousrTransfer = WarehouseTransfer
+typealias WarehousrTransferStatus = WarehouseTransferStatus
