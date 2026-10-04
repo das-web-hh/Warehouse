@@ -5,7 +5,6 @@ package ru.warehouse.app.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,7 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.warehouse.app.data.CheckResult
 import ru.warehouse.app.data.CheckStatus
-import ru.warehouse.app.data.PlanItem
+import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseState
 
 @Composable
@@ -58,17 +58,7 @@ fun PlanScreen(
     modifier: Modifier = Modifier,
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var planItems by remember(state.products) {
-        mutableStateOf(
-            state.products.map { product ->
-                PlanItem(
-                    product = product,
-                    scannedQuantity = 0.0,
-                    status = CheckStatus.PENDING
-                )
-            }
-        )
-    }
+    val scannedQuantities = remember { mutableStateMapOf<String, Double>() }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -104,13 +94,13 @@ fun PlanScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val filteredItems = remember(planItems, searchQuery) {
+            val filteredProducts = remember(state.products, searchQuery) {
                 if (searchQuery.isBlank()) {
-                    planItems
+                    state.products
                 } else {
-                    planItems.filter {
-                        it.product.name.contains(searchQuery, ignoreCase = true) ||
-                                it.product.barcode.contains(searchQuery, ignoreCase = true)
+                    state.products.filter {
+                        it.name.contains(searchQuery, ignoreCase = true) ||
+                                it.barcode.contains(searchQuery, ignoreCase = true)
                     }
                 }
             }
@@ -119,22 +109,20 @@ fun PlanScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(filteredItems, key = { it.product.id }) { item ->
-                    PlanItemCard(
-                        item = item,
+                items(filteredProducts, key = { it.id }) { product ->
+                    val currentQty = scannedQuantities[product.id] ?: 0.0
+                    val status = when {
+                        currentQty == 0.0 -> CheckStatus.PENDING
+                        currentQty == product.quantity -> CheckStatus.MATCH
+                        else -> CheckStatus.MISMATCH
+                    }
+
+                    PlanProductCard(
+                        product = product,
+                        scannedQuantity = currentQty,
+                        status = status,
                         onQuantityChange = { newQty ->
-                            planItems = planItems.map {
-                                if (it.product.id == item.product.id) {
-                                    val status = when {
-                                        newQty == 0.0 -> CheckStatus.PENDING
-                                        newQty == it.product.quantity -> CheckStatus.MATCH
-                                        else -> CheckStatus.MISMATCH
-                                    }
-                                    it.copy(scannedQuantity = newQty, status = status)
-                                } else {
-                                    it
-                                }
-                            }
+                            scannedQuantities[product.id] = newQty
                         }
                     )
                 }
@@ -144,12 +132,18 @@ fun PlanScreen(
 
             Button(
                 onClick = {
-                    val results = planItems.map {
+                    val results = state.products.map { product ->
+                        val currentQty = scannedQuantities[product.id] ?: 0.0
+                        val status = when {
+                            currentQty == 0.0 -> CheckStatus.PENDING
+                            currentQty == product.quantity -> CheckStatus.MATCH
+                            else -> CheckStatus.MISMATCH
+                        }
                         CheckResult(
-                            productId = it.product.id,
-                            expectedQty = it.product.quantity,
-                            scannedQty = it.scannedQuantity,
-                            status = it.status
+                            productId = product.id,
+                            expectedQty = product.quantity,
+                            scannedQty = currentQty,
+                            status = status
                         )
                     }
                     onSavePlan(results)
@@ -163,15 +157,17 @@ fun PlanScreen(
 }
 
 @Composable
-private fun PlanItemCard(
-    item: PlanItem,
+private fun PlanProductCard(
+    product: Product,
+    scannedQuantity: Double,
+    status: CheckStatus,
     onQuantityChange: (Double) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when (item.status) {
+            containerColor = when (status) {
                 CheckStatus.MATCH -> Color(0xFFE8F5E9)
                 CheckStatus.MISMATCH -> Color(0xFFFFEBEE)
                 CheckStatus.PENDING -> MaterialTheme.colorScheme.surfaceVariant
@@ -187,30 +183,30 @@ private fun PlanItemCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.product.name,
+                    text = product.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Штрихкод: ${item.product.barcode}",
+                    text = "Штрихкод: ${product.barcode}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "План: ${item.product.quantity} ${item.product.unit}",
+                    text = "План: ${formatQuantity(product.quantity)} ${product.unit}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = when (item.status) {
+                    imageVector = when (status) {
                         CheckStatus.MATCH -> Icons.Default.CheckCircle
                         CheckStatus.MISMATCH -> Icons.Default.Warning
                         CheckStatus.PENDING -> Icons.Default.QrCodeScanner
                     },
                     contentDescription = null,
-                    tint = when (item.status) {
+                    tint = when (status) {
                         CheckStatus.MATCH -> Color(0xFF2E7D32)
                         CheckStatus.MISMATCH -> Color(0xFFC62828)
                         CheckStatus.PENDING -> Color.Gray
@@ -220,13 +216,13 @@ private fun PlanItemCard(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = formatQuantity(item.scannedQuantity),
+                    text = formatQuantity(scannedQuantity),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surface)
-                        .clickable { onQuantityChange(item.scannedQuantity + 1.0) }
+                        .clickable { onQuantityChange(scannedQuantity + 1.0) }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
             }
