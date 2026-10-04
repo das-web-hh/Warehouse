@@ -22,6 +22,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -76,6 +77,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         webView = WebView(this)
+        
+        // Включаем аппаратное ускорение рендеринга для плавности графики
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        
         setContentView(webView)
 
         webView.settings.apply {
@@ -85,19 +90,23 @@ class MainActivity : AppCompatActivity() {
             mediaPlaybackRequiresUserGesture = false
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
+            
+            // Настройки оптимизации производительности
+            databaseEnabled = true
+            cacheMode = WebSettings.LOAD_DEFAULT
+            @Suppress("DEPRECATION")
+            setRenderPriority(WebSettings.RenderPriority.HIGH)
         }
 
         webView.isFocusable = true
         webView.isFocusableInTouchMode = true
 
-        // ВАЖНО: Разрешаем доступ к камере внутри WebView
+        // Разрешаем доступ к камере внутри WebView
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest?) {
                 request?.grant(request.resources)
             }
 
-            // Без этого клик по <input type="file"> в WebView ничего не делает —
-            // системный выбор файла/галереи не открывается вообще.
             override fun onShowFileChooser(
                 webView: WebView?,
                 callback: ValueCallback<Array<Uri>>?,
@@ -123,8 +132,6 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // Если APK стартует со страницы входа, не теряем файл,
-                // которым поделились: warehouse.html загрузится после авторизации.
                 if (pendingIntent != null && url?.endsWith("/warehouse.html") == true) {
                     pendingIntent?.let { handleShareIntent(it) }
                     pendingIntent = null
@@ -152,16 +159,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendTermuxCommand(scriptPath: String) {
-        try {
-            val intent = Intent()
-            intent.setClassName("com.termux", "com.termux.app.RunCommandService")
-            intent.action = "com.termux.RUN_COMMAND"
-            intent.putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
-            intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
-            ContextCompat.startForegroundService(this, intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        Thread {
+            try {
+                val intent = Intent()
+                intent.setClassName("com.termux", "com.termux.app.RunCommandService")
+                intent.action = "com.termux.RUN_COMMAND"
+                intent.putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
+                intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
+                ContextCompat.startForegroundService(this, intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }.start()
     }
 
     private fun startPythonServer() {
@@ -190,44 +199,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleShareIntent(intent: Intent) {
-        val uris = mutableListOf<Uri>()
-        when (intent.action) {
-            Intent.ACTION_SEND -> {
-                @Suppress("DEPRECATION")
-                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                if (uri != null) uris.add(uri)
-            }
-            Intent.ACTION_SEND_MULTIPLE -> {
-                @Suppress("DEPRECATION")
-                val list = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
-                if (list != null) uris.addAll(list)
-            }
-        }
-        if (uris.isEmpty()) return
-
-        val jsonFiles = JSONArray()
-        for (uri in uris) {
-            try {
-                val name = queryFileName(uri) ?: "shared-file"
-                val type = contentResolver.getType(uri) ?: "application/octet-stream"
-                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                if (bytes != null) {
-                    val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                    val obj = JSONObject().apply {
-                        put("name", name)
-                        put("type", type)
-                        put("base64", base64)
-                    }
-                    jsonFiles.put(obj)
+        Thread {
+            val uris = mutableListOf<Uri>()
+            when (intent.action) {
+                Intent.ACTION_SEND -> {
+                    @Suppress("DEPRECATION")
+                    val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    if (uri != null) uris.add(uri)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                Intent.ACTION_SEND_MULTIPLE -> {
+                    @Suppress("DEPRECATION")
+                    val list = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                    if (list != null) uris.addAll(list)
+                }
             }
-        }
-        if (jsonFiles.length() == 0) return
+            if (uris.isEmpty()) return@Thread
 
-        val js = "window.receiveNativeSharedFiles && window.receiveNativeSharedFiles($jsonFiles);"
-        webView.evaluateJavascript(js, null)
+            val jsonFiles = JSONArray()
+            for (uri in uris) {
+                try {
+                    val name = queryFileName(uri) ?: "shared-file"
+                    val type = contentResolver.getType(uri) ?: "application/octet-stream"
+                    val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    if (bytes != null) {
+                        val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        val obj = JSONObject().apply {
+                            put("name", name)
+                            put("type", type)
+                            put("base64", base64)
+                        }
+                        jsonFiles.put(obj)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            if (jsonFiles.length() == 0) return@Thread
+
+            runOnUiThread {
+                val js = "window.receiveNativeSharedFiles && window.receiveNativeSharedFiles($jsonFiles);"
+                webView.evaluateJavascript(js, null)
+            }
+        }.start()
     }
 
     private fun queryFileName(uri: Uri): String? {
@@ -299,8 +312,6 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    // Возвращаем фокус на WebView при возврате в приложение — иначе
-    // Bluetooth/HID-сканер может перестать присылать нажатия клавиш.
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) webView.requestFocus(View.FOCUS_DOWN)
@@ -410,9 +421,7 @@ class MainActivity : AppCompatActivity() {
         put("mime", if (entry.isDir) "" else entry.mime)
     }
 
-    // Мост для warehouse.html: window.Android.saveFile(...) и
-    // window.Android.printHtml(...), которые сейчас никуда не вызываются
-    // без этого объекта.
+    // Мост для взаимодействия JS и Android
     private inner class WebAppInterface(private val context: Context) {
         private val loginPrefs by lazy {
             context.getSharedPreferences(LOGIN_PREFS, Context.MODE_PRIVATE)
@@ -501,14 +510,16 @@ class MainActivity : AppCompatActivity() {
             val cleanUsername = username?.trim().orEmpty()
             val cleanPassword = password.orEmpty()
             if (cleanUsername.isBlank() || cleanPassword.isBlank()) return
-            try {
-                loginPrefs.edit()
-                    .putString(USERNAME_CIPHER, encrypt(cleanUsername))
-                    .putString(PASSWORD_CIPHER, encrypt(cleanPassword))
-                    .apply()
-            } catch (error: Exception) {
-                error.printStackTrace()
-            }
+            Thread {
+                try {
+                    loginPrefs.edit()
+                        .putString(USERNAME_CIPHER, encrypt(cleanUsername))
+                        .putString(PASSWORD_CIPHER, encrypt(cleanPassword))
+                        .apply()
+                } catch (error: Exception) {
+                    error.printStackTrace()
+                }
+            }.start()
         }
 
         @JavascriptInterface
@@ -577,7 +588,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // ───── Выбор папки и файловые операции для warehouse.html ─────
         @JavascriptInterface
         fun pickFolder(requestId: String) {
             runOnUiThread {
@@ -717,7 +727,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // ───── Вибрация: нативно, чтобы работала сразу и не зависела от WebView ─────
         private val vibrator: Vibrator? by lazy {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)
@@ -728,7 +737,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // pattern: "25" (одна вибрация, мс) или "30,40,30" (вибрация, пауза, вибрация…)
         @JavascriptInterface
         fun vibrate(pattern: String) {
             try {
@@ -758,7 +766,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Озвучка чисел через нативный Android TextToSpeech (в WebView нет голосов speechSynthesis).
         @JavascriptInterface
         fun getVoices(): String {
             val arr = JSONArray()
@@ -796,8 +803,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Позволяет странице (например, «Приём B-Ware») перезапустить Python,
-        // если он не ответил: тот же start-server.sh, что и при старте APK.
         @JavascriptInterface
         fun ensurePythonServer() {
             runOnUiThread { this@MainActivity.startPythonServer() }
@@ -805,34 +810,37 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun saveFile(base64: String, fileName: String, mimeType: String) {
-            try {
-                val bytes = Base64.decode(base64, Base64.DEFAULT)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val values = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                        put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            // Выполняем сохранение в фоновом потоке, чтобы не вешать интерфейс
+            Thread {
+                try {
+                    val bytes = Base64.decode(base64, Base64.DEFAULT)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        }
+                        val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                        uri?.let {
+                            context.contentResolver.openOutputStream(it)?.use { out -> out.write(bytes) }
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        if (!dir.exists()) dir.mkdirs()
+                        File(dir, fileName).writeBytes(bytes)
                     }
-                    val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                    uri?.let {
-                        context.contentResolver.openOutputStream(it)?.use { out -> out.write(bytes) }
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    if (!dir.exists()) dir.mkdirs()
-                    File(dir, fileName).writeBytes(bytes)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            }.start()
         }
 
         @JavascriptInterface
         fun printHtml(html: String) {
             runOnUiThread {
                 val wv = WebView(this@MainActivity)
-                printWebView = wv // держим ссылку, иначе WebView может быть собран GC до конца печати
+                printWebView = wv
                 wv.settings.javaScriptEnabled = false
                 wv.webViewClient = object : WebViewClient() {
                     private var started = false
