@@ -13,10 +13,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import ru.warehouse.app.ui.BarcodeScannerDialog
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import ru.warehouse.app.data.DraftLine
 import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseState
+import ru.warehouse.app.ui.BarcodeScannerDialog
 import ru.warehouse.app.ui.WarehouseViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -150,7 +151,7 @@ fun ReceiveScreen(
                     singleLine = true,
                 )
                 FilledTonalIconButton(onClick = onScan) {
-                    Icon(Icons.Default.BarcodeReader, contentDescription = "Сканировать")
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = "Сканировать")
                 }
             }
         }
@@ -311,7 +312,7 @@ fun InventoryScreen(
                     singleLine = true,
                 )
                 FilledTonalIconButton(onClick = onScan) {
-                    Icon(Icons.Default.BarcodeReader, contentDescription = "Сканировать адрес или товар")
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = "Сканировать адрес или товар")
                 }
             }
         }
