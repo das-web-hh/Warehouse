@@ -51,6 +51,7 @@ data class PlanItem(
     val barcode: String = "",
     val ean: String = "",
     val sku: String = "",
+    val planned: Double = 0.0,
     val quantity: Double = 0.0,
     val expectedQty: Double = 0.0,
     val scannedQty: Double = 0.0,
