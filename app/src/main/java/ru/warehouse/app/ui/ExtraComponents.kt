@@ -9,13 +9,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,9 +36,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
 /**
+ * Цветовые константы для статусов и уведомлений.
+ */
+val OkGreen = Color(0xFF2E9E5B)
+val WarnAmber = Color(0xFFE5A038)
+val AlertRed = Color(0xFFE05252)
+val InfoBlue = Color(0xFF3B82F6)
+
+/**
  * Запуск камеры-сканера для окон, которым нужен свой обработчик кода.
- * Один код = один результат (диалог закрывается сразу после считывания),
- * как и в warehouse.html. Возвращает функцию «начать сканирование».
  */
 @Composable
 fun rememberScanner(onCode: (String) -> Unit): () -> Unit {
@@ -44,7 +53,10 @@ fun rememberScanner(onCode: (String) -> Unit): () -> Unit {
     var locked by remember { mutableStateOf(false) }
     val callback = rememberUpdatedState(onCode)
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) { locked = false; open = true }
+        if (granted) {
+            locked = false
+            open = true
+        }
     }
     if (open) {
         BarcodeScannerDialog(
@@ -61,15 +73,18 @@ fun rememberScanner(onCode: (String) -> Unit): () -> Unit {
     return {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED
-        if (granted) { locked = false; open = true } else permission.launch(Manifest.permission.CAMERA)
+        if (granted) {
+            locked = false
+            open = true
+        } else {
+            permission.launch(Manifest.permission.CAMERA)
+        }
     }
 }
 
-val OkGreen = Color(0xFF2E9E5B)
-val WarnAmber = Color(0xFFE5A038)
-val AlertRed = Color(0xFFE05252)
-val InfoBlue = Color(0xFF3B82F6)
-
+/**
+ * Универсальная карточка для вывода информации.
+ */
 @Composable
 fun InfoCard(
     modifier: Modifier = Modifier,
@@ -80,18 +95,57 @@ fun InfoCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) { content() }
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) { 
+            content() 
+        }
     }
 }
 
+/**
+ * Строка «Ключ — Значение» для таблиц и просмотров.
+ */
 @Composable
 fun KeyValueRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        Text(value.ifBlank { "—" }, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = label, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant, 
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = value.ifBlank { "—" }, 
+            fontWeight = FontWeight.SemiBold, 
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+/**
+ * Бейдж статуса (для отображения успехов, предупреждений и ошибок)
+ */
+@Composable
+fun StatusBadge(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = color.copy(alpha = 0.15f),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = text,
+            color = color,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }
