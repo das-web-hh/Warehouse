@@ -47,27 +47,35 @@ data class Product(
 
 data class PlanItem(
     val id: String = UUID.randomUUID().toString(),
+    val itemId: String = "",
     val name: String = "",
     val barcode: String = "",
     val ean: String = "",
     val sku: String = "",
-    val planned: Double = 0.0,
+    val code: String = "",
+    val product: String = "",
     val quantity: Double = 0.0,
+    val planned: Double = 0.0,
     val expectedQty: Double = 0.0,
     val scannedQty: Double = 0.0,
     val unit: String = "шт",
+    val type: String = "",
     val isBware: Boolean = false,
 )
 
 data class CheckResult(
+    val id: String = UUID.randomUUID().toString(),
     val itemId: String = "",
     val name: String = "",
+    val barcode: String = "",
     val expectedQty: Double = 0.0,
     val actualQty: Double = 0.0,
     val difference: Double = 0.0,
     val status: CheckStatus = CheckStatus.PENDING,
     val unit: String = "шт",
+    val type: String = "",
 )
+
 
 data class InvoiceItem(
     val id: String = UUID.randomUUID().toString(),
