@@ -5,7 +5,15 @@ import java.util.UUID
 data class Product(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "",
-    val ean: String = ""
+    val ean: String = "",
+    val sku: String = "",
+    val category: String = "",
+    val unit: String = "шт",
+    val stock: Int = 0,
+    val bwareStock: Int = 0,
+    val barcode: String = ""
+)
+
 )
 
 /** Строка списка в окне «По заданию». */
