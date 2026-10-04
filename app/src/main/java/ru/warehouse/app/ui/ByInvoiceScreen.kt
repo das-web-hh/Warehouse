@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,12 +24,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -59,8 +59,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.warehouse.app.data.Invoice
 import ru.warehouse.app.data.InvoiceItem
-import kotlin.math.abs
-import kotlin.math.roundToLong
 
 /**
  * Warehouse invoice receiving screen.
@@ -1163,12 +1161,3 @@ private fun invoiceColors(dark: Boolean) = if (dark) {
 
 private fun invoiceItemKey(invoice: Invoice, item: InvoiceItem): String =
     "${invoice.id}:${item.id.ifBlank { item.sku.ifBlank { item.name } }}"
-
-private fun formatQuantity(value: Double): String {
-    val nearestInteger = value.roundToLong()
-    return if (abs(value - nearestInteger) < 0.000001) {
-        nearestInteger.toString()
-    } else {
-        value.toString().trimEnd('0').trimEnd('.')
-    }
-}
