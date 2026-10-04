@@ -80,15 +80,10 @@ fun WarehouseApp(
             WarehouseScreen.Catalog -> {
                 CatalogScreen(
                     state = state,
-                    onBack = { currentScreen = WarehouseScreen.Home },
-                    onScanClick = onScanRequest,
-                    onProductSelected = { product -> editingProduct = product },
-                    onAddProduct = { isAddingProduct = true },
-                    onEditProduct = { product -> editingProduct = product },
-                    onDeleteProduct = { productId ->
-                        val updatedList = state.products.filterNot { it.id == productId }
-                        onStateChange(state.copy(products = updatedList))
-                    },
+                    scanResult = scanResult,
+                    onScan = onScanRequest,
+                    onEdit = { product -> editingProduct = product },
+                    onAdd = { isAddingProduct = true },
                     modifier = modifier,
                 )
             }
