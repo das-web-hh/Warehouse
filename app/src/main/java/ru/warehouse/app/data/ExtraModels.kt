@@ -95,3 +95,7 @@ enum class WarehouseDocumentType(var customName: String? = null) {
 
 typealias WarehousrTransfer = WarehouseTransfer
 typealias WarehousrTransferStatus = WarehouseTransferStatus
+typealias WarehousrTransfer = WarehouseTransfer
+typealias WarehousrTransferStatus = WarehouseTransferStatus
+typealias WarehousrTransferItem = WarehouseTransferItem
+
