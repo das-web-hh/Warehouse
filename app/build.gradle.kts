@@ -64,6 +64,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.6")
+    implementation("androidx.documentfile:documentfile:1.0.1")
 
     // CameraX и Сканер штрихкодов
     implementation("androidx.camera:camera-core:1.3.1")
