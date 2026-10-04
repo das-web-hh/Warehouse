@@ -2,6 +2,12 @@ package ru.warehouse.app.data
 
 import java.util.UUID
 
+data class Product(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String = "",
+    val ean: String = ""
+)
+
 /** Строка списка в окне «По заданию». */
 data class PlanItem(
     val name: String,
