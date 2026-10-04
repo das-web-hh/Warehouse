@@ -37,7 +37,7 @@ data class Product(
     val id: String = UUID.randomUUID().toString(),
     val barcode: String = "",
     val sku: String = "",
-    val name: String,
+    val name: String = "",
     val category: String = "",
     val unit: String = "шт",
     val stock: Double = 0.0,
@@ -54,6 +54,7 @@ data class PlanItem(
     val sku: String = "",
     val code: String = "",
     val product: String = "",
+    val size: String = "",
     val quantity: Double = 0.0,
     val planned: Double = 0.0,
     val expectedQty: Double = 0.0,
@@ -68,14 +69,21 @@ data class CheckResult(
     val itemId: String = "",
     val name: String = "",
     val barcode: String = "",
+    val ean: String = "",
+    val sku: String = "",
     val expectedQty: Double = 0.0,
     val actualQty: Double = 0.0,
+    val scannedQty: Double = 0.0,
+    val quantity: Double = 0.0,
     val difference: Double = 0.0,
     val status: CheckStatus = CheckStatus.PENDING,
     val unit: String = "шт",
     val type: String = "",
+    val code: String = "",
+    val product: String = "",
+    val planned: Double = 0.0,
+    val size: String = "",
 )
-
 
 data class InvoiceItem(
     val id: String = UUID.randomUUID().toString(),
@@ -98,32 +106,32 @@ data class Invoice(
 )
 
 data class ReceiptLine(
-    val productId: String,
-    val barcode: String,
-    val name: String,
-    val quantity: Double,
-    val unit: String,
+    val productId: String = "",
+    val barcode: String = "",
+    val name: String = "",
+    val quantity: Double = 0.0,
+    val unit: String = "шт",
 )
 
 data class Receipt(
     val id: String = UUID.randomUUID().toString(),
-    val date: String,
+    val date: String = "",
     val orderNumber: String = "",
     val supplier: String = "",
     val isBware: Boolean = false,
-    val lines: List<ReceiptLine>,
+    val lines: List<ReceiptLine> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
 )
 
 data class InventoryLocation(
-    val code: String,
+    val code: String = "",
     val counts: Map<String, Double> = emptyMap(),
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
 data class WarehouseTask(
     val id: String = UUID.randomUUID().toString(),
-    val title: String,
+    val title: String = "",
     val description: String = "",
     val done: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
@@ -139,12 +147,12 @@ data class WarehouseState(
 )
 
 data class DraftLine(
-    val product: Product,
+    val product: Product = Product(),
     val quantity: Double = 1.0,
 )
 
 data class ImportResult(
-    val productCount: Int,
-    val receiptCount: Int,
-    val message: String,
+    val productCount: Int = 0,
+    val receiptCount: Int = 0,
+    val message: String = "",
 )
