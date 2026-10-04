@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ru.warehouse.app.ui
 
 import android.Manifest
@@ -50,7 +52,6 @@ import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseScreen
 import ru.warehouse.app.data.WarehouseState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WarehouseApp(
     viewModel: WarehouseViewModel,
