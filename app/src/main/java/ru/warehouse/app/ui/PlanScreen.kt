@@ -1,156 +1,232 @@
-package ru.warehouse.app.data
+@file:OptIn(ExperimentalMaterial3Api::class)
 
-import java.util.UUID
+package ru.warehouse.app.ui
 
-enum class WarehouseScreen(val title: String) {
-    Home("Warehouse"),
-    Catalog("Каталог"),
-    Receive("Приём товаров"),
-    Bware("Приёмка B-Ware"),
-    Inventory("Инвентаризация"),
-    History("История"),
-    Tasks("Задачи"),
-    Transfer("Импорт / экспорт"),
-    Settings("Настройки"),
-    ReceiveHub("Приём товаров"),
-    ByInvoice("По накладной"),
-    Auto("Автоприём"),
-    History2("История 2"),
-    Plan("Приём по заданию"),
-    LinkTool("Товар + штрихкод"),
-    Profile("Профиль"),
-    Info("Инфо"),
-    Documents("Документы"),
-    Gemini("Чат Gemini"),
-    Integrations("Gemini и сервер"),
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import ru.warehouse.app.data.CheckResult
+import ru.warehouse.app.data.CheckStatus
+import ru.warehouse.app.data.PlanItem
+import ru.warehouse.app.data.WarehouseState
+
+@Composable
+fun PlanScreen(
+    state: WarehouseState,
+    onBack: () -> Unit = {},
+    onScanClick: () -> Unit = {},
+    onSavePlan: (List<CheckResult>) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var planItems by remember {
+        mutableStateOf(
+            state.products.map { product ->
+                PlanItem(
+                    id = product.id,
+                    name = product.name,
+                    barcode = product.barcode,
+                    sku = product.sku,
+                    expectedQty = product.stock,
+                    scannedQty = 0.0,
+                    unit = product.unit
+                )
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Приём по заданию") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onScanClick) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Сканировать")
+                    }
+                }
+            )
+        },
+        modifier = modifier
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Поиск по названию или штрихкоду") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            val filteredItems = planItems.filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                        it.barcode.contains(searchQuery, ignoreCase = true) ||
+                        it.sku.contains(searchQuery, ignoreCase = true)
+            }
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(filteredItems) { item ->
+                    PlanItemRow(
+                        item = item,
+                        onQuantityChange = { newQty ->
+                            planItems = planItems.map {
+                                if (it.id == item.id) it.copy(scannedQty = newQty) else it
+                            }
+                        }
+                    )
+                }
+            }
+
+            Button(
+                onClick = {
+                    val results = planItems.map { item ->
+                        val diff = item.scannedQty - item.expectedQty
+                        val status = when {
+                            diff == 0.0 -> CheckStatus.MATCH
+                            diff < 0 -> CheckStatus.SHORTAGE
+                            else -> CheckStatus.OVERAGE
+                        }
+                        CheckResult(
+                            itemId = item.id,
+                            name = item.name,
+                            barcode = item.barcode,
+                            expectedQty = item.expectedQty,
+                            actualQty = item.scannedQty,
+                            difference = diff,
+                            status = status,
+                            unit = item.unit
+                        )
+                    }
+                    onSavePlan(results)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Завершить и сохранить сверку")
+            }
+        }
+    }
 }
 
-enum class CheckStatus {
-    MATCH,
-    SHORTAGE,
-    OVERAGE,
-    MISMATCH,
-    PENDING
+@Composable
+private fun PlanItemRow(
+    item: PlanItem,
+    onQuantityChange: (Double) -> Unit
+) {
+    val diff = item.scannedQty - item.expectedQty
+    val statusColor = when {
+        item.scannedQty == 0.0 -> Color.Gray
+        diff == 0.0 -> Color(0xFF2E7D32)
+        diff < 0 -> Color(0xFFE65100)
+        else -> Color(0xFFC62828)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name.ifEmpty { "Товар без названия" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Штрихкод: ${item.barcode.ifEmpty { "—" }} | SKU: ${item.sku.ifEmpty { "—" }}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(statusColor)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "План: ${item.expectedQty} ${item.unit} | Факт: ${item.scannedQty} ${item.unit}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { if (item.scannedQty > 0) onQuantityChange(item.scannedQty - 1) }
+                ) {
+                    Text("-", style = MaterialTheme.typography.headlineMedium)
+                }
+                Text(
+                    text = "${item.scannedQty.toInt()}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                IconButton(
+                    onClick = { onQuantityChange(item.scannedQty + 1) }
+                ) {
+                    Text("+", style = MaterialTheme.typography.headlineMedium)
+                }
+            }
+        }
+    }
 }
-
-data class Product(
-    val id: String = UUID.randomUUID().toString(),
-    val barcode: String = "",
-    val sku: String = "",
-    val name: String = "",
-    val category: String = "",
-    val unit: String = "шт",
-    val stock: Double = 0.0,
-    val bwareStock: Double = 0.0,
-    val pendingApproval: Boolean = false,
-)
-
-data class PlanItem(
-    val id: String = UUID.randomUUID().toString(),
-    val itemId: String = "",
-    val name: String = "",
-    val barcode: String = "",
-    val ean: String = "",
-    val sku: String = "",
-    val code: String = "",
-    val product: String = "",
-    val quantity: Double = 0.0,
-    val planned: Double = 0.0,
-    val expectedQty: Double = 0.0,
-    val scannedQty: Double = 0.0,
-    val unit: String = "шт",
-    val type: String = "",
-    val isBware: Boolean = false,
-)
-
-data class CheckResult(
-    val id: String = UUID.randomUUID().toString(),
-    val itemId: String = "",
-    val name: String = "",
-    val barcode: String = "",
-    val ean: String = "",
-    val sku: String = "",
-    val expectedQty: Double = 0.0,
-    val actualQty: Double = 0.0,
-    val scannedQty: Double = 0.0,
-    val quantity: Double = 0.0,
-    val difference: Double = 0.0,
-    val status: CheckStatus = CheckStatus.PENDING,
-    val unit: String = "шт",
-    val type: String = "",
-    val code: String = "",
-    val product: String = "",
-    val planned: Double = 0.0,
-)
-
-data class InvoiceItem(
-    val id: String = UUID.randomUUID().toString(),
-    val name: String = "",
-    val barcode: String = "",
-    val sku: String = "",
-    val quantity: Double = 0.0,
-    val scannedQty: Double = 0.0,
-    val unit: String = "шт",
-    val price: Double = 0.0,
-)
-
-data class Invoice(
-    val id: String = UUID.randomUUID().toString(),
-    val number: String = "",
-    val date: String = "",
-    val supplier: String = "",
-    val items: List<InvoiceItem> = emptyList(),
-    val isCompleted: Boolean = false,
-)
-
-data class ReceiptLine(
-    val productId: String = "",
-    val barcode: String = "",
-    val name: String = "",
-    val quantity: Double = 0.0,
-    val unit: String = "шт",
-)
-
-data class Receipt(
-    val id: String = UUID.randomUUID().toString(),
-    val date: String = "",
-    val orderNumber: String = "",
-    val supplier: String = "",
-    val isBware: Boolean = false,
-    val lines: List<ReceiptLine> = emptyList(),
-    val createdAt: Long = System.currentTimeMillis(),
-)
-
-data class InventoryLocation(
-    val code: String = "",
-    val counts: Map<String, Double> = emptyMap(),
-    val updatedAt: Long = System.currentTimeMillis(),
-)
-
-data class WarehouseTask(
-    val id: String = UUID.randomUUID().toString(),
-    val title: String = "",
-    val description: String = "",
-    val done: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis(),
-)
-
-data class WarehouseState(
-    val products: List<Product> = emptyList(),
-    val receipts: List<Receipt> = emptyList(),
-    val locations: List<InventoryLocation> = emptyList(),
-    val tasks: List<WarehouseTask> = emptyList(),
-    val darkTheme: Boolean = false,
-    val selectedLocation: String = "",
-)
-
-data class DraftLine(
-    val product: Product = Product(),
-    val quantity: Double = 1.0,
-)
-
-data class ImportResult(
-    val productCount: Int = 0,
-    val receiptCount: Int = 0,
-    val message: String = "",
-)
