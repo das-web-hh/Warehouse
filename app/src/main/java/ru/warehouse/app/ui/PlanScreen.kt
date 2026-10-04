@@ -58,26 +58,23 @@ fun PlanScreen(
     modifier: Modifier = Modifier,
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var planItems by remember {
+    var planItems by remember(state.products) {
         mutableStateOf(
             state.products.map { product ->
                 PlanItem(
-                    id = product.id,
-                    name = product.name,
-                    barcode = product.barcode,
-                    sku = product.sku,
-                    expectedQty = product.stock,
-                    scannedQty = 0.0,
-                    unit = product.unit
+                    product = product,
+                    scannedQuantity = 0.0,
+                    status = CheckStatus.PENDING
                 )
             }
         )
     }
 
     Scaffold(
+        modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Приём по заданию") },
+                title = { Text("Инвентаризация / План") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
@@ -89,143 +86,149 @@ fun PlanScreen(
                     }
                 }
             )
-        },
-        modifier = modifier
-    ) { innerPadding ->
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Поиск по названию или штрихкоду") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Поиск по наименованию или штрихкоду") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
-            val filteredItems = planItems.filter {
-                it.name.contains(searchQuery, ignoreCase = true) ||
-                        it.barcode.contains(searchQuery, ignoreCase = true) ||
-                        it.sku.contains(searchQuery, ignoreCase = true)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val filteredItems = remember(planItems, searchQuery) {
+                if (searchQuery.isBlank()) {
+                    planItems
+                } else {
+                    planItems.filter {
+                        it.product.name.contains(searchQuery, ignoreCase = true) ||
+                                it.product.barcode.contains(searchQuery, ignoreCase = true)
+                    }
+                }
             }
 
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(filteredItems) { item ->
-                    PlanItemRow(
+                items(filteredItems, key = { it.product.id }) { item ->
+                    PlanItemCard(
                         item = item,
                         onQuantityChange = { newQty ->
                             planItems = planItems.map {
-                                if (it.id == item.id) it.copy(scannedQty = newQty) else it
+                                if (it.product.id == item.product.id) {
+                                    val status = when {
+                                        newQty == 0.0 -> CheckStatus.PENDING
+                                        newQty == it.product.quantity -> CheckStatus.MATCH
+                                        else -> CheckStatus.MISMATCH
+                                    }
+                                    it.copy(scannedQuantity = newQty, status = status)
+                                } else {
+                                    it
+                                }
                             }
                         }
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
-                    val results = planItems.map { item ->
-                        val diff = item.scannedQty - item.expectedQty
-                        val status = when {
-                            diff == 0.0 -> CheckStatus.MATCH
-                            diff < 0 -> CheckStatus.SHORTAGE
-                            else -> CheckStatus.OVERAGE
-                        }
+                    val results = planItems.map {
                         CheckResult(
-                            itemId = item.id,
-                            name = item.name,
-                            barcode = item.barcode,
-                            expectedQty = item.expectedQty,
-                            actualQty = item.scannedQty,
-                            difference = diff,
-                            status = status,
-                            unit = item.unit
+                            productId = it.product.id,
+                            expectedQty = it.product.quantity,
+                            scannedQty = it.scannedQuantity,
+                            status = it.status
                         )
                     }
                     onSavePlan(results)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Завершить и сохранить сверку")
+                Text("Сохранить результат")
             }
         }
     }
 }
 
 @Composable
-private fun PlanItemRow(
+private fun PlanItemCard(
     item: PlanItem,
-    onQuantityChange: (Double) -> Unit
+    onQuantityChange: (Double) -> Unit,
 ) {
-    val diff = item.scannedQty - item.expectedQty
-    val statusColor = when {
-        item.scannedQty == 0.0 -> Color.Gray
-        diff == 0.0 -> Color(0xFF2E7D32)
-        diff < 0 -> Color(0xFFE65100)
-        else -> Color(0xFFC62828)
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when (item.status) {
+                CheckStatus.MATCH -> Color(0xFFE8F5E9)
+                CheckStatus.MISMATCH -> Color(0xFFFFEBEE)
+                CheckStatus.PENDING -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.name.ifEmpty { "Товар без названия" },
+                    text = item.product.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Штрихкод: ${item.barcode.ifEmpty { "—" }} | SKU: ${item.sku.ifEmpty { "—" }}",
-                    style = MaterialTheme.typography.bodySmall
+                    text = "Штрихкод: ${item.product.barcode}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(RoundedCornerShape(5.dp))
-                            .background(statusColor)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "План: ${item.expectedQty} ${item.unit} | Факт: ${item.scannedQty} ${item.unit}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                Text(
+                    text = "План: ${item.product.quantity} ${item.product.unit}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { if (item.scannedQty > 0) onQuantityChange(item.scannedQty - 1) }
-                ) {
-                    Text("-", style = MaterialTheme.typography.headlineMedium)
-                }
-                Text(
-                    text = "${item.scannedQty.toInt()}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                Icon(
+                    imageVector = when (item.status) {
+                        CheckStatus.MATCH -> Icons.Default.CheckCircle
+                        CheckStatus.MISMATCH -> Icons.Default.Warning
+                        CheckStatus.PENDING -> Icons.Default.QrCodeScanner
+                    },
+                    contentDescription = null,
+                    tint = when (item.status) {
+                        CheckStatus.MATCH -> Color(0xFF2E7D32)
+                        CheckStatus.MISMATCH -> Color(0xFFC62828)
+                        CheckStatus.PENDING -> Color.Gray
+                    }
                 )
-                IconButton(
-                    onClick = { onQuantityChange(item.scannedQty + 1) }
-                ) {
-                    Text("+", style = MaterialTheme.typography.headlineMedium)
-                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = formatQuantity(item.scannedQuantity),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable { onQuantityChange(item.scannedQuantity + 1.0) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
             }
         }
     }
