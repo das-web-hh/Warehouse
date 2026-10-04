@@ -55,6 +55,7 @@ import ru.warehouse.app.data.WarehouseState
 @Composable
 fun WarehouseApp(
     viewModel: WarehouseViewModel,
+    extra: ExtraViewModel,
     state: WarehouseState = viewModel.state.collectAsState().value,
 ) {
     val context = LocalContext.current
@@ -64,6 +65,29 @@ fun WarehouseApp(
     var scanResult by rememberSaveable { mutableStateOf<String?>(null) }
     var scannerOpen by rememberSaveable { mutableStateOf(false) }
     var editorProduct by remember { mutableStateOf<Product?>(null) }
+    var homePage by rememberSaveable { mutableStateOf(0) }
+
+    // Куда возвращает «Назад»: из под-окон приёма — в меню приёма, из «История 2» — в «По накладной».
+    fun parentOf(target: WarehouseScreen): WarehouseScreen = when (target) {
+        WarehouseScreen.Receive, WarehouseScreen.ByInvoice, WarehouseScreen.Auto -> WarehouseScreen.ReceiveHub
+        WarehouseScreen.History2 -> WarehouseScreen.ByInvoice
+        WarehouseScreen.Integrations -> WarehouseScreen.Settings
+        else -> WarehouseScreen.Home
+    }
+    val goBack = { screen = parentOf(screen) }
+
+    // Файл, отправленный в приложение через «Поделиться», открывает окно «По накладной».
+    val openRequest by extra.openRequest.collectAsState()
+    LaunchedEffect(openRequest) {
+        openRequest?.let { screen = it; extra.consumeOpenRequest() }
+    }
+    val extraMessage by extra.message.collectAsState()
+    LaunchedEffect(extraMessage) {
+        extraMessage?.takeIf(String::isNotBlank)?.let {
+            snackbarHost.showSnackbar(it)
+            extra.dismissMessage()
+        }
+    }
 
     val cameraPermission = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -85,7 +109,7 @@ fun WarehouseApp(
         when {
             scannerOpen -> scannerOpen = false
             editorProduct != null -> editorProduct = null
-            else -> screen = WarehouseScreen.Home
+            else -> goBack()
         }
     }
 
@@ -102,7 +126,7 @@ fun WarehouseApp(
         topBar = {
             WarehouseTopBar(
                 screen = screen,
-                onBack = { screen = WarehouseScreen.Home },
+                onBack = goBack,
                 onSettings = { screen = WarehouseScreen.Settings },
             )
         },
@@ -110,7 +134,7 @@ fun WarehouseApp(
             WarehouseBottomBar(
                 selected = screen,
                 onSelect = { target ->
-                    screen = target
+                    screen = if (target == WarehouseScreen.Receive) WarehouseScreen.ReceiveHub else target
                     scanResult = null
                 },
             )
@@ -125,6 +149,8 @@ fun WarehouseApp(
                 onOpen = { screen = it; scanResult = null },
                 onScan = openScanner,
                 onProduct = { editorProduct = it },
+                page = homePage,
+                onPageChange = { homePage = it },
                 modifier = Modifier.padding(innerPadding),
             )
             WarehouseScreen.Catalog -> CatalogScreen(
@@ -171,7 +197,39 @@ fun WarehouseApp(
                 onThemeChange = viewModel::setDarkTheme,
                 onTransfer = { screen = WarehouseScreen.Transfer },
                 modifier = Modifier.padding(innerPadding),
+                onIntegrations = { screen = WarehouseScreen.Integrations },
             )
+            WarehouseScreen.ReceiveHub -> ReceiveHubScreen(
+                onOpen = { screen = it },
+                modifier = Modifier.padding(innerPadding),
+            )
+            WarehouseScreen.ByInvoice -> ByInvoiceScreen(
+                state = state,
+                extra = extra,
+                warehouse = viewModel,
+                onHistory2 = { screen = WarehouseScreen.History2 },
+                modifier = Modifier.padding(innerPadding),
+            )
+            WarehouseScreen.Auto -> AutoReceiveScreen(
+                state = state,
+                extra = extra,
+                warehouse = viewModel,
+                modifier = Modifier.padding(innerPadding),
+            )
+            WarehouseScreen.History2 -> History2Screen(extra, Modifier.padding(innerPadding))
+            WarehouseScreen.Plan -> PlanScreen(
+                state = state,
+                extra = extra,
+                warehouse = viewModel,
+                onBackToHome = { screen = WarehouseScreen.Home },
+                modifier = Modifier.padding(innerPadding),
+            )
+            WarehouseScreen.LinkTool -> LinkToolScreen(state, extra, viewModel, Modifier.padding(innerPadding))
+            WarehouseScreen.Profile -> ProfileScreen(extra, Modifier.padding(innerPadding))
+            WarehouseScreen.Info -> InfoStatsScreen(state, Modifier.padding(innerPadding))
+            WarehouseScreen.Documents -> DocumentsScreen(extra, Modifier.padding(innerPadding))
+            WarehouseScreen.Gemini -> GeminiChatScreen(extra, Modifier.padding(innerPadding))
+            WarehouseScreen.Integrations -> IntegrationSettingsScreen(extra, Modifier.padding(innerPadding))
         }
     }
 
@@ -257,9 +315,12 @@ private fun WarehouseBottomBar(
 ) {
     val selectedTab = when (selected) {
         WarehouseScreen.Catalog -> WarehouseScreen.Catalog
-        WarehouseScreen.Receive, WarehouseScreen.Bware -> WarehouseScreen.Receive
-        WarehouseScreen.History -> WarehouseScreen.History
-        WarehouseScreen.Transfer, WarehouseScreen.Settings, WarehouseScreen.Tasks, WarehouseScreen.Inventory -> WarehouseScreen.Settings
+        WarehouseScreen.Receive, WarehouseScreen.Bware, WarehouseScreen.ReceiveHub,
+        WarehouseScreen.ByInvoice, WarehouseScreen.Auto, WarehouseScreen.Plan -> WarehouseScreen.Receive
+        WarehouseScreen.History, WarehouseScreen.History2 -> WarehouseScreen.History
+        WarehouseScreen.Transfer, WarehouseScreen.Settings, WarehouseScreen.Tasks, WarehouseScreen.Inventory,
+        WarehouseScreen.LinkTool, WarehouseScreen.Profile, WarehouseScreen.Info, WarehouseScreen.Documents,
+        WarehouseScreen.Gemini, WarehouseScreen.Integrations -> WarehouseScreen.Settings
         else -> WarehouseScreen.Home
     }
     NavigationBar(

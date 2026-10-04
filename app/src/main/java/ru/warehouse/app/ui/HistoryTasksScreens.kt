@@ -228,6 +228,7 @@ fun SettingsScreen(
     onThemeChange: (Boolean) -> Unit,
     onTransfer: () -> Unit,
     modifier: Modifier = Modifier,
+    onIntegrations: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -273,6 +274,24 @@ fun SettingsScreen(
                     )
                     Button(onClick = onTransfer, modifier = Modifier.fillMaxWidth()) {
                         Text("Резервная копия и перенос")
+                    }
+                }
+            }
+        }
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Gemini и сервер", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Адрес Python-сервера, ключ и модель Gemini, интервал проверки папки автоприёма.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(onClick = onIntegrations, modifier = Modifier.fillMaxWidth()) {
+                        Text("Открыть настройки")
                     }
                 }
             }
