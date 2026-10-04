@@ -25,6 +25,14 @@ enum class WarehouseScreen(val title: String) {
     Integrations("Gemini и сервер"),
 }
 
+enum class CheckStatus {
+    MATCH,
+    SHORTAGE,
+    OVERAGE,
+    MISMATCH,
+    PENDING
+}
+
 data class Product(
     val id: String = UUID.randomUUID().toString(),
     val barcode: String = "",
@@ -35,6 +43,49 @@ data class Product(
     val stock: Double = 0.0,
     val bwareStock: Double = 0.0,
     val pendingApproval: Boolean = false,
+)
+
+data class PlanItem(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String = "",
+    val barcode: String = "",
+    val ean: String = "",
+    val sku: String = "",
+    val quantity: Double = 0.0,
+    val expectedQty: Double = 0.0,
+    val scannedQty: Double = 0.0,
+    val unit: String = "шт",
+    val isBware: Boolean = false,
+)
+
+data class CheckResult(
+    val itemId: String = "",
+    val name: String = "",
+    val expectedQty: Double = 0.0,
+    val actualQty: Double = 0.0,
+    val difference: Double = 0.0,
+    val status: CheckStatus = CheckStatus.PENDING,
+    val unit: String = "шт",
+)
+
+data class InvoiceItem(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String = "",
+    val barcode: String = "",
+    val sku: String = "",
+    val quantity: Double = 0.0,
+    val scannedQty: Double = 0.0,
+    val unit: String = "шт",
+    val price: Double = 0.0,
+)
+
+data class Invoice(
+    val id: String = UUID.randomUUID().toString(),
+    val number: String = "",
+    val date: String = "",
+    val supplier: String = "",
+    val items: List<InvoiceItem> = emptyList(),
+    val isCompleted: Boolean = false,
 )
 
 data class ReceiptLine(
