@@ -1,7 +1,11 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ru.warehouse.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,35 +18,40 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AssignmentTurnedIn
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoveToInbox
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseScreen
 import ru.warehouse.app.data.WarehouseState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     state: WarehouseState,
@@ -57,36 +66,62 @@ fun HomeScreen(
         emptyList()
     } else {
         state.products.filter {
-            it.name.contains(search, true) ||
-                it.barcode.contains(search, true) ||
-                it.sku.contains(search, true)
+            it.name.contains(search, ignoreCase = true) ||
+                it.barcode.contains(search, ignoreCase = true) ||
+                it.sku.contains(search, ignoreCase = true)
         }
     }
 
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    val currentTime = timeFormat.format(Date())
+    val currentDate = dateFormat.format(Date())
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        // Заголовок с временем и датой (как в Replit)
         item {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                OutlinedTextField(
-                    value = search,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    label = { Text("Быстрый поиск товара") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    shape = MaterialTheme.shapes.large,
+                Text(
+                    text = currentTime,
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
-                FilledTonalIconButton(onClick = onScan) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Сканер")
-                }
+                Text(
+                    text = currentDate,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+        }
+
+        // Поле поиска с иконкой сканера внутри
+        item {
+            OutlinedTextField(
+                value = search,
+                onValueChange = onSearchChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Поиск товара") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = onScan) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Сканировать")
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                ),
+            )
         }
 
         if (search.isNotBlank()) {
@@ -97,7 +132,7 @@ fun HomeScreen(
                 item {
                     EmptyState(
                         title = "Ничего не найдено",
-                        body = "Проверьте введенный текст или штрихкод.",
+                        body = "Попробуйте изменить запрос или отсканировать штрихкод.",
                     )
                 }
             } else {
@@ -106,89 +141,47 @@ fun HomeScreen(
                 }
             }
         } else {
+            // Крупные цветные кнопки (Приём товаров, Инвентар., B-Ware, По заданию)
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    HomeStatCard(
-                        title = "Всего позиций",
-                        value = state.products.size.toString(),
-                        subtitle = "в каталоге",
-                        modifier = Modifier.weight(1f),
-                    )
-                    HomeStatCard(
-                        title = "Документов",
-                        value = state.receipts.size.toString(),
-                        subtitle = "проведено",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-
-            item {
-                SectionHeading("Быстрые действия")
-            }
-
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        ActionCard(
-                            title = "Приёмка",
-                            subtitle = "Новое поступление",
+                        QuickActionButton(
+                            title = "Приём товаров",
                             icon = Icons.Default.MoveToInbox,
+                            color = Color(0xFF7C8CF8),
                             onClick = { onOpen(WarehouseScreen.Receive) },
                             modifier = Modifier.weight(1f),
                         )
-                        ActionCard(
-                            title = "B-Ware",
-                            subtitle = "Уценка и уценка",
-                            icon = Icons.Default.Warning,
-                            onClick = { onOpen(WarehouseScreen.Bware) },
+                        QuickActionButton(
+                            title = "Инвентар.",
+                            icon = Icons.Default.AssignmentTurnedIn,
+                            color = Color(0xFF52C4C1),
+                            onClick = { onOpen(WarehouseScreen.Inventory) },
                             modifier = Modifier.weight(1f),
                         )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        ActionCard(
-                            title = "Инвентаризация",
-                            subtitle = "Сверка остатков",
-                            icon = Icons.Default.Inventory,
-                            onClick = { onOpen(WarehouseScreen.Inventory) },
+                        QuickActionButton(
+                            title = "B-Ware",
+                            icon = Icons.Default.Warning,
+                            color = Color(0xFFE5A038),
+                            onClick = { onOpen(WarehouseScreen.Bware) },
                             modifier = Modifier.weight(1f),
                         )
-                        ActionCard(
-                            title = "Задачи",
-                            subtitle = "Списки и задания",
+                        QuickActionButton(
+                            title = "По заданию",
                             icon = Icons.Default.Assignment,
+                            color = Color(0xFF4DB6AC),
                             onClick = { onOpen(WarehouseScreen.Tasks) },
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        ActionCard(
-                            title = "Каталог",
-                            subtitle = "База товаров",
-                            icon = Icons.Default.Inventory2,
-                            onClick = { onOpen(WarehouseScreen.Catalog) },
-                            modifier = Modifier.weight(1f),
-                        )
-                        ActionCard(
-                            title = "История",
-                            subtitle = "Все операции",
-                            icon = Icons.Default.History,
-                            onClick = { onOpen(WarehouseScreen.History) },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
                 }
             }
         }
@@ -196,63 +189,44 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeStatCard(
+private fun QuickActionButton(
     title: String,
-    value: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ActionCard(
-    title: String,
-    subtitle: String,
     icon: ImageVector,
+    color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    Surface(
         onClick = onClick,
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = modifier.height(110.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface,
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(36.dp),
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(color, CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(8.dp),
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp),
                 )
             }
-            Column {
-                Text(title, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
