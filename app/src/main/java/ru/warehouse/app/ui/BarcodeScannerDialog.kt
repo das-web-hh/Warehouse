@@ -30,12 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
@@ -44,105 +44,88 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Composable
 fun BarcodeScannerDialog(
     onDismiss: () -> Unit,
-    onBarcode: (String) -> Unit,
+    onBarcodeScanned: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val callback by rememberUpdatedState(onBarcode)
-    val executor = remember { Executors.newSingleThreadExecutor() }
-    val scanner = remember { BarcodeScanning.getClient() }
-    val consumed = remember { AtomicBoolean(false) }
-    val cameraController = remember(context) {
+    val currentOnBarcode = rememberUpdatedState(onBarcodeScanned)
+
+    val cameraController = remember {
         LifecycleCameraController(context).apply {
-            setImageAnalysisAnalyzer(executor, ImageAnalysis.Analyzer { proxy ->
-                val mediaImage = proxy.image
-                if (mediaImage == null) {
-                    proxy.close()
-                } else {
-                    val image = InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
+            setImageAnalysisAnalyzer(
+                Executors.newSingleThreadExecutor()
+            ) { imageProxy ->
+                val mediaImage = imageProxy.image
+                if (mediaImage != null) {
+                    val image = InputImage.fromMediaImage(
+                        mediaImage,
+                        imageProxy.imageInfo.rotationDegrees
+                    )
+                    val scanner = BarcodeScanning.getClient()
                     scanner.process(image)
-                        .addOnSuccessListener { codes ->
-                            val value = codes.firstOrNull { !it.rawValue.isNullOrBlank() }?.rawValue
-                            if (!value.isNullOrBlank() && consumed.compareAndSet(false, true)) {
-                                callback(value)
+                        .addOnSuccessListener { barcodes ->
+                            barcodes.firstOrNull()?.rawValue?.let { barcode ->
+                                currentOnBarcode.value(barcode)
                             }
                         }
-                        .addOnCompleteListener { proxy.close() }
+                        .addOnCompleteListener {
+                            imageProxy.close()
+                        }
+                } else {
+                    imageProxy.close()
                 }
-            })
+            }
         }
     }
 
-    DisposableEffect(cameraController, lifecycleOwner) {
+    DisposableEffect(lifecycleOwner) {
         cameraController.bindToLifecycle(lifecycleOwner)
         onDispose {
-            cameraController.clearImageAnalysisAnalyzer()
             cameraController.unbind()
-            executor.shutdown()
-            scanner.close()
         }
     }
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .height(590.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = Color(0xFF0C1723),
-            contentColor = Color.White,
+                .fillMaxWidth(0.9f)
+                .height(450.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
-            Box {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { viewContext ->
-                        PreviewView(viewContext).apply {
-                            scaleType = PreviewView.ScaleType.FILL_CENTER
-                            this.controller = cameraController
-                        }
-                    },
-                    update = { it.controller = cameraController },
-                )
-                Column(
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Сканирование штрихкода",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Закрыть")
+                    }
+                }
+
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.18f))
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .weight(1f)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column {
-                            Text("Сканирование", style = MaterialTheme.typography.titleLarge)
-                            Text("Наведите камеру на штрихкод или QR-код", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.78f))
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = "Закрыть", tint = Color.White)
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(190.dp)
-                            .background(Color.Transparent, RoundedCornerShape(24.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(128.dp),
-                            shape = RoundedCornerShape(18.dp),
-                            color = Color.Transparent,
-                            border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFF07818)),
-                        ) {}
-                    }
-                    Spacer(Modifier.height(1.dp))
+                    AndroidView(
+                        factory = { ctx ->
+                            PreviewView(ctx).apply {
+                                controller = cameraController
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }
