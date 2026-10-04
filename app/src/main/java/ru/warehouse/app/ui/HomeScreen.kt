@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
-import ru.warehouse.app.ui.BarcodeScannerDialog
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -29,8 +28,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -123,12 +124,12 @@ fun HomeScreen(
                         placeholder = { Text("Название, артикул или штрихкод", color = Color.White.copy(alpha = 0.65f)) },
                         singleLine = true,
                         trailingIcon = {
-                            androidx.compose.material3.IconButton(onClick = onScan) {
-                                Icon(Icons.Default.BarcodeReader, contentDescription = "Сканировать", tint = Color.White)
+                            IconButton(onClick = onScan) {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = "Сканировать", tint = Color.White)
                             }
                         },
                         shape = MaterialTheme.shapes.large,
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
                             focusedBorderColor = Color(0xFFFFAE69),
