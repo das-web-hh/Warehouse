@@ -2,7 +2,6 @@
 
 package ru.warehouse.app.ui
 
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -11,7 +10,6 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -82,10 +80,15 @@ fun WarehouseApp(
             WarehouseScreen.Catalog -> {
                 CatalogScreen(
                     state = state,
-                    scanResult = scanResult,
-                    onScan = onScanRequest,
-                    onEdit = { product -> editingProduct = product },
-                    onAdd = { isAddingProduct = true },
+                    onBack = { currentScreen = WarehouseScreen.Home },
+                    onScanClick = onScanRequest,
+                    onProductSelected = { product -> editingProduct = product },
+                    onAddProduct = { isAddingProduct = true },
+                    onEditProduct = { product -> editingProduct = product },
+                    onDeleteProduct = { productId ->
+                        val updatedList = state.products.filterNot { it.id == productId }
+                        onStateChange(state.copy(products = updatedList))
+                    },
                     modifier = modifier,
                 )
             }
