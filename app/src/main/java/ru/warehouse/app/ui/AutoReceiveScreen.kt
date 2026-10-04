@@ -1,4 +1,4 @@
-package ru.warehouse.app.ui.screens
+package ru.warehouse.app.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
