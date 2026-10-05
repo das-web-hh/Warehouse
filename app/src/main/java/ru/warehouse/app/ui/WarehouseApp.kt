@@ -8,19 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import ru.warehouse.app.data.DraftLine
 import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseScreen
@@ -57,12 +55,6 @@ fun WarehouseApp(
 
     fun navigate(screen: WarehouseScreen) {
         if (stack.last() != screen) stack.add(screen)
-    }
-
-    fun openRoot(screen: WarehouseScreen) {
-        stack.clear()
-        stack.add(WarehouseScreen.Home)
-        if (screen != WarehouseScreen.Home) stack.add(screen)
     }
 
     fun back() {
@@ -94,38 +86,23 @@ fun WarehouseApp(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             if (currentScreen != WarehouseScreen.Home) {
                 TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = if (state.darkTheme) Color(0xFF1A1D23) else Color(0xFF23478F),
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White,
+                        actionIconContentColor = Color.White,
+                    ),
                     title = { Text(currentScreen.title) },
                     navigationIcon = {
                         IconButton(onClick = { back() }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                         }
                     },
-                )
-            }
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = currentScreen == WarehouseScreen.Home,
-                    onClick = { openRoot(WarehouseScreen.Home) },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
-                    label = { Text("Главная") },
-                )
-                NavigationBarItem(
-                    selected = currentScreen == WarehouseScreen.Catalog,
-                    onClick = { openRoot(WarehouseScreen.Catalog) },
-                    icon = { Icon(Icons.Default.List, contentDescription = "Каталог") },
-                    label = { Text("Каталог") },
-                )
-                NavigationBarItem(
-                    selected = currentScreen == WarehouseScreen.Settings,
-                    onClick = { openRoot(WarehouseScreen.Settings) },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Настройки") },
-                    label = { Text("Настройки") },
                 )
             }
         },
