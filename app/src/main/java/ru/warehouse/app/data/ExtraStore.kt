@@ -88,7 +88,7 @@ class ExtraStore(context: Context) {
             orderNumber = o.optString("orderNumber"),
             date = o.optString("date"),
             items = o.optJSONArray("items").mapObjects { i ->
-                InvoiceItem(i.optString("name"), i.optDouble("quantity", 0.0), i.optString("unit", "шт"), i.optString("ean"))
+                BatchItem(i.optString("name"), i.optDouble("quantity", 0.0), i.optString("unit", "шт"), i.optString("ean"))
             },
             status = runCatching { BatchStatus.valueOf(o.optString("status")) }.getOrDefault(BatchStatus.READY),
             error = o.optString("error"),

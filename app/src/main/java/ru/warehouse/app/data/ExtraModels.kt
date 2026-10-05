@@ -2,20 +2,6 @@ package ru.warehouse.app.data
 
 import java.util.UUID
 
-data class Product(
-    val id: String = UUID.randomUUID().toString(),
-    val name: String = "",
-    val ean: String = "",
-    val sku: String = "",
-    val category: String = "",
-    val unit: String = "шт",
-    val stock: Int = 0,
-    val bwareStock: Int = 0,
-    val barcode: String = ""
-)
-
-)
-
 /** Строка списка в окне «По заданию». */
 data class PlanItem(
     val name: String,
@@ -58,9 +44,12 @@ data class ChatMessage(
     val role: String, // "user" | "assistant"
     val text: String,
     val ts: Long = System.currentTimeMillis(),
-)
+) {
+    val isFromUser: Boolean get() = role == "user"
+    val timestamp: Long get() = ts
+}
 
-data class InvoiceItem(
+data class BatchItem(
     val name: String,
     val quantity: Double,
     val unit: String = "шт",
@@ -83,7 +72,7 @@ data class InvoiceBatch(
     val sender: String = "",
     val orderNumber: String = "",
     val date: String = "",
-    val items: List<InvoiceItem> = emptyList(),
+    val items: List<BatchItem> = emptyList(),
     val status: BatchStatus = BatchStatus.QUEUED,
     val error: String = "",
     val createdAt: Long = System.currentTimeMillis(),
@@ -102,14 +91,3 @@ data class ExtraSettings(
     val email: String = "",
     val accountId: String = UUID.randomUUID().toString(),
 )
-
-enum class WarehouseDocumentType(var customName: String? = null) {
-    INVOICE, RECEIPT, WAYBILL, TRANSFER, WRITE_OFF, RETURN, TASK, OTHER
-}
-
-typealias WarehousrTransfer = WarehouseTransfer
-typealias WarehousrTransferStatus = WarehouseTransferStatus
-typealias WarehousrTransfer = WarehouseTransfer
-typealias WarehousrTransferStatus = WarehouseTransferStatus
-typealias WarehousrTransferItem = WarehouseTransferItem
-

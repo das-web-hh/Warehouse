@@ -13,7 +13,7 @@ data class InvoiceResponse(
     val sender: String,
     val orderNumber: String,
     val date: String,
-    val items: List<InvoiceItem>,
+    val items: List<BatchItem>,
     val totalPages: Int,
     val failedPages: Int,
 )
@@ -42,12 +42,12 @@ object ServerClient {
         val fields = if (geminiKey.isNotBlank()) mapOf("api_key" to geminiKey) else emptyMap()
         val json = postMultipart(baseUrl, "/process-invoice", fields, "file", fileName, mimeType, bytes, 300_000)
         val items = json.optJSONArray("items").let { arr ->
-            val out = mutableListOf<InvoiceItem>()
+            val out = mutableListOf<BatchItem>()
             if (arr != null) for (i in 0 until arr.length()) {
                 val o = arr.optJSONObject(i) ?: continue
                 val name = o.optString("name").trim()
                 if (name.isBlank()) continue
-                out += InvoiceItem(
+                out += BatchItem(
                     name = name,
                     quantity = o.optDouble("menge", o.optDouble("quantity", 0.0)),
                     unit = o.optString("unit").ifBlank { "шт" },

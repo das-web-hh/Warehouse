@@ -45,44 +45,12 @@ data class Product(
     val pendingApproval: Boolean = false,
 )
 
-data class PlanItem(
-    val id: String = UUID.randomUUID().toString(),
-    val itemId: String = "",
-    val name: String = "",
-    val barcode: String = "",
-    val ean: String = "",
-    val sku: String = "",
-    val code: String = "",
-    val product: String = "",
-    val size: String = "",
-    val quantity: Double = 0.0,
-    val planned: Double = 0.0,
+/** Результат сверки одного товара в окне «По заданию» (Product-based). */
+data class PlanProductResult(
+    val productId: String = "",
     val expectedQty: Double = 0.0,
     val scannedQty: Double = 0.0,
-    val unit: String = "шт",
-    val type: String = "",
-    val isBware: Boolean = false,
-)
-
-data class CheckResult(
-    val id: String = UUID.randomUUID().toString(),
-    val itemId: String = "",
-    val name: String = "",
-    val barcode: String = "",
-    val ean: String = "",
-    val sku: String = "",
-    val expectedQty: Double = 0.0,
-    val actualQty: Double = 0.0,
-    val scannedQty: Double = 0.0,
-    val quantity: Double = 0.0,
-    val difference: Double = 0.0,
     val status: CheckStatus = CheckStatus.PENDING,
-    val unit: String = "шт",
-    val type: String = "",
-    val code: String = "",
-    val product: String = "",
-    val planned: Double = 0.0,
-    val size: String = "",
 )
 
 data class InvoiceItem(
