@@ -1,4 +1,8 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ru.warehouse.app.ui
+
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -713,6 +717,7 @@ private data class GeminiChatColors(
     val assistantBubble: Color,
     val composerBackground: Color,
     val inputBackground: Color,
+    val control: Color,
     val attachButton: Color,
     val attachmentBackground: Color,
     val usageBackground: Color,
@@ -736,6 +741,7 @@ private fun geminiChatColors(darkTheme: Boolean) = if (darkTheme) {
         assistantBubble = Color(0xFF171A1F),
         composerBackground = Color(0xFF171A1F),
         inputBackground = Color(0xFF242A33),
+        control = Color(0xFF242A33),
         attachButton = Color(0xFF303741),
         attachmentBackground = Color(0xFF20252D),
         usageBackground = Color(0xFF172536),
@@ -758,6 +764,7 @@ private fun geminiChatColors(darkTheme: Boolean) = if (darkTheme) {
         assistantBubble = Color.White,
         composerBackground = Color.White,
         inputBackground = Color(0xFFF8F9FA),
+        control = Color(0xFFE9ECEF),
         attachButton = Color(0xFFE9ECEF),
         attachmentBackground = Color.White,
         usageBackground = Color(0xFFEAF3FC),

@@ -1,4 +1,8 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ru.warehouse.app.ui
+
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 import android.app.Application
 import android.content.Intent
@@ -26,7 +30,7 @@ import ru.warehouse.app.data.DraftLine
 import ru.warehouse.app.data.ExtraSettings
 import ru.warehouse.app.data.ExtraStore
 import ru.warehouse.app.data.InvoiceBatch
-import ru.warehouse.app.data.InvoiceItem
+import ru.warehouse.app.data.BatchItem
 import ru.warehouse.app.data.PlanItem
 import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.ServerClient
@@ -431,7 +435,7 @@ class ExtraViewModel(application: Application) : AndroidViewModel(application) {
         b.items.forEach { appendLine("${it.name} — ${formatQuantity(it.quantity)} ${it.unit}  ${it.ean}") }
     }
 
-    private fun mergeItems(a: List<InvoiceItem>, b: List<InvoiceItem>): List<InvoiceItem> {
+    private fun mergeItems(a: List<BatchItem>, b: List<BatchItem>): List<BatchItem> {
         val out = a.toMutableList()
         b.forEach { n ->
             val i = out.indexOfFirst { (n.ean.isNotEmpty() && it.ean == n.ean) || it.name.equals(n.name, true) }

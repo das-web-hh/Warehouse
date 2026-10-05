@@ -1,4 +1,8 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ru.warehouse.app.ui
+
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme

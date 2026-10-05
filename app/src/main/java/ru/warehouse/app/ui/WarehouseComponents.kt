@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -206,4 +207,37 @@ fun formatQuantity(value: Double): String {
 @Composable
 fun ScreenSectionSpace() {
     Spacer(Modifier.height(18.dp))
+}
+
+
+/** Строка выбора товара с кнопкой действия («Добавить», «Внести»). */
+@Composable
+fun ProductPickerRow(
+    product: Product,
+    action: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(product.name, fontWeight = FontWeight.SemiBold)
+                Text(
+                    listOf(product.sku, product.barcode).filter(String::isNotBlank).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onClick) { Text(action) }
+        }
+    }
 }

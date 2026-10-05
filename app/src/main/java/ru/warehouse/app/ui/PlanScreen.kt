@@ -44,7 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import ru.warehouse.app.data.CheckResult
+import ru.warehouse.app.data.PlanProductResult
 import ru.warehouse.app.data.CheckStatus
 import ru.warehouse.app.data.Product
 import ru.warehouse.app.data.WarehouseState
@@ -54,7 +54,7 @@ fun PlanScreen(
     state: WarehouseState,
     onBack: () -> Unit = {},
     onScanClick: () -> Unit = {},
-    onSavePlan: (List<CheckResult>) -> Unit = {},
+    onSavePlan: (List<PlanProductResult>) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -113,7 +113,7 @@ fun PlanScreen(
                     val currentQty = scannedQuantities[product.id] ?: 0.0
                     val status = when {
                         currentQty == 0.0 -> CheckStatus.PENDING
-                        currentQty == product.quantity -> CheckStatus.MATCH
+                        currentQty == product.stock -> CheckStatus.MATCH
                         else -> CheckStatus.MISMATCH
                     }
 
@@ -136,12 +136,12 @@ fun PlanScreen(
                         val currentQty = scannedQuantities[product.id] ?: 0.0
                         val status = when {
                             currentQty == 0.0 -> CheckStatus.PENDING
-                            currentQty == product.quantity -> CheckStatus.MATCH
+                            currentQty == product.stock -> CheckStatus.MATCH
                             else -> CheckStatus.MISMATCH
                         }
-                        CheckResult(
+                        PlanProductResult(
                             productId = product.id,
-                            expectedQty = product.quantity,
+                            expectedQty = product.stock,
                             scannedQty = currentQty,
                             status = status
                         )
@@ -169,7 +169,9 @@ private fun PlanProductCard(
         colors = CardDefaults.cardColors(
             containerColor = when (status) {
                 CheckStatus.MATCH -> Color(0xFFE8F5E9)
-                CheckStatus.MISMATCH -> Color(0xFFFFEBEE)
+                CheckStatus.MISMATCH,
+                CheckStatus.SHORTAGE,
+                CheckStatus.OVERAGE -> Color(0xFFFFEBEE)
                 CheckStatus.PENDING -> MaterialTheme.colorScheme.surfaceVariant
             }
         )
@@ -193,7 +195,7 @@ private fun PlanProductCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "План: ${formatQuantity(product.quantity)} ${product.unit}",
+                    text = "План: ${formatQuantity(product.stock)} ${product.unit}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -202,13 +204,17 @@ private fun PlanProductCard(
                 Icon(
                     imageVector = when (status) {
                         CheckStatus.MATCH -> Icons.Default.CheckCircle
-                        CheckStatus.MISMATCH -> Icons.Default.Warning
+                        CheckStatus.MISMATCH,
+                        CheckStatus.SHORTAGE,
+                        CheckStatus.OVERAGE -> Icons.Default.Warning
                         CheckStatus.PENDING -> Icons.Default.QrCodeScanner
                     },
                     contentDescription = null,
                     tint = when (status) {
                         CheckStatus.MATCH -> Color(0xFF2E7D32)
-                        CheckStatus.MISMATCH -> Color(0xFFC62828)
+                        CheckStatus.MISMATCH,
+                        CheckStatus.SHORTAGE,
+                        CheckStatus.OVERAGE -> Color(0xFFC62828)
                         CheckStatus.PENDING -> Color.Gray
                     }
                 )
